@@ -1,0 +1,39 @@
+<Project
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns="http://usefulinc.com/ns/doap#"
+    xmlns:foaf="http://xmlns.com/foaf/0.1/"
+    xmlns:admin="http://webns.net/mvcb/">
+
+  <name>@PACKAGE_NAME@</name>
+  <shortname>@PACKAGE_TARNAME@</shortname>
+  <homepage rdf:resource=@PACKAGE_URL@ />
+  <created>@GSTD_PACKAGE_CREATED@</created>
+  <shortdesc xml:lang="en">
+    @GSTD_README_SHORT@
+  </shortdesc>
+  <description xml:lang="en">
+    @GSTD_README_LONG@
+  </description>
+  <category></category>
+  <bug-database rdf:resource="@PACKAGE_BUGREPORT@" />
+  <screenshots></screenshots>
+  <mailing-list rdf:resource="@GSTD_PACKAGE_MAILINGLIST@" />
+  <programming-language>C</programming-language>
+  <license rdf:resource="https://github.com/edumbill/doap/blob/master/licenses/lgpl" />
+  <download-page rdf:resource="@GSTD_REPO_DOWNLOAD@" />
+
+  <repository>
+    <GitRepository>
+      <location rdf:resource="@GSTD_REPO_LOCATION@"/>
+      <browse rdf:resource="@GSTD_REPO_BROWSE@"/>
+    </GitRepository>
+  </repository> 
+
+  <maintainer>
+    <foaf:Person>
+      <foaf:name>Michael Gruner</foaf:name>
+    </foaf:Person>
+  </maintainer>
+
+</Project>

@@ -1,0 +1,6 @@
+This directory contains regression tests, functionality tests, examples, ...
+
+check/
+   unit tests using the check library, non-interactive
+examples/
+   small examples demonstrating the use of various features
