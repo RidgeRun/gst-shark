@@ -1,23 +1,50 @@
+lib_LTLIBRARIES = libgstshark-@GST_SHARK_API_VERSION@.la
 
-plugin_LTLIBRARIES = libgstsharktracers.la
+libgstshark_@GST_SHARK_API_VERSION@_la_SOURCES = \
+	gstdot.c
 
-libgstsharktracers_la_DEPENDENCIES = 
-libgstsharktracers_la_SOURCES = \
-	gstsharktracers.c
+libgstshark_@GST_SHARK_API_VERSION@_la_CFLAGS = \
+	$(GST_SHARK_OBJ_CFLAGS) \
+	$(GST_CFLAGS) \
+	$(GVC_CFLAGS)  \
+	-DGST_USE_UNSTABLE_API \
+	-Wno-undef
 
-libgstsharktracers_la_CFLAGS = $(GST_SHARK_OBJ_CFLAGS) $(GST_CFLAGS) \
-  -DGST_USE_UNSTABLE_API
-libgstsharktracers_la_LIBADD = $(GST_LIBS) \
-	$(GST_SHARK_OBJ_LIBS)
-libgstsharktracers_la_LDFLAGS = $(GST_SHARK_PLUGIN_LDFLAGS)
-libgstsharktracers_la_LIBTOOLFLAGS = $(GST_SHARK_PLUGIN_LIBTOOLFLAGS)
+libgstshark_@GST_SHARK_API_VERSION@_la_LIBADD = \
+	$(GST_SHARK_OBJ_LIBS) \
+	$(GST_LIBS) \
+	$(GVC_LIBS)
 
-noinst_HEADERS =
+plugin_LTLIBRARIES = libgstsharktracers-@GST_SHARK_API_VERSION@.la
+
+libgstsharktracers_@GST_SHARK_API_VERSION@_la_DEPENDENCIES = \
+	libgstshark-@GST_SHARK_API_VERSION@.la
+
+libgstsharktracers_@GST_SHARK_API_VERSION@_la_SOURCES = \
+	gstsharktracers.c 
+
+libgstsharktracers_@GST_SHARK_API_VERSION@_la_CFLAGS = \
+	$(GST_SHARK_OBJ_CFLAGS) \
+	$(GST_CFLAGS) \
+	-DGST_USE_UNSTABLE_API
+
+libgstsharktracers_@GST_SHARK_API_VERSION@_la_LIBADD = \
+	$(GST_SHARK_OBJ_LIBS) \
+	$(GST_LIBS) 
+
+libgstsharktracers_@GST_SHARK_API_VERSION@_la_LDFLAGS = \
+	$(GST_SHARK_PLUGIN_LDFLAGS)
+
+libgstsharktracers_@GST_SHARK_API_VERSION@_la_LIBTOOLFLAGS = \
+	$(GST_SHARK_PLUGIN_LIBTOOLFLAGS)
+
+noinst_HEADERS = \
+	gstdot.h
 
 CLEANFILES = *.gcno *.gcda *.gcov *.gcov.out
 
-%.c.gcov: .libs/libgstsharktracers_la-%.gcda %.c
+%.c.gcov: .libs/libgstshark_@GST_SHARK_API_VERSION@_la-%.gcda %.c
 	$(GCOV) -b -f -o $^ > $@.out
 
-gcov: $(libgstsharktracers_la_SOURCES:=.gcov)
+gcov: $(libgstshark_@GST_SHARK_API_VERSION@_la_SOURCES:=.gcov)
 
