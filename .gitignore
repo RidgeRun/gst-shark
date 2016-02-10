@@ -19,6 +19,7 @@ libtool
 ltmain.sh
 missing
 stamp-h1
+.dirstamp
 
 # M4 Macros, all except ours
 m4/*
@@ -27,6 +28,11 @@ m4/*
 # Test related stuff
 test-driver
 test-suite.log
+*.log
+*.trs
+*.reg
+tests/check/gstdot
+tests/examples/dotviewer/dotviewer
 
 # Docs related stuff
 docs/version.entities
@@ -38,3 +44,8 @@ docs/version.entities
 *.typelib
 *.la
 *.lo
+*.o
+
+# Other
+.clang_complete
+

@@ -218,6 +218,19 @@ AG_GST_CHECK_GST([$GST_REQ_MAJMIN], [$GST_REQ_MINVER], [yes])
 AG_GST_CHECK_GST_BASE([$GST_REQ_MAJMIN], [$GST_REQ_MINVER], [yes])
 AG_GST_CHECK_GST_CHECK([$GST_REQ_MAJMIN], [$GST_REQ_MINVER], [yes])
 
+dnl Graphviz
+GVC_REQ=2.38
+PKG_CHECK_MODULES(GVC, [
+  libgvc >= $GVC_REQ
+], [
+  AC_SUBST(GVC_CFLAGS)
+  AC_SUBST(GVC_LIBS)
+],[
+  AC_MSG_ERROR([
+    Please install libgvc development packages (libgvc)
+  ])
+])
+
 dnl building of unit test libraries
 AC_ARG_ENABLE(check,
   AS_HELP_STRING([--disable-check],[disable building unit test libraries]),
@@ -359,6 +372,7 @@ plugins/tracers/Makefile
 tests/Makefile
 tests/check/Makefile
 tests/examples/Makefile
+tests/examples/dotviewer/Makefile
 docs/Makefile
 docs/version.entities
 tools/Makefile
