@@ -9,7 +9,7 @@ AC_INIT([GstShark],
         [0.1.0.1],
 	[https://github.com/RidgeRun/gst-shark],
 	[gst-shark],
-	[])
+	[https://github.com/RidgeRun/gst-shark])
 AG_GSTD_INIT
 AG_GST_SHARK_INIT
 
