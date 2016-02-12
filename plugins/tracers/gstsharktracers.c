@@ -23,12 +23,16 @@
 #endif
 
 #include <gst/gst.h>
+#include "gstcpuusage.h"
 
 static gboolean
 plugin_init (GstPlugin * plugin)
 {
-  /* if (!gst_tracer_register (plugin, "example", gst_example_tracer_get_type ())) */
-  /*   return FALSE; */
+  if (!gst_tracer_register (plugin, "cpuusage",
+          gst_cpuusage_tracer_get_type ())) {
+    return FALSE;
+  }
+
 
   return TRUE;
 }
