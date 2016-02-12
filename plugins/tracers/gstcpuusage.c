@@ -30,7 +30,8 @@
 
 #include <unistd.h>
 #include "gstcpuusage.h"
-#include <stdio.h>
+#include "gstcpuusagecompute.h"
+#include <glib/gstdio.h>
 
 #ifdef HAVE_SYS_RESOURCE_H
 #ifndef __USE_GNU
@@ -50,8 +51,7 @@ G_LOCK_DEFINE (_proc);
 G_DEFINE_TYPE_WITH_CODE (GstCPUUsageTracer, gst_cpuusage_tracer,
     GST_TYPE_TRACER, _do_init);
 
-/* remember x measurements per self->window */
-#define WINDOW_SUBDIV 100
+gpointer cpuusage_thread_func (gpointer data);
 
 typedef struct
 {
@@ -95,7 +95,7 @@ free_thread_stats (gpointer data)
 static void
 do_stats (GstTracer * obj, guint64 ts)
 {
-  printf ("cpuusage: hook\n");
+
 }
 
 /* tracer class */
@@ -119,16 +119,66 @@ gst_cpuusage_tracer_class_init (GstCPUUsageTracerClass * klass)
   gobject_class->finalize = gst_cpuusage_tracer_finalize;
 }
 
+gpointer
+cpuusage_thread_func (gpointer data)
+{
+  GstCPUUsageTracer *self;
+  gdouble *cpu_usage;
+  gint msg_id;
+
+  self = (GstCPUUsageTracer *) data;
+
+  printf ("cpuusage: load 2\n");
+  cpu_usage = self->cpuusage.cpu_usage;
+
+  while (1) {
+    gst_cpu_usage_compute (&self->cpuusage);
+
+    sleep (1);
+
+    for (msg_id = 0; msg_id < self->cpuusage.cpu_num; ++msg_id) {
+      gst_tracer_log_trace (gst_structure_new ("cpu",
+              "number", G_TYPE_INT, msg_id,
+              "load", G_TYPE_DOUBLE, cpu_usage[msg_id] * 100, NULL));
+    }
+
+  }
+  g_thread_exit (0);
+
+  return NULL;
+}
+
 static void
 gst_cpuusage_tracer_init (GstCPUUsageTracer * self)
 {
+  gint32 cpu_num;
+
   GstTracer *tracer = GST_TRACER (self);
 
+  if ((cpu_num = sysconf (_SC_NPROCESSORS_CONF)) == -1) {
+    GST_WARNING ("failed to get number of cpus");
+    cpu_num = 1;
+  }
+
   gst_tracing_register_hook (tracer, "pad-push-pre", G_CALLBACK (do_stats));
+
+
+  /* Create new thread to compute the cpu usage periodically */
+  g_thread_new ("cpuusage_compute", cpuusage_thread_func, self);
 
   self->threads = g_hash_table_new_full (NULL, NULL, NULL, free_thread_stats);
   self->tvs_proc = make_trace_values (GST_SECOND);
   self->main_thread_id = g_thread_self ();
+
+  self->cpuusage.cpu_array_sel = 0;
+  self->cpuusage.cpu_num = cpu_num;
+
+
+  gst_tracer_log_trace (gst_structure_new ("cpuusage.class", "number", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_INT, "description", G_TYPE_STRING, "Core number", "flags", G_TYPE_STRING, "aggregated",     /* TODO: use gflags */
+              "min", G_TYPE_UINT, G_GINT64_CONSTANT (0), "max", G_TYPE_UINT, CPU_NUM_MAX, NULL), "load", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_DOUBLE, "description", G_TYPE_STRING, "Core load percentage", "flags", G_TYPE_STRING, "aggregated",       /* TODO: use gflags */
+              "min", G_TYPE_DOUBLE, G_GUINT64_CONSTANT (0),
+              "max", G_TYPE_DOUBLE, G_GUINT64_CONSTANT (100), NULL), NULL));
+
 
   GST_DEBUG ("cpuusage: main thread=%p", self->main_thread_id);
 }
