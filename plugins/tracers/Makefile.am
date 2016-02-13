@@ -21,7 +21,8 @@ libgstsharktracers_@GST_SHARK_API_VERSION@_la_DEPENDENCIES = \
 	libgstshark-@GST_SHARK_API_VERSION@.la
 
 libgstsharktracers_@GST_SHARK_API_VERSION@_la_SOURCES = \
-	gstsharktracers.c 
+	gstsharktracers.c \
+	gstgraphic.c
 
 libgstsharktracers_@GST_SHARK_API_VERSION@_la_CFLAGS = \
 	$(GST_SHARK_OBJ_CFLAGS) \
@@ -30,7 +31,8 @@ libgstsharktracers_@GST_SHARK_API_VERSION@_la_CFLAGS = \
 
 libgstsharktracers_@GST_SHARK_API_VERSION@_la_LIBADD = \
 	$(GST_SHARK_OBJ_LIBS) \
-	$(GST_LIBS) 
+	$(GST_LIBS) \
+	$(top_builddir)/plugins/tracers/libgstshark-@GST_SHARK_API_VERSION@.la 
 
 libgstsharktracers_@GST_SHARK_API_VERSION@_la_LDFLAGS = \
 	$(GST_SHARK_PLUGIN_LDFLAGS)
@@ -39,7 +41,8 @@ libgstsharktracers_@GST_SHARK_API_VERSION@_la_LIBTOOLFLAGS = \
 	$(GST_SHARK_PLUGIN_LIBTOOLFLAGS)
 
 noinst_HEADERS = \
-	gstdot.h
+	gstdot.h \
+	gstgraphic.h
 
 CLEANFILES = *.gcno *.gcda *.gcov *.gcov.out
 
