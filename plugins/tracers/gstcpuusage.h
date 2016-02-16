@@ -44,18 +44,6 @@ G_BEGIN_DECLS
 typedef struct _GstCPUUsageTracer GstCPUUsageTracer;
 typedef struct _GstCPUUsageTracerClass GstCPUUsageTracerClass;
 
-typedef struct
-{
-  GstClockTime ts;
-  GstClockTime val;
-} GstTraceValue;
-
-typedef struct
-{
-  GstClockTime window;
-  GQueue values;                /* GstTraceValue* */
-} GstTraceValues;
-
 
 typedef struct
 {
@@ -81,15 +69,6 @@ typedef struct
  */
 struct _GstCPUUsageTracer {
   GstTracer  parent;
-
-  /*< private >*/
-  GHashTable *threads;
-  GstTraceValues *tvs_proc;
-
-  /* for ts calibration */
-  gpointer main_thread_id;
-  guint64 tproc_base;
-
   GstCPUUsage cpuusage;
 };
 
