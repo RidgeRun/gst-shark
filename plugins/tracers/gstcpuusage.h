@@ -23,6 +23,7 @@
 
 #include <gst/gst.h>
 #include <gst/gsttracer.h>
+#include "gstcpuusagecompute.h"
 
 
 G_BEGIN_DECLS
@@ -39,28 +40,9 @@ G_BEGIN_DECLS
   (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_CPUUSAGE_TRACER))
 #define GST_CPUUSAGE_TRACER_CAST(obj) ((GstCPUUsageTracer *)(obj))
 
-#define CPU_NUM_MAX  8
-
 typedef struct _GstCPUUsageTracer GstCPUUsageTracer;
 typedef struct _GstCPUUsageTracerClass GstCPUUsageTracerClass;
 
-
-typedef struct
-{
-  /* CPU core number */
-  gint32  cpu_num;
-  gdouble cpu_usage[CPU_NUM_MAX];
-
-  gint user    [CPU_NUM_MAX]; /* Time spent in user mode */
-  gint user_aux[CPU_NUM_MAX]; /* Time spent in user mode */
-  gint nice    [CPU_NUM_MAX]; /* Time spent in user mode with low priority */
-  gint nice_aux[CPU_NUM_MAX]; /* Time spent in user mode with low priority */
-  gint system    [CPU_NUM_MAX];/* Time spent in user mode with low priority */
-  gint system_aux[CPU_NUM_MAX];/* Time spent in user mode with low priority */
-  gint idle    [CPU_NUM_MAX]; /* Time spent in system mode */
-  gint idle_aux[CPU_NUM_MAX]; /* Time spent in system mode */
-  gboolean cpu_array_sel;
-} GstCPUUsage;
 
 /**
  * GstCPUUsageTracer:

@@ -80,23 +80,26 @@ gpointer
 cpuusage_thread_func (gpointer data)
 {
   GstCPUUsageTracer *self;
+  GstCPUUsage *cpuusage;
   gdouble *cpu_usage;
   gint msg_id;
+  gint cpu_num;
 
   self = (GstCPUUsageTracer *) data;
+  cpuusage = &self->cpuusage;
 
-  cpu_usage = self->cpuusage.cpu_usage;
+  cpu_usage = CPU_USAGE_ARRAY (cpuusage);
+  cpu_num = CPU_USAGE_ARRAY_LENGTH (cpuusage);
 
   while (1) {
-    gst_cpu_usage_compute (&self->cpuusage);
+    gst_cpu_usage_compute (cpuusage);
 
-    sleep (1);
-    for (msg_id = 0; msg_id < self->cpuusage.cpu_num; ++msg_id) {
+    for (msg_id = 0; msg_id < cpu_num; ++msg_id) {
       gst_tracer_log_trace (gst_structure_new ("cpu",
               "number", G_TYPE_INT, msg_id,
               "load", G_TYPE_DOUBLE, cpu_usage[msg_id] * 100, NULL));
     }
-
+    sleep (1);
   }
   g_thread_exit (0);
 
@@ -106,24 +109,14 @@ cpuusage_thread_func (gpointer data)
 static void
 gst_cpuusage_tracer_init (GstCPUUsageTracer * self)
 {
-  gint32 cpu_num;
-
   GstTracer *tracer = GST_TRACER (self);
 
-  if ((cpu_num = sysconf (_SC_NPROCESSORS_CONF)) == -1) {
-    GST_WARNING ("failed to get number of cpus");
-    cpu_num = 1;
-  }
+  gst_cpu_usage_init (&(self->cpuusage));
 
   gst_tracing_register_hook (tracer, "pad-push-pre", G_CALLBACK (do_stats));
 
-
   /* Create new thread to compute the cpu usage periodically */
   g_thread_new ("cpuusage_compute", cpuusage_thread_func, self);
-
-  self->cpuusage.cpu_array_sel = 0;
-  self->cpuusage.cpu_num = cpu_num;
-
 
   gst_tracer_log_trace (gst_structure_new ("cpuusage.class", "number", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_INT, "description", G_TYPE_STRING, "Core number", "flags", G_TYPE_STRING, "aggregated",     /* TODO: use gflags */
               "min", G_TYPE_UINT, G_GINT64_CONSTANT (0), "max", G_TYPE_UINT, CPU_NUM_MAX, NULL), "load", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_DOUBLE, "description", G_TYPE_STRING, "Core load percentage", "flags", G_TYPE_STRING, "aggregated",       /* TODO: use gflags */

@@ -27,6 +27,27 @@
 #include "gstcpuusage.h"
 #include "gstcpuusagecompute.h"
 
+#include <unistd.h>
+#include <string.h>
+
+
+void
+gst_cpu_usage_init (GstCPUUsage * cpuusage)
+{
+  gint32 cpu_num;
+
+  g_return_if_fail (cpuusage);
+
+  memset (cpuusage, 0, sizeof (GstCPUUsage));
+
+  if ((cpu_num = sysconf (_SC_NPROCESSORS_CONF)) == -1) {
+    GST_WARNING ("failed to get number of cpus");
+    cpu_num = 1;
+  }
+
+  cpuusage->cpu_num = cpu_num;
+}
+
 void
 gst_cpu_usage_compute (GstCPUUsage * cpuusage)
 {
@@ -53,7 +74,9 @@ gst_cpu_usage_compute (GstCPUUsage * cpuusage)
   gdouble num_value;
   gdouble den_value;
   gboolean cpu_array_sel;
-  int ret;
+  gint ret;
+
+  g_return_if_fail (cpuusage);
 
   user = cpuusage->user;
   user_aux = cpuusage->user_aux;
