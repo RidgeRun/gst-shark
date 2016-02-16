@@ -23,12 +23,13 @@
 #endif
 
 #include <gst/gst.h>
+#include "gstgraphic.h"
 
 static gboolean
 plugin_init (GstPlugin * plugin)
 {
-  /* if (!gst_tracer_register (plugin, "example", gst_example_tracer_get_type ())) */
-  /*   return FALSE; */
+  if (!gst_tracer_register (plugin, "graphic", gst_graphic_tracer_get_type ()))
+    return FALSE;
 
   return TRUE;
 }
