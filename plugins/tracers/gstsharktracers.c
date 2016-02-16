@@ -24,12 +24,18 @@
 
 #include <gst/gst.h>
 #include "gstgraphic.h"
+#include "gstcpuusage.h"
 
 static gboolean
 plugin_init (GstPlugin * plugin)
 {
-  if (!gst_tracer_register (plugin, "graphic", gst_graphic_tracer_get_type ()))
+  if (!gst_tracer_register (plugin, "cpuusage",
+          gst_cpuusage_tracer_get_type ())) {
     return FALSE;
+  }
+  if (!gst_tracer_register (plugin, "graphic", gst_graphic_tracer_get_type ())) {
+    return FALSE;
+  }
 
   return TRUE;
 }
