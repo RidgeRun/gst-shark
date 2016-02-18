@@ -2,7 +2,8 @@ lib_LTLIBRARIES = libgstshark-@GST_SHARK_API_VERSION@.la
 
 libgstshark_@GST_SHARK_API_VERSION@_la_SOURCES = \
 	gstdot.c \
-    gstcpuusagecompute.c  
+    gstcpuusagecompute.c \
+	gstproctimecompute.c
 
 libgstshark_@GST_SHARK_API_VERSION@_la_CFLAGS = \
 	$(GST_SHARK_OBJ_CFLAGS) \
@@ -45,7 +46,8 @@ noinst_HEADERS = \
 	gstcpuusage.h \
     gstcpuusagecompute.h \
     gstgraphic.h \
-	gstproctime.h
+	gstproctime.h \
+	gstproctimecompute.h
 
 
 CLEANFILES = *.gcno *.gcda *.gcov *.gcov.out
