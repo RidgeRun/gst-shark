@@ -21,7 +21,8 @@ plugin_LTLIBRARIES = libgstsharktracers-@GST_SHARK_API_VERSION@.la
 libgstsharktracers_@GST_SHARK_API_VERSION@_la_SOURCES = \
 	gstsharktracers.c \
 	gstgraphic.c \
-    gstcpuusage.c
+    gstcpuusage.c \
+	gstproctime.c
 
 libgstsharktracers_@GST_SHARK_API_VERSION@_la_CFLAGS = \
 	$(GST_SHARK_OBJ_CFLAGS) \
@@ -43,7 +44,8 @@ noinst_HEADERS = \
 	gstdot.h \
 	gstcpuusage.h \
     gstcpuusagecompute.h \
-    gstgraphic.h
+    gstgraphic.h \
+	gstproctime.h
 
 
 CLEANFILES = *.gcno *.gcda *.gcov *.gcov.out
