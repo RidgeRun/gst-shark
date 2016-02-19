@@ -23,6 +23,7 @@
 
 #include <gst/gst.h>
 #include <gst/gsttracer.h>
+#include "gstproctimecompute.h"
 
 G_BEGIN_DECLS
 
@@ -48,7 +49,7 @@ typedef struct _GstProcTimeTracerClass GstProcTimeTracerClass;
  */
 struct _GstProcTimeTracer {
   GstTracer  parent;
-
+  GstProcTime procTime;
 };
 
 struct _GstProcTimeTracerClass {

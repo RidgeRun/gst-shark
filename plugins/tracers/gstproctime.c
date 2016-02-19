@@ -30,7 +30,6 @@
 
 #include <unistd.h>
 #include "gstproctime.h"
-#include <glib/gstdio.h>
 
 #ifdef HAVE_SYS_RESOURCE_H
 #ifndef __USE_GNU
@@ -50,18 +49,67 @@ G_LOCK_DEFINE (_proc);
 G_DEFINE_TYPE_WITH_CODE (GstProcTimeTracer, gst_proctime_tracer,
     GST_TYPE_TRACER, _do_init);
 
-
 static void
 do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
 {
+  GstProcTimeTracer *procTimeTracer;
+  GstProcTime *procTime;
+
+  gchar *parentName;
+  gchar *peerParentName;
+  GstElement *element;
+  GstPad *padPeer;
+  gchar *name;
+  gint64 time;
+
+  procTimeTracer = GST_PROCTIME_TRACER_CAST (self);
+  procTime = &procTimeTracer->procTime;
+
+  element = gst_pad_get_parent_element (pad);
+  parentName = gst_element_get_name (element);
+
+  padPeer = gst_pad_get_peer (pad);
+  element = gst_pad_get_parent_element (padPeer);
+  peerParentName = gst_element_get_name (element);
+
+  g_free (parentName);
+  g_free (peerParentName);
+
+  gst_proctime_proc_time (procTime, &time, &name, padPeer, pad);
+  if (NULL != name) {
+    gst_tracer_log_trace (gst_structure_new (name,
+            "time", G_TYPE_INT64, time, NULL));
+  }
+}
+
+
+static void
+do_element_new (GObject * self, GstClockTime ts, GstElement * element)
+{
+  GstProcTimeTracer *procTimeTracer;
+  GstProcTime *procTime;
+
+  procTimeTracer = GST_PROCTIME_TRACER (self);
+  procTime = &procTimeTracer->procTime;
+
+  gst_proctime_add_new_element (procTime, element);
 
 }
+
 
 /* tracer class */
 
 static void
 gst_proctime_tracer_finalize (GObject * obj)
 {
+  GstProcTimeTracer *procTimeTracer;
+  GstProcTime *procTime;
+
+  procTimeTracer = GST_PROCTIME_TRACER (obj);
+  procTime = &procTimeTracer->procTime;
+
+  gst_proctime_finalize (procTime);
+
   G_OBJECT_CLASS (parent_class)->finalize (obj);
 }
 
@@ -81,4 +129,11 @@ gst_proctime_tracer_init (GstProcTimeTracer * self)
 
   gst_tracing_register_hook (tracer, "pad-push-pre",
       G_CALLBACK (do_push_buffer_pre));
+
+  gst_tracing_register_hook (tracer, "element-new",
+      G_CALLBACK (do_element_new));
+
+  gst_tracer_log_trace (gst_structure_new ("proctime.class", "time", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_INT64, "description", G_TYPE_STRING, "Processing time (Microseconds)", "flags", G_TYPE_STRING, "aggregated",  /* TODO: use gflags */
+              "min", G_TYPE_INT64, G_GINT64_CONSTANT (0), "max", G_TYPE_INT64,
+              G_MAXINT64, NULL), NULL));
 }
