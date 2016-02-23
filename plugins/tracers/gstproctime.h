@@ -50,6 +50,7 @@ typedef struct _GstProcTimeTracerClass GstProcTimeTracerClass;
 struct _GstProcTimeTracer {
   GstTracer  parent;
   GstProcTime procTime;
+  GString * timeString;
 };
 
 struct _GstProcTimeTracerClass {

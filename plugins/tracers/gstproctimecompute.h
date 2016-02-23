@@ -27,14 +27,12 @@
 
 G_BEGIN_DECLS
 
-typedef struct timeval GstProcTimeClock;
-
 typedef struct
 {
     gchar * name;
     GstPad * srcPad;
     GstPad * sinkPad;
-    GstProcTimeClock startTime;
+    GstClockTime startTime;
 } GstProcTimeElement;
 
 typedef struct
@@ -49,7 +47,7 @@ void gst_proctime_init(GstProcTime * procTime);
 void gst_proctime_add_new_element (GstProcTime * procTime, GstElement * element);
 
 void gst_proctime_proc_time (GstProcTime * procTime,
-        gint64 * time, gchar ** name,
+        GstClockTime * time, gchar ** name,
         GstPad * peerPad, GstPad * srcPad);
 
 void gst_proctime_finalize(GstProcTime * procTime);

@@ -72,8 +72,6 @@ gst_proctime_add_in_list (GstProcTime * procTime, gchar * name,
   element[elem_idx].srcPad = srcpad;
 }
 
-
-
 void
 gst_proctime_add_new_element (GstProcTime * procTime, GstElement * element)
 {
@@ -110,41 +108,12 @@ gst_proctime_add_new_element (GstProcTime * procTime, GstElement * element)
   }
 }
 
-static void
-gst_proctime_get_time (GstProcTimeClock * time)
-{
-  struct timeval *t;
-
-  g_return_if_fail (time);
-
-  t = time;
-
-  gettimeofday (t, NULL);
-}
-
-static void
-gst_proctime_get_time_diff (gint64 * time, GstProcTimeClock * time1,
-    GstProcTimeClock * time2)
-{
-  struct timeval *t1;
-  struct timeval *t2;
-
-  g_return_if_fail (time1);
-  g_return_if_fail (time2);
-
-  t1 = time1;
-  t2 = time2;
-
-  *time = (double) (t2->tv_usec - t1->tv_usec) +
-      (double) (t2->tv_sec - t1->tv_sec) * 1000000;
-}
-
 void
-gst_proctime_proc_time (GstProcTime * procTime, gint64 * time, gchar ** name,
-    GstPad * peerPad, GstPad * srcPad)
+gst_proctime_proc_time (GstProcTime * procTime, GstClockTime * time,
+    gchar ** name, GstPad * peerPad, GstPad * srcPad)
 {
   GstProcTimeElement *element;
-  GstProcTimeClock stopTime;
+  GstClockTime stopTime;
   gint elem_idx;
   gint elem_num;
 
@@ -164,7 +133,7 @@ gst_proctime_proc_time (GstProcTime * procTime, gint64 * time, gchar ** name,
    */
   for (elem_idx = 0; elem_idx < elem_num; ++elem_idx) {
     if (element[elem_idx].sinkPad == peerPad) {
-      gst_proctime_get_time (&element[elem_idx].startTime);
+      element[elem_idx].startTime = gst_util_get_timestamp ();
     }
   }
 
@@ -176,9 +145,8 @@ gst_proctime_proc_time (GstProcTime * procTime, gint64 * time, gchar ** name,
    */
   for (elem_idx = 0; elem_idx < elem_num; ++elem_idx) {
     if (element[elem_idx].srcPad == srcPad) {
-      gst_proctime_get_time (&stopTime);
-      gst_proctime_get_time_diff (time, &element[elem_idx].startTime,
-          &stopTime);
+      stopTime = gst_util_get_timestamp ();
+      *time = stopTime - element[elem_idx].startTime;
       *name = element[elem_idx].name;
     }
   }
