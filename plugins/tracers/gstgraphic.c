@@ -55,7 +55,7 @@ log_graphic (GstDebugCategory * cat, const char *fmt, ...)
 }
 
 static void
-do_element_change_state_post (GstTracer * self, guint64 ts,
+do_element_change_state_post (GstGraphicTracer * self, guint64 ts,
     GstElement * element, GstStateChange transition,
     GstStateChangeReturn result)
 {
@@ -84,8 +84,17 @@ do_element_change_state_post (GstTracer * self, guint64 ts,
 /* tracer class */
 
 static void
+gst_graphic_tracer_finalize (GObject * obj)
+{
+  G_OBJECT_CLASS (parent_class)->finalize (obj);
+}
+
+static void
 gst_graphic_tracer_class_init (GstGraphicTracerClass * klass)
 {
+  GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
+
+  gobject_class->finalize = gst_graphic_tracer_finalize;
 }
 
 static void
