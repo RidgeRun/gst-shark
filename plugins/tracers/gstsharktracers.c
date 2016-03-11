@@ -26,6 +26,7 @@
 #include "gstgraphic.h"
 #include "gstcpuusage.h"
 #include "gstproctime.h"
+#include "gstinterlatency.h"
 
 static gboolean
 plugin_init (GstPlugin * plugin)
@@ -40,6 +41,10 @@ plugin_init (GstPlugin * plugin)
 
   if (!gst_tracer_register (plugin, "proctime",
           gst_proctime_tracer_get_type ())) {
+    return FALSE;
+  }
+  if (!gst_tracer_register (plugin, "interlatency",
+          gst_interlatency_tracer_get_type ())) {
     return FALSE;
   }
   return TRUE;
