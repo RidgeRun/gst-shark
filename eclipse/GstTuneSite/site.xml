@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/GstTuneFeature_1.0.0.201603171858.jar" id="GstTuneFeature" version="1.0.0.201603171858">
+      <category name="ridgerun"/>
+   </feature>
+   <category-def name="ridgerun" label="RidgeRun"/>
+</site>
