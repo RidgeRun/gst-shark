@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Gsttune
+Bundle-SymbolicName: com.ridgerun.gsttune;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.ridgerun.gsttune.Activator
+Bundle-Vendor: RIDGERUN
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.tracecompass.ctf.core;bundle-version="1.1.1",
+ org.eclipse.tracecompass.ctf.parser;bundle-version="1.0.0",
+ org.eclipse.tracecompass.tmf.core;bundle-version="1.2.0",
+ org.eclipse.tracecompass.tmf.ctf.core;bundle-version="1.0.1"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-ActivationPolicy: lazy
