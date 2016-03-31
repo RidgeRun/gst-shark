@@ -30,6 +30,16 @@
     </GitRepository>
   </repository> 
 
+  <release>
+  <Version>
+   <revision>0.1.0</revision>
+   <branch>release-v0.1</branch>
+   <name></name>
+   <created>2016-03-18</created>
+   <file-release rdf:resource="" />
+  </Version>
+ </release>
+
   <maintainer>
     <foaf:Person>
       <foaf:name>Michael Gruner</foaf:name>
