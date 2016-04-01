@@ -47,8 +47,8 @@ struct _GstFramerateTracer
 
   /*< private > */
 
-  GHashTable *frameCounters;
-  gboolean startTimer;
+  GHashTable *frame_counters;
+  gboolean start_timer;
 };
 
 struct _GstFramerateTracerClass

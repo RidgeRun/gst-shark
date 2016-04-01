@@ -1,5 +1,5 @@
 /* GstShark - A Front End for GstTracer
- * Copyright (C) 2016 RidgeRun Engineering <michael.gruner@ridgerun.com>
+ * Copyright (C) 2016 RidgeRun Engineering <sebastian.fatjo@ridgerun.com>
  *
  * This file is part of GstShark.
  *
@@ -80,14 +80,14 @@ do_print_framerate (gpointer * data)
 
   /* Using the iterator functions to go through the Hash table and print the framerate 
      of every element stored */
-  g_hash_table_iter_init (&iter, self->frameCounters);
+  g_hash_table_iter_init (&iter, self->frame_counters);
   while (g_hash_table_iter_next (&iter, &key, &value)) {
     padtable = (GstFramerateHash *) value;
     gst_tracer_log_trace (gst_structure_new ("framerate",
             "source-pad", G_TYPE_STRING, padtable->fullname,
             "fps", G_TYPE_INT, padtable->counter, NULL));
     padtable->counter = 0;
-    if (!self->startTimer) {
+    if (!self->start_timer) {
       return FALSE;
     }
   }
@@ -133,24 +133,22 @@ do_pad_push_buffer_pre (GstFramerateTracer * self, guint64 ts, GstPad * pad,
   fullname = g_strjoin (".", elementname, padname, NULL);
 
   /* Function contains on the Hash table returns TRUE if the key already exists */
-  if (g_hash_table_contains (self->frameCounters, pad)) {
-    GST_INFO
-        ("Could not insert pad in the Hash table, it already exists in the table\n");
+  if (g_hash_table_contains (self->frame_counters, pad)) {
 
     /* If the pad that is pushing a buffer has already a space on the Hash table
        only the value should be updated */
     padframes =
-        (GstFramerateHash *) g_hash_table_lookup (self->frameCounters, pad);
+        (GstFramerateHash *) g_hash_table_lookup (self->frame_counters, pad);
     padframes->counter++;
   } else {
-    GST_INFO ("New key and value added to Hash table\n");
+    GST_INFO_OBJECT (self, "The %s key was added to the Hash Table", fullname);
 
     /* Reserving memory space for every structure that is going to be stored as a 
        value in the Hash table */
     padframes = g_malloc (sizeof (GstFramerateHash));
     padframes->fullname = g_strdup (fullname);
     padframes->counter = value;
-    g_hash_table_insert (self->frameCounters, pad, (gpointer) padframes);
+    g_hash_table_insert (self->frame_counters, pad, (gpointer) padframes);
   }
 
   g_free (elementname);
@@ -164,21 +162,24 @@ do_element_change_state_post (GstFramerateTracer * self, guint64 ts,
     GstElement * element, GstStateChange transition,
     GstStateChangeReturn result)
 {
-  /* Logging the change of state in which the pipeline graphic is being done */
-  log_framerate (GST_CAT_STATES,
-      "%" GST_TIME_FORMAT ", element=%" GST_PTR_FORMAT ", change=%d, res=%d",
-      GST_TIME_ARGS (ts), element, (gint) transition, (gint) result);
+  const gchar *statename =
+      gst_element_state_get_name (GST_STATE_TRANSITION_NEXT (transition));
+  const gchar *retname = gst_element_state_change_return_get_name (result);
 
-  if (GST_IS_PIPELINE (element)
-      && (transition == GST_STATE_CHANGE_PAUSED_TO_PLAYING)) {
+  if (GST_IS_PIPELINE (element)) {
+    /* Logging the change of state in which the pipeline graphic is being done */
+    log_framerate (GST_CAT_STATES,
+        "%" GST_TIME_FORMAT ", element=%" GST_PTR_FORMAT ", change=%s, res=%s",
+        GST_TIME_ARGS (ts), element, statename, retname);
 
-    /* Creating a calback function to display the updated counter of frames every second */
-    self->startTimer = TRUE;
-    g_timeout_add_seconds (1, (GSourceFunc) do_print_framerate,
-        (gpointer) self);
-  } else if (GST_IS_PIPELINE (element)
-      && (transition == GST_STATE_CHANGE_PLAYING_TO_PAUSED)) {
-    self->startTimer = FALSE;
+    if (transition == GST_STATE_CHANGE_PAUSED_TO_PLAYING) {
+      /* Creating a calback function to display the updated counter of frames every second */
+      self->start_timer = TRUE;
+      g_timeout_add_seconds (1, (GSourceFunc) do_print_framerate,
+          (gpointer) self);
+    } else if (transition == GST_STATE_CHANGE_PLAYING_TO_PAUSED) {
+      self->start_timer = FALSE;
+    }
   }
 }
 
@@ -189,7 +190,7 @@ gst_framerate_tracer_finalize (GObject * obj)
 {
   GstFramerateTracer *self = GST_FRAMERATE_TRACER (obj);
 
-  g_hash_table_destroy (self->frameCounters);
+  g_hash_table_destroy (self->frame_counters);
 
   G_OBJECT_CLASS (parent_class)->finalize (obj);
 }
@@ -208,10 +209,10 @@ gst_framerate_tracer_init (GstFramerateTracer * self)
 {
   GstTracer *tracer = GST_TRACER (self);
 
-  self->frameCounters =
+  self->frame_counters =
       g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL,
       do_destroy_hashtable_value);
-  self->startTimer = FALSE;
+  self->start_timer = FALSE;
 
   gst_tracing_register_hook (tracer, "pad-push-pre",
       G_CALLBACK (do_pad_push_buffer_pre));

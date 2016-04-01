@@ -2,7 +2,7 @@ lib_LTLIBRARIES = libgstshark-@GST_SHARK_API_VERSION@.la
 
 libgstshark_@GST_SHARK_API_VERSION@_la_SOURCES = \
 	gstdot.c \
-        gstcpuusagecompute.c  
+	gstcpuusagecompute.c  
 
 libgstshark_@GST_SHARK_API_VERSION@_la_CFLAGS = \
 	$(GST_SHARK_OBJ_CFLAGS) \
@@ -21,8 +21,8 @@ plugin_LTLIBRARIES = libgstsharktracers-@GST_SHARK_API_VERSION@.la
 libgstsharktracers_@GST_SHARK_API_VERSION@_la_SOURCES = \
 	gstsharktracers.c \
 	gstgraphic.c \
-        gstcpuusage.c \
-        gstframerate.c
+	gstcpuusage.c \
+	gstframerate.c
 
 libgstsharktracers_@GST_SHARK_API_VERSION@_la_CFLAGS = \
 	$(GST_SHARK_OBJ_CFLAGS) \
@@ -43,9 +43,9 @@ libgstsharktracers_@GST_SHARK_API_VERSION@_la_LIBTOOLFLAGS = \
 noinst_HEADERS = \
 	gstdot.h \
 	gstcpuusage.h \
-        gstcpuusagecompute.h \
-        gstgraphic.h \
-        gstframerate.h
+	gstcpuusagecompute.h \
+	gstgraphic.h \
+	gstframerate.h
 
 CLEANFILES = *.gcno *.gcda *.gcov *.gcov.out
 
