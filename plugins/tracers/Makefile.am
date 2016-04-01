@@ -24,7 +24,8 @@ libgstsharktracers_@GST_SHARK_API_VERSION@_la_SOURCES = \
 	gstgraphic.c \
 	gstcpuusage.c \
 	gstproctime.c \
-	gstinterlatency.c
+	gstinterlatency.c \
+    gstscheduletime.c
 
 libgstsharktracers_@GST_SHARK_API_VERSION@_la_CFLAGS = \
 	$(GST_SHARK_OBJ_CFLAGS) \
@@ -49,7 +50,8 @@ noinst_HEADERS = \
 	gstgraphic.h \
 	gstproctime.h \
 	gstproctimecompute.h \
-	gstinterlatency.h
+	gstinterlatency.h \
+    gstscheduletime.h
 
 
 CLEANFILES = *.gcno *.gcda *.gcov *.gcov.out
