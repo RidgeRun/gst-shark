@@ -28,6 +28,7 @@
 #include "gstproctime.h"
 #include "gstinterlatency.h"
 #include "gstscheduletime.h"
+#include "gstframerate.h"
 
 static gboolean
 plugin_init (GstPlugin * plugin)
@@ -49,6 +50,10 @@ plugin_init (GstPlugin * plugin)
   }
   if (!gst_tracer_register (plugin, "scheduletime",
           gst_scheduletime_tracer_get_type ())) {
+    return FALSE;
+  }
+  if (!gst_tracer_register (plugin, "framerate",
+          gst_framerate_tracer_get_type ())) {
     return FALSE;
   }
   return TRUE;
