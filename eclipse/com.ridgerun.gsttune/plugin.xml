@@ -7,14 +7,6 @@
             commandId="com.ridgerun.gsttune.commands.showdot"
             class="com.ridgerun.gsttune.handlers.ShowDotHandler">
       </handler>
-      <handler
-            commandId="com.ridgerun.gsttune.commands.sampleCommand"
-            class="com.ridgerun.gsttune.handlers.SampleHandler">
-      </handler>
-      <handler
-            class="com.ridgerun.gsttune.handlers.SampleHandler"
-            commandId="com.ridgerun.gsttune.commands.sampleCommand">
-      </handler>
    </extension>
    <extension
          point="org.eclipse.ui.menus">
@@ -38,37 +30,8 @@
                   label="Open Trace..."
                   style="push">
             </command>   
-            <command
-                  commandId="com.ridgerun.gsttune.commands.sampleCommand"
-                  id="com.ridgerun.gsttune.menus.sampleCommand"
-                  mnemonic="S">
-            </command>
          </menu>
       </menuContribution>
-      <menuContribution
-            locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
-         <toolbar
-               id="com.ridgerun.gsttune.toolbars.sampleToolbar">
-            <command
-                  commandId="com.ridgerun.gsttune.commands.sampleCommand"
-                  icon="icons/sample.gif"
-                  tooltip="Say hello world"
-                  id="com.ridgerun.gsttune.toolbars.sampleCommand">
-            </command>
-         </toolbar>
-      </menuContribution>
-   </extension>
-   <extension
-         point="org.eclipse.ui.commands">
-      <category
-            id="com.ridgerun.gsttune.commands.category"
-            name="Sample Category">
-      </category>
-      <command
-            categoryId="com.ridgerun.gsttune.commands.category"
-            id="com.ridgerun.gsttune.commands.sampleCommand"
-            name="Sample Command">
-      </command>
    </extension>
    <extension
          point="org.eclipse.ui.bindings">
