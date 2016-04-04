@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Gsttune
-Bundle-SymbolicName: com.ridgerun.gsttune;singleton:=true
+Bundle-Name: Gstshark
+Bundle-SymbolicName: com.ridgerun.gstshark;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: com.ridgerun.gsttune.Activator
 Bundle-Vendor: RIDGERUN

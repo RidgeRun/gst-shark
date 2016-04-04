@@ -7,83 +7,31 @@
             commandId="com.ridgerun.gsttune.commands.showdot"
             class="com.ridgerun.gsttune.handlers.ShowDotHandler">
       </handler>
-      <handler
-            commandId="com.ridgerun.gsttune.commands.sampleCommand"
-            class="com.ridgerun.gsttune.handlers.SampleHandler">
-      </handler>
-      <handler
-            class="com.ridgerun.gsttune.handlers.SampleHandler"
-            commandId="com.ridgerun.gsttune.commands.sampleCommand">
-      </handler>
    </extension>
    <extension
          point="org.eclipse.ui.menus">
       <menuContribution
             locationURI="menu:org.eclipse.ui.main.menu?after=additions">
-         
          <!-- GstTune Main Menu Interface -->
          <menu
                id="com.ridgerun.gsttune.menus.gsttuneMenu"
-               label="GstTune"
+               label="GstShark"
                mnemonic="M">
-               
             <!-- Pipeline Graphics -->
-            <menu
-                  id="com.ridgerun.gsttune.menus.pipelineGraphics"
-                  label="Pipeline Graphics"
-                  mnemonic="M">
-               <!-- Pipeline Graphics Commands-->
-               <command
-                     commandId="com.ridgerun.gsttune.commands.showdot"
-                     label="Show Pipeline dot file"
-                     id="com.ridgerun.gsttune.menus.sampleCommand"
-                     mnemonic="S">
-               </command>
-            </menu>
-            <!-- GstTune Menu Options Others -->
-            <menu
-                  id="com.ridgerun.gsttune.menus.others"
-                  label="Show Tracer"
-                  mnemonic="M">
-               <!-- Others Commands -->
-               <command
-                     commandId="org.eclipse.linuxtools.tmf.ui.openFile"
-                     label="Open Trace..."
-                     style="push">
-               </command>
-            </menu>
             <command
-                  commandId="com.ridgerun.gsttune.commands.sampleCommand"
+                  commandId="com.ridgerun.gsttune.commands.showdot"
+                  label="Show Pipeline Diagram"
                   id="com.ridgerun.gsttune.menus.sampleCommand"
                   mnemonic="S">
             </command>
-         </menu>
-         
-      </menuContribution>
-      <menuContribution
-            locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
-         <toolbar
-               id="com.ridgerun.gsttune.toolbars.sampleToolbar">
+            <!-- GstTune Menu Options Others -->
             <command
-                  commandId="com.ridgerun.gsttune.commands.sampleCommand"
-                  icon="icons/sample.gif"
-                  tooltip="Say hello world"
-                  id="com.ridgerun.gsttune.toolbars.sampleCommand">
-            </command>
-         </toolbar>
+                  commandId="org.eclipse.linuxtools.tmf.ui.openFile"
+                  label="Open Trace..."
+                  style="push">
+            </command>   
+         </menu>
       </menuContribution>
-   </extension>
-   <extension
-         point="org.eclipse.ui.commands">
-      <category
-            id="com.ridgerun.gsttune.commands.category"
-            name="Sample Category">
-      </category>
-      <command
-            categoryId="com.ridgerun.gsttune.commands.category"
-            id="com.ridgerun.gsttune.commands.sampleCommand"
-            name="Sample Command">
-      </command>
    </extension>
    <extension
          point="org.eclipse.ui.bindings">
