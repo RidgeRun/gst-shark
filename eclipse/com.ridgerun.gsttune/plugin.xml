@@ -7,6 +7,10 @@
             commandId="com.ridgerun.gsttune.commands.showdot"
             class="com.ridgerun.gsttune.handlers.ShowDotHandler">
       </handler>
+      <handler
+            commandId="com.ridgerun.gsttune.commands.opentrace"
+            class="com.ridgerun.gsttune.handlers.OpenTrace">
+      </handler>
    </extension>
    <extension
          point="org.eclipse.ui.menus">
@@ -26,7 +30,7 @@
             </command>
             <!-- GstTune Menu Options Others -->
             <command
-                  commandId="org.eclipse.linuxtools.tmf.ui.openFile"
+                  commandId="com.ridgerun.gsttune.commands.opentrace"
                   label="Open Trace..."
                   style="push">
             </command>   
