@@ -25,6 +25,7 @@
 #include <gst/gst.h>
 #include <gvc.h>
 #include <cgraph.h>
+#include "gstctf.h"
 
 #include "gstdot.h"
 
@@ -46,10 +47,7 @@ gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags)
   gchar *full_file_name = NULL;
   FILE *out;
 
-  trace_dir = g_getenv ("GST_SHARK_TRACE_DIR");
-
-  if (G_LIKELY (trace_dir == NULL))
-    trace_dir = g_getenv ("PWD");
+  trace_dir = get_ctf_path_name ();
 
   full_file_name = g_strdup_printf ("%s" G_DIR_SEPARATOR_S "pipeline.dot",
       trace_dir);
