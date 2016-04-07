@@ -37,6 +37,41 @@ struct _GstDotRenderThread
   gpointer args;
 };
 
+static void gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags);
+
+void
+gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags)
+{
+  const gchar *trace_dir;
+  gchar *full_file_name = NULL;
+  FILE *out;
+
+  trace_dir = g_getenv ("GST_SHARK_TRACE_DIR");
+
+  if (G_LIKELY (trace_dir == NULL))
+    trace_dir = g_getenv ("PWD");
+
+  full_file_name = g_strdup_printf ("%s" G_DIR_SEPARATOR_S "pipeline.dot",
+      trace_dir);
+
+  if ((out = fopen (full_file_name, "wb"))) {
+    gchar *buf;
+
+    buf = gst_debug_bin_to_dot_data (bin, flags);
+    fputs (buf, out);
+
+    g_free (buf);
+    fclose (out);
+
+    GST_INFO ("wrote bin graph to : '%s'", full_file_name);
+  } else {
+    GST_WARNING ("Failed to open file '%s' for writing: %s", full_file_name,
+        g_strerror (errno));
+  }
+
+  g_free (full_file_name);
+}
+
 const gchar *
 gst_dot_pipeline_to_string (const GstPipeline * pipe)
 {
@@ -46,6 +81,8 @@ gst_dot_pipeline_to_string (const GstPipeline * pipe)
   g_return_val_if_fail (pipe, NULL);
   bin = GST_BIN (pipe);
   flags = GST_DEBUG_GRAPH_SHOW_ALL;
+
+  gst_dot_pipeline_to_file (bin, flags);
 
   return gst_debug_bin_to_dot_data (bin, flags);
 }
