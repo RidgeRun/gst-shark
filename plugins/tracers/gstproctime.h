@@ -26,7 +26,6 @@
 #include "gstproctimecompute.h"
 
 G_BEGIN_DECLS
-
 #define GST_TYPE_PROCTIME_TRACER \
   (gst_proctime_tracer_get_type())
 #define GST_PROCTIME_TRACER(obj) \
@@ -38,7 +37,6 @@ G_BEGIN_DECLS
 #define GST_IS_PROCTIME_TRACER_CLASS(klass) \
   (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_PROCTIME_TRACER))
 #define GST_PROCTIME_TRACER_CAST(obj) ((GstProcTimeTracer *)(obj))
-
 typedef struct _GstProcTimeTracer GstProcTimeTracer;
 typedef struct _GstProcTimeTracerClass GstProcTimeTracerClass;
 
@@ -47,13 +45,15 @@ typedef struct _GstProcTimeTracerClass GstProcTimeTracerClass;
  *
  * Opaque #GstProcTimeTracer data structure
  */
-struct _GstProcTimeTracer {
-  GstTracer  parent;
+struct _GstProcTimeTracer
+{
+  GstTracer parent;
   GstProcTime procTime;
-  GString * timeString;
+  GString *timeString;
 };
 
-struct _GstProcTimeTracerClass {
+struct _GstProcTimeTracerClass
+{
   GstTracerClass parent_class;
 
 };
@@ -61,5 +61,4 @@ struct _GstProcTimeTracerClass {
 G_GNUC_INTERNAL GType gst_proctime_tracer_get_type (void);
 
 G_END_DECLS
-
 #endif /* __GST_PROCTIME_TRACER_H__ */

@@ -25,7 +25,6 @@
 #include <gst/gsttracer.h>
 
 G_BEGIN_DECLS
-
 #define GST_TYPE_GRAPHIC_TRACER \
   (gst_graphic_tracer_get_type())
 #define GST_GRAPHIC_TRACER(obj) \
@@ -37,17 +36,18 @@ G_BEGIN_DECLS
 #define GST_IS_GRAPHIC_TRACER_CLASS(klass) \
   (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_GRAPHIC_TRACER))
 #define GST_GRAPHIC_TRACER_CAST(obj) ((GstGraphicTracer *)(obj))
-
 typedef struct _GstGraphicTracer GstGraphicTracer;
 typedef struct _GstGraphicTracerClass GstGraphicTracerClass;
 
-struct _GstGraphicTracer {
-  GstTracer 	 parent;
+struct _GstGraphicTracer
+{
+  GstTracer parent;
 
-  /*< private >*/
+  /*< private > */
 };
 
-struct _GstGraphicTracerClass {
+struct _GstGraphicTracerClass
+{
   GstTracerClass parent_class;
 
   /* signals */
@@ -56,5 +56,4 @@ struct _GstGraphicTracerClass {
 G_GNUC_INTERNAL GType gst_graphic_tracer_get_type (void);
 
 G_END_DECLS
-
 #endif /* __GST_GRAPHIC_TRACER_H__ */

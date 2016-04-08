@@ -31,6 +31,7 @@
 #include <unistd.h>
 #include "gstcpuusage.h"
 #include "gstcpuusagecompute.h"
+#include "gstctf.h"
 #include <glib/gstdio.h>
 
 #ifdef HAVE_SYS_RESOURCE_H
@@ -51,8 +52,18 @@ G_LOCK_DEFINE (_proc);
 G_DEFINE_TYPE_WITH_CODE (GstCPUUsageTracer, gst_cpuusage_tracer,
     GST_TYPE_TRACER, _do_init);
 
-gpointer cpuusage_thread_func (gpointer data);
+static const char cpuusage_metadata_event[] = "event {\n\
+	name = cpuusage;\n\
+	id = %d;\n\
+	stream_id = %d;\n\
+	fields := struct {\n\
+		integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } _cpunum;\n\
+		integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _cpuload;\n\
+	};\n\
+};\n\
+\n";
 
+gpointer cpuusage_thread_func (gpointer data);
 
 static void
 do_stats (GstTracer * obj, guint64 ts)
@@ -98,6 +109,8 @@ cpuusage_thread_func (gpointer data)
       gst_tracer_log_trace (gst_structure_new ("cpu",
               "number", G_TYPE_INT, msg_id,
               "load", G_TYPE_DOUBLE, cpu_usage[msg_id] * 100, NULL));
+      do_print_cpuusage_event (CPUUSAGE_EVENT_ID, msg_id,
+          (int) (cpu_usage[msg_id] * 100));
     }
     sleep (1);
   }
@@ -109,6 +122,7 @@ cpuusage_thread_func (gpointer data)
 static void
 gst_cpuusage_tracer_init (GstCPUUsageTracer * self)
 {
+  gchar *metadata_event;
   GstTracer *tracer = GST_TRACER (self);
 
   gst_cpu_usage_init (&(self->cpuusage));
@@ -122,4 +136,10 @@ gst_cpuusage_tracer_init (GstCPUUsageTracer * self)
               "min", G_TYPE_UINT, G_GINT64_CONSTANT (0), "max", G_TYPE_UINT, CPU_NUM_MAX, NULL), "load", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_DOUBLE, "description", G_TYPE_STRING, "Core load percentage", "flags", G_TYPE_STRING, "aggregated",       /* TODO: use gflags */
               "min", G_TYPE_DOUBLE, G_GUINT64_CONSTANT (0),
               "max", G_TYPE_DOUBLE, G_GUINT64_CONSTANT (100), NULL), NULL));
+
+
+  metadata_event =
+      g_strdup_printf (cpuusage_metadata_event, CPUUSAGE_EVENT_ID, 0);
+  add_metadata_event_struct (metadata_event);
+  g_free (metadata_event);
 }
