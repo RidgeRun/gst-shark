@@ -125,10 +125,7 @@ static void
 do_pad_push_buffer_pre (GstFramerateTracer * self, guint64 ts, GstPad * pad,
     GstBuffer * buffer)
 {
-  gchar *elementname;
-  gchar *padname;
   gchar *fullname;
-  GstElement *element;
   gint value = 1;
   GstFramerateHash *padframes;
 
@@ -140,10 +137,7 @@ do_pad_push_buffer_pre (GstFramerateTracer * self, guint64 ts, GstPad * pad,
 
   /* The full name of every pad has the format elementName.padName and it is going 
      to be used for displaying the framerate in a friendly user way */
-  element = gst_pad_get_parent_element (pad);
-  elementname = gst_element_get_name (element);
-  padname = gst_pad_get_name (pad);
-  fullname = g_strjoin (".", elementname, padname, NULL);
+  fullname = g_strdup_printf ("%s.%s", GST_DEBUG_PAD_NAME (pad));
 
   /* Function contains on the Hash table returns TRUE if the key already exists */
   if (g_hash_table_contains (self->frame_counters, pad)) {
@@ -164,10 +158,7 @@ do_pad_push_buffer_pre (GstFramerateTracer * self, guint64 ts, GstPad * pad,
     g_hash_table_insert (self->frame_counters, pad, (gpointer) padframes);
   }
 
-  g_free (elementname);
-  g_free (padname);
   g_free (fullname);
-  gst_object_unref (element);
 }
 
 static void
