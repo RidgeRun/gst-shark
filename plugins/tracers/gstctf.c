@@ -76,7 +76,7 @@ clock { \n\
 	description = \"Monotonic Clock\"; \n\
 	freq = 1000000; /* Frequency, in Hz */ \n\
 	/* clock value offset from Epoch is: offset * (1/freq) */ \n\
-    offset_s = 0; \n\
+    offset_s = 21600; \n\
 };\n\
 \n\
 typealias integer {\n\
