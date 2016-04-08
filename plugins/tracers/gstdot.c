@@ -46,7 +46,7 @@ void
 gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags)
 {
   gchar *trace_dir;
-  gchar *full_trace_dir;
+  gchar *full_trace_dir = NULL;
   gchar *full_file_name = NULL;
   FILE *out;
 
@@ -86,6 +86,7 @@ gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags)
   }
 
   g_free (full_file_name);
+  g_free (full_trace_dir);
 }
 
 const gchar *
