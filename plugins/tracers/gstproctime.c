@@ -30,6 +30,7 @@
 
 #include <unistd.h>
 #include "gstproctime.h"
+#include "gstctf.h"
 
 #ifdef HAVE_SYS_RESOURCE_H
 #ifndef __USE_GNU
@@ -48,6 +49,17 @@ G_LOCK_DEFINE (_proc);
 #define gst_proctime_tracer_parent_class parent_class
 G_DEFINE_TYPE_WITH_CODE (GstProcTimeTracer, gst_proctime_tracer,
     GST_TYPE_TRACER, _do_init);
+
+static const char proctime_metadata_event[] = "event {\n\
+	name = proctime;\n\
+	id = %d;\n\
+	stream_id = %d;\n\
+	fields := struct {\n\
+        string element; \n\
+		integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _time;\n\
+	};\n\
+};\n\
+\n";
 
 static void
 do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
@@ -83,6 +95,8 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
 
     gst_tracer_log_trace (gst_structure_new (name,
             "time", G_TYPE_STRING, timeString->str, NULL));
+
+    do_print_proctime_event (PROCTIME_EVENT_ID, name, time);
   }
 }
 
@@ -131,6 +145,7 @@ static void
 gst_proctime_tracer_init (GstProcTimeTracer * self)
 {
   GstTracer *tracer = GST_TRACER (self);
+  gchar *metadata_event;
 
   self->timeString = g_string_new ("0:00:00.000000000 ");
 
@@ -144,4 +159,9 @@ gst_proctime_tracer_init (GstProcTimeTracer * self)
           GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE,
               G_TYPE_INT64, "description", G_TYPE_STRING,
               "Processing time (Microseconds)", NULL), NULL));
+
+  metadata_event =
+      g_strdup_printf (proctime_metadata_event, PROCTIME_EVENT_ID, 0);
+  add_metadata_event_struct (metadata_event);
+  g_free (metadata_event);
 }

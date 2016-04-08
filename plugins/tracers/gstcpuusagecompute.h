@@ -24,40 +24,32 @@
 #include <gst/gst.h>
 
 G_BEGIN_DECLS
-
 #define CPU_NUM_MAX  8
-
 /* Returns a reference to the array the contains the cpu usage computed */
 #define CPU_USAGE_ARRAY(cpuusage_struct)  (cpuusage_struct->cpu_usage)
 /* Returns how many element contains the cpu_usage array
  * This value also represents the number of cpus in the system */
 #define CPU_USAGE_ARRAY_LENGTH(cpuusage_struct)  (cpuusage_struct->cpu_num)
-
-typedef struct
+    typedef struct
 {
   /* CPU core number */
-  gint  cpu_num;
+  gint cpu_num;
   gdouble cpu_usage[CPU_NUM_MAX];
 
-  gint user    [CPU_NUM_MAX]; /* Time spent in user mode */
-  gint user_aux[CPU_NUM_MAX]; /* Time spent in user mode */
-  gint nice    [CPU_NUM_MAX]; /* Time spent in user mode with low priority */
-  gint nice_aux[CPU_NUM_MAX]; /* Time spent in user mode with low priority */
-  gint system    [CPU_NUM_MAX];/* Time spent in user mode with low priority */
-  gint system_aux[CPU_NUM_MAX];/* Time spent in user mode with low priority */
-  gint idle    [CPU_NUM_MAX]; /* Time spent in system mode */
-  gint idle_aux[CPU_NUM_MAX]; /* Time spent in system mode */
+  gint user[CPU_NUM_MAX];       /* Time spent in user mode */
+  gint user_aux[CPU_NUM_MAX];   /* Time spent in user mode */
+  gint nice[CPU_NUM_MAX];       /* Time spent in user mode with low priority */
+  gint nice_aux[CPU_NUM_MAX];   /* Time spent in user mode with low priority */
+  gint system[CPU_NUM_MAX];     /* Time spent in user mode with low priority */
+  gint system_aux[CPU_NUM_MAX]; /* Time spent in user mode with low priority */
+  gint idle[CPU_NUM_MAX];       /* Time spent in system mode */
+  gint idle_aux[CPU_NUM_MAX];   /* Time spent in system mode */
   gboolean cpu_array_sel;
 } GstCPUUsage;
 
-void
-gst_cpu_usage_init (GstCPUUsage * cpuusage);
+void gst_cpu_usage_init (GstCPUUsage * cpuusage);
 
-void
-gst_cpu_usage_compute (GstCPUUsage * cpuusage);
+void gst_cpu_usage_compute (GstCPUUsage * cpuusage);
 
 G_END_DECLS
-
 #endif //__GST_CPU_USAGE_COMPUTE_H__
-
-

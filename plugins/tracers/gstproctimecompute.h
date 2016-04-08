@@ -25,35 +25,30 @@
 
 #include <sys/time.h>
 
-G_BEGIN_DECLS
-
-typedef struct
+G_BEGIN_DECLS typedef struct
 {
-    gchar * name;
-    GstPad * srcPad;
-    GstPad * sinkPad;
-    GstClockTime startTime;
+  gchar *name;
+  GstPad *srcPad;
+  GstPad *sinkPad;
+  GstClockTime startTime;
 } GstProcTimeElement;
 
 typedef struct
 {
-    gint elem_num;
-    GstProcTimeElement * element;
-    GstClock clock;
+  gint elem_num;
+  GstProcTimeElement *element;
+  GstClock clock;
 } GstProcTime;
 
-void gst_proctime_init(GstProcTime * procTime);
+void gst_proctime_init (GstProcTime * procTime);
 
-void gst_proctime_add_new_element (GstProcTime * procTime, GstElement * element);
+void gst_proctime_add_new_element (GstProcTime * procTime,
+    GstElement * element);
 
 void gst_proctime_proc_time (GstProcTime * procTime,
-        GstClockTime * time, gchar ** name,
-        GstPad * peerPad, GstPad * srcPad);
+    GstClockTime * time, gchar ** name, GstPad * peerPad, GstPad * srcPad);
 
-void gst_proctime_finalize(GstProcTime * procTime);
+void gst_proctime_finalize (GstProcTime * procTime);
 
 G_END_DECLS
-
 #endif //__GST_PROC_CTIME_COMPUTE_H__
-
-

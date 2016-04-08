@@ -27,7 +27,6 @@
 
 
 G_BEGIN_DECLS
-
 #define GST_TYPE_CPUUSAGE_TRACER \
   (gst_cpuusage_tracer_get_type())
 #define GST_CPUUSAGE_TRACER(obj) \
@@ -39,7 +38,6 @@ G_BEGIN_DECLS
 #define GST_IS_CPUUSAGE_TRACER_CLASS(klass) \
   (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_CPUUSAGE_TRACER))
 #define GST_CPUUSAGE_TRACER_CAST(obj) ((GstCPUUsageTracer *)(obj))
-
 typedef struct _GstCPUUsageTracer GstCPUUsageTracer;
 typedef struct _GstCPUUsageTracerClass GstCPUUsageTracerClass;
 
@@ -49,12 +47,14 @@ typedef struct _GstCPUUsageTracerClass GstCPUUsageTracerClass;
  *
  * Opaque #GstCPUUsageTracer data structure
  */
-struct _GstCPUUsageTracer {
-  GstTracer  parent;
+struct _GstCPUUsageTracer
+{
+  GstTracer parent;
   GstCPUUsage cpuusage;
 };
 
-struct _GstCPUUsageTracerClass {
+struct _GstCPUUsageTracerClass
+{
   GstTracerClass parent_class;
 
   /* signals */
@@ -63,5 +63,4 @@ struct _GstCPUUsageTracerClass {
 G_GNUC_INTERNAL GType gst_cpuusage_tracer_get_type (void);
 
 G_END_DECLS
-
 #endif /* __GST_CPUUSAGE_TRACER_H__ */

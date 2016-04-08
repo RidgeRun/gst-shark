@@ -35,6 +35,7 @@
 #include <glib.h>
 
 #include "gstframerate.h"
+#include "gstctf.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_framerate_debug);
 #define GST_CAT_DEFAULT gst_framerate_debug
@@ -57,6 +58,16 @@ struct _GstFramerateHash
   gint counter;
 };
 
+static const char framerate_metadata_event[] = "event {\n\
+	name = framerate;\n\
+	id = %d;\n\
+	stream_id = %d;\n\
+	fields := struct {\n\
+		string padname;\n\
+		integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _fps;\n\
+	};\n\
+};\n\
+\n";
 
 static void
 log_framerate (GstDebugCategory * cat, const char *fmt, ...)
@@ -86,6 +97,8 @@ do_print_framerate (gpointer * data)
     gst_tracer_log_trace (gst_structure_new ("framerate",
             "source-pad", G_TYPE_STRING, padtable->fullname,
             "fps", G_TYPE_INT, padtable->counter, NULL));
+    do_print_framerate_event (FPS_EVENT_ID, padtable->fullname,
+        padtable->counter);
     padtable->counter = 0;
     if (!self->start_timer) {
       return FALSE;
@@ -208,6 +221,7 @@ static void
 gst_framerate_tracer_init (GstFramerateTracer * self)
 {
   GstTracer *tracer = GST_TRACER (self);
+  gchar *metadata_event;
 
   self->frame_counters =
       g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL,
@@ -230,4 +244,8 @@ gst_framerate_tracer_init (GstFramerateTracer * self)
               "flags", G_TYPE_STRING, "aggregated",
               "min", G_TYPE_INT, G_GUINT64_CONSTANT (0),
               "max", G_TYPE_INT, G_GUINT64_CONSTANT (5000), NULL), NULL));
+
+  metadata_event = g_strdup_printf (framerate_metadata_event, FPS_EVENT_ID, 0);
+  add_metadata_event_struct (metadata_event);
+  g_free (metadata_event);
 }

@@ -23,12 +23,14 @@
 #endif
 
 #include <gst/gst.h>
+#include <glib/gstdio.h>
 #include "gstgraphic.h"
 #include "gstcpuusage.h"
 #include "gstproctime.h"
 #include "gstinterlatency.h"
 #include "gstscheduletime.h"
 #include "gstframerate.h"
+#include "gstctf.h"
 
 static gboolean
 plugin_init (GstPlugin * plugin)
@@ -56,6 +58,10 @@ plugin_init (GstPlugin * plugin)
           gst_framerate_tracer_get_type ())) {
     return FALSE;
   }
+  if (!gst_ctf_init ()) {
+    return FALSE;
+  }
+
   return TRUE;
 }
 

@@ -24,6 +24,8 @@
 
 #include <gst/gst.h>
 #include <gvc.h>
+#include <glib.h>
+#include <glib/gstdio.h>
 #include <cgraph.h>
 #include "gstctf.h"
 
@@ -43,14 +45,30 @@ static void gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags);
 void
 gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags)
 {
-  const gchar *trace_dir;
+  gchar *trace_dir;
+  gchar *full_trace_dir;
   gchar *full_file_name = NULL;
   FILE *out;
 
   trace_dir = get_ctf_path_name ();
 
-  full_file_name = g_strdup_printf ("%s" G_DIR_SEPARATOR_S "pipeline.dot",
+  full_trace_dir = g_strdup_printf ("%s" G_DIR_SEPARATOR_S "graphic",
       trace_dir);
+
+  if (!g_file_test (full_trace_dir, G_FILE_TEST_EXISTS)) {
+    if (g_mkdir (full_trace_dir, 0775) == 0) {
+      GST_INFO ("Directory %s did not exist and was created sucessfully.",
+          full_trace_dir);
+    } else {
+      GST_ERROR ("Directory %s could not be created.", full_trace_dir);
+    }
+  } else {
+    GST_INFO ("Directory %s already exists in the current path.",
+        full_trace_dir);
+  }
+
+  full_file_name = g_strdup_printf ("%s" G_DIR_SEPARATOR_S "pipeline.dot",
+      full_trace_dir);
 
   if ((out = fopen (full_file_name, "wb"))) {
     gchar *buf;
@@ -61,7 +79,7 @@ gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags)
     g_free (buf);
     fclose (out);
 
-    GST_INFO ("wrote bin graph to : '%s'", full_file_name);
+    GST_INFO ("Wrote bin graph to : '%s'", full_file_name);
   } else {
     GST_WARNING ("Failed to open file '%s' for writing: %s", full_file_name,
         g_strerror (errno));

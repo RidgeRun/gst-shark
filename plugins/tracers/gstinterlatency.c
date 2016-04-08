@@ -42,6 +42,7 @@
 #endif
 
 #include "gstinterlatency.h"
+#include "gstctf.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_interlatency_debug);
 #define GST_CAT_DEFAULT gst_interlatency_debug
@@ -55,6 +56,18 @@ G_DEFINE_TYPE_WITH_CODE (GstInterLatencyTracer, gst_interlatency_tracer,
 static GQuark latency_probe_id;
 static GQuark latency_probe_pad;
 static GQuark latency_probe_ts;
+
+static const char interlatency_metadata_event[] = "event {\n\
+	name = interlatency;\n\
+	id = %d;\n\
+	stream_id = %d;\n\
+	fields := struct {\n\
+		string src;\n\
+		string element;\n\
+		integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _time;\n\
+	};\n\
+};\n\
+\n";
 
 /* data helpers */
 
@@ -99,6 +112,7 @@ log_latency (const GstStructure * data, GstPad * sink_pad, guint64 sink_ts)
   GstPad *src_pad;
   guint64 src_ts;
   gchar *src, *sink;
+  guint64 time;
 
   gst_structure_id_get (data,
       latency_probe_pad, GST_TYPE_PAD, &src_pad,
@@ -107,11 +121,14 @@ log_latency (const GstStructure * data, GstPad * sink_pad, guint64 sink_ts)
   src = g_strdup_printf ("%s_%s", GST_DEBUG_PAD_NAME (src_pad));
   sink = g_strdup_printf ("%s_%s", GST_DEBUG_PAD_NAME (sink_pad));
 
+  time = GST_CLOCK_DIFF (src_ts, sink_ts);
+
   /* TODO(ensonic): report format is still unstable */
   gst_tracer_log_trace (gst_structure_new ("latency",
           "src", G_TYPE_STRING, src,
-          "element", G_TYPE_STRING, sink,
-          "time", G_TYPE_UINT64, GST_CLOCK_DIFF (src_ts, sink_ts), NULL));
+          "element", G_TYPE_STRING, sink, "time", G_TYPE_UINT64, time, NULL));
+  do_print_interlatency_event (INTERLATENCY_EVENT_ID, src, sink, time);
+
   g_free (src);
   g_free (sink);
 }
@@ -241,6 +258,8 @@ static void
 gst_interlatency_tracer_init (GstInterLatencyTracer * self)
 {
   GstTracer *tracer = GST_TRACER (self);
+  gchar *metadata_event;
+
   gst_tracing_register_hook (tracer, "pad-push-pre",
       G_CALLBACK (do_push_buffer_pre));
   gst_tracing_register_hook (tracer, "pad-push-list-pre",
@@ -255,4 +274,9 @@ gst_interlatency_tracer_init (GstInterLatencyTracer * self)
       G_CALLBACK (do_pull_range_post));
   gst_tracing_register_hook (tracer, "pad-push-event-pre",
       G_CALLBACK (do_push_event_pre));
+
+  metadata_event =
+      g_strdup_printf (interlatency_metadata_event, INTERLATENCY_EVENT_ID, 0);
+  add_metadata_event_struct (metadata_event);
+  g_free (metadata_event);
 }
