@@ -46,6 +46,7 @@ struct _GstCtfDescriptor
   GMutex mutex;
   GstClockTime start_time;
   gchar *ctf_dir_name;
+  gboolean ctf_output_disable;
 };
 
 static GstCtfDescriptor *ctf_descriptor = NULL;
@@ -233,7 +234,7 @@ get_ctf_path_name (void)
 }
 
 static void
-create_ctf_path (GstCtfDescriptor * ctf)
+set_ctf_path_name (GstCtfDescriptor * ctf)
 {
   gchar dir_name[30];
   gchar *env_dir_name;
@@ -242,7 +243,11 @@ create_ctf_path (GstCtfDescriptor * ctf)
 
   g_return_if_fail (ctf);
 
-  env_dir_name = (gchar *) g_getenv ("GST_SHARK_TRACE_DIR");
+  if (G_UNLIKELY (g_getenv ("GST_SHARK_CTF_DISABLE") != NULL)) {
+    env_dir_name = (gchar *) g_getenv ("PWD");
+  } else {
+    env_dir_name = (gchar *) g_getenv ("GST_SHARK_LOCATION");
+  }
 
   if (G_LIKELY (env_dir_name == NULL)) {
     /* Creating the output folder for the CTF output files. */
@@ -255,19 +260,23 @@ create_ctf_path (GstCtfDescriptor * ctf)
     ctf->ctf_dir_name = g_malloc (size_env_path + 1);
     g_stpcpy (ctf->ctf_dir_name, env_dir_name);
   }
+}
 
-  if (!g_file_test (ctf->ctf_dir_name, G_FILE_TEST_EXISTS)) {
-    if (g_mkdir (ctf->ctf_dir_name, 0775) == 0) {
+static void
+create_ctf_path (gchar * ctf_dir_name)
+{
+  g_return_if_fail (ctf_dir_name);
+
+  if (!g_file_test (ctf_dir_name, G_FILE_TEST_EXISTS)) {
+    if (g_mkdir (ctf_dir_name, 0775) == 0) {
       GST_INFO ("Directory %s did not exist and was created sucessfully.",
-          ctf->ctf_dir_name);
+          ctf_dir_name);
     } else {
-      GST_ERROR ("Directory %s could not be created.", ctf->ctf_dir_name);
+      GST_ERROR ("Directory %s could not be created.", ctf_dir_name);
     }
   } else {
-    GST_INFO ("Directory %s already exists in the current path.",
-        ctf->ctf_dir_name);
+    GST_INFO ("Directory %s already exists in the current path.", ctf_dir_name);
   }
-
 }
 
 static GstCtfDescriptor *
@@ -281,8 +290,17 @@ create_new_ctf (void)
      contains the file descriptors for the CTF ouput. */
   ctf = g_malloc (sizeof (GstCtfDescriptor));
 
+  /* Composing the complete path of the output files. */
+  set_ctf_path_name (ctf);
+
+  if (G_UNLIKELY (g_getenv ("GST_SHARK_CTF_DISABLE") != NULL)) {
+    GST_WARNING ("Output CTF log is disabled, there will be no output files.");
+    ctf->ctf_output_disable = TRUE;
+    return ctf;
+  }
+
   /* Creating the output folder for the CTF output files. */
-  create_ctf_path (ctf);
+  create_ctf_path (ctf->ctf_dir_name);
 
   datastream_file =
       g_strjoin (G_DIR_SEPARATOR_S, ctf->ctf_dir_name, "datastream", NULL);
@@ -301,6 +319,7 @@ create_new_ctf (void)
 
   g_mutex_init (&ctf->mutex);
   ctf->start_time = gst_util_get_timestamp ();
+  ctf->ctf_output_disable = FALSE;
 
   g_free (datastream_file);
   g_free (metadata_file);
@@ -321,11 +340,16 @@ gst_ctf_init (void)
     return FALSE;
   }
 
+  /* Since the descriptors structure does not existit is needed to
+     create and initialize a new one. */
   ctf_descriptor = create_new_ctf ();
-  generate_datastream_header (UUID, sizeof (UUID), 0);
-  generate_metadata (1, 3, UUID, BYTE_ORDER_LE);
 
-  do_print_ctf_init (INIT_EVENT_ID);
+  if (!ctf_descriptor->ctf_output_disable) {
+    generate_datastream_header (UUID, sizeof (UUID), 0);
+    generate_metadata (1, 3, UUID, BYTE_ORDER_LE);
+
+    do_print_ctf_init (INIT_EVENT_ID);
+  }
 
   return TRUE;
 }
@@ -345,6 +369,10 @@ add_metadata_event_struct (const gchar * metadata_event)
 {
   /* This function only writes the event structure to the metadata file, it
      depends entirely of what is passed as an argument. */
+
+  if (ctf_descriptor->ctf_output_disable)
+    return;
+
   g_mutex_lock (&ctf_descriptor->mutex);
   g_fprintf (ctf_descriptor->metadata, "%s", metadata_event);
   g_mutex_unlock (&ctf_descriptor->mutex);
@@ -356,6 +384,10 @@ add_event_header (event_id id)
   guint32 timestamp;
   GstClockTime elapsed =
       GST_CLOCK_DIFF (ctf_descriptor->start_time, gst_util_get_timestamp ());
+
+  if (ctf_descriptor->ctf_output_disable)
+    return;
+
   elapsed = elapsed / 1000;
   timestamp = elapsed;
   /* Add event ID */
@@ -367,6 +399,9 @@ add_event_header (event_id id)
 void
 do_print_cpuusage_event (event_id id, guint32 cpunum, guint64 cpuload)
 {
+  if (ctf_descriptor->ctf_output_disable)
+    return;
+
   g_mutex_lock (&ctf_descriptor->mutex);
   add_event_header (id);
   fwrite (&cpunum, sizeof (gchar), sizeof (guint32),
@@ -382,6 +417,9 @@ do_print_proctime_event (event_id id, gchar * elementname, guint64 time)
 {
   gint size = strlen (elementname);
 
+  if (ctf_descriptor->ctf_output_disable)
+    return;
+
   g_mutex_lock (&ctf_descriptor->mutex);
   add_event_header (id);
   fwrite (elementname, sizeof (gchar), size + 1, ctf_descriptor->datastream);
@@ -393,6 +431,9 @@ void
 do_print_framerate_event (event_id id, const gchar * padname, guint64 fps)
 {
   gint size = strlen (padname);
+
+  if (ctf_descriptor->ctf_output_disable)
+    return;
 
   g_mutex_lock (&ctf_descriptor->mutex);
   add_event_header (id);
@@ -406,6 +447,9 @@ do_print_interlatency_event (event_id id,
     gchar * originpad, gchar * destinationpad, guint64 time)
 {
   gint size = strlen (originpad);
+
+  if (ctf_descriptor->ctf_output_disable)
+    return;
 
   g_mutex_lock (&ctf_descriptor->mutex);
   add_event_header (id);
@@ -423,6 +467,9 @@ do_print_scheduling_event (event_id id, gchar * elementname, guint64 time)
 {
   gint size = strlen (elementname);
 
+  if (ctf_descriptor->ctf_output_disable)
+    return;
+
   g_mutex_lock (&ctf_descriptor->mutex);
   add_event_header (id);
   fwrite (elementname, sizeof (gchar), size + 1, ctf_descriptor->datastream);
@@ -434,6 +481,9 @@ void
 do_print_ctf_init (event_id id)
 {
   guint32 unknown = 0;
+
+  if (ctf_descriptor->ctf_output_disable)
+    return;
 
   g_mutex_lock (&ctf_descriptor->mutex);
   add_event_header (id);
