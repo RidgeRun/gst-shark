@@ -251,8 +251,7 @@ set_ctf_path_name (GstCtfDescriptor * ctf)
 
   if (G_LIKELY (env_dir_name == NULL)) {
     /* Creating the output folder for the CTF output files. */
-    strftime (dir_name, MAX_DIRNAME_LEN, "gstshark_%Y%m%d%H%M%S",
-        localtime (&now));
+    strftime (dir_name, MAX_DIRNAME_LEN, "gstshark_%F_%T", localtime (&now));
     ctf->ctf_dir_name = g_malloc (MAX_DIRNAME_LEN + 1);
     g_stpcpy (ctf->ctf_dir_name, dir_name);
   } else {
