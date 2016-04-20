@@ -50,7 +50,7 @@ G_LOCK_DEFINE (_proc);
 G_DEFINE_TYPE_WITH_CODE (GstProcTimeTracer, gst_proctime_tracer,
     GST_TYPE_TRACER, _do_init);
 
-static const char proctime_metadata_event[] = "event {\n\
+static const gchar proctime_metadata_event[] = "event {\n\
 	name = proctime;\n\
 	id = %d;\n\
 	stream_id = %d;\n\

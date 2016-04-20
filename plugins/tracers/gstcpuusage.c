@@ -52,7 +52,7 @@ G_LOCK_DEFINE (_proc);
 G_DEFINE_TYPE_WITH_CODE (GstCPUUsageTracer, gst_cpuusage_tracer,
     GST_TYPE_TRACER, _do_init);
 
-static const char cpuusage_metadata_event[] = "event {\n\
+static const gchar cpuusage_metadata_event[] = "event {\n\
 	name = cpuusage;\n\
 	id = %d;\n\
 	stream_id = %d;\n\
@@ -136,7 +136,6 @@ gst_cpuusage_tracer_init (GstCPUUsageTracer * self)
               "min", G_TYPE_UINT, G_GINT64_CONSTANT (0), "max", G_TYPE_UINT, CPU_NUM_MAX, NULL), "load", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_DOUBLE, "description", G_TYPE_STRING, "Core load percentage", "flags", G_TYPE_STRING, "aggregated",       /* TODO: use gflags */
               "min", G_TYPE_DOUBLE, G_GUINT64_CONSTANT (0),
               "max", G_TYPE_DOUBLE, G_GUINT64_CONSTANT (100), NULL), NULL));
-
 
   metadata_event =
       g_strdup_printf (cpuusage_metadata_event, CPUUSAGE_EVENT_ID, 0);

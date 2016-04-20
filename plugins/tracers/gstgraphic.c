@@ -44,7 +44,7 @@ G_DEFINE_TYPE_WITH_CODE (GstGraphicTracer, gst_graphic_tracer, GST_TYPE_TRACER,
     _do_init);
 
 static void
-log_graphic (GstDebugCategory * cat, const char *fmt, ...)
+log_graphic (GstDebugCategory * cat, const gchar * fmt, ...)
 {
   va_list var_args;
 

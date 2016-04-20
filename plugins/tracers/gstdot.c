@@ -70,7 +70,8 @@ gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags)
   full_file_name = g_strdup_printf ("%s" G_DIR_SEPARATOR_S "pipeline.dot",
       full_trace_dir);
 
-  if ((out = fopen (full_file_name, "wb"))) {
+  out = g_fopen (full_file_name, "w");
+  if (out != NULL) {
     gchar *buf;
 
     buf = gst_debug_bin_to_dot_data (bin, flags);
