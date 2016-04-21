@@ -55,7 +55,8 @@ struct _GstSchedulePad
 struct _GstScheduletimeTracer
 {
   GstTracer parent;
-  GHashTable *schedulepads;
+  GHashTable *schedule_pads;
+  GString *timeString;
 };
 
 struct _GstScheduletimeTracerClass
