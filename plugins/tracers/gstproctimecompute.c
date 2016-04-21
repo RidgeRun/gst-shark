@@ -26,8 +26,6 @@
 
 #include "gstproctimecompute.h"
 
-
-
 void
 gst_proctime_init (GstProcTime * procTime)
 {

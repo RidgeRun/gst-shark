@@ -58,7 +58,7 @@ struct _GstFramerateHash
   gint counter;
 };
 
-static const char framerate_metadata_event[] = "event {\n\
+static const gchar framerate_metadata_event[] = "event {\n\
 	name = framerate;\n\
 	id = %d;\n\
 	stream_id = %d;\n\
@@ -70,7 +70,7 @@ static const char framerate_metadata_event[] = "event {\n\
 \n";
 
 static void
-log_framerate (GstDebugCategory * cat, const char *fmt, ...)
+log_framerate (GstDebugCategory * cat, const gchar * fmt, ...)
 {
   va_list var_args;
 

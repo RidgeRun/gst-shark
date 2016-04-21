@@ -52,7 +52,7 @@ struct _GstCtfDescriptor
 static GstCtfDescriptor *ctf_descriptor = NULL;
 
 /* Metadata format string */
-static const char metadata_fmt[] = "\
+static const gchar metadata_fmt[] = "\
 /* CTF 1.8 */\n\
 typealias integer { size = 8; align = 8; signed = false; } := uint8_t;\n\
 typealias integer { size = 16; align = 8; signed = false; } := uint16_t;\n\
@@ -251,8 +251,7 @@ set_ctf_path_name (GstCtfDescriptor * ctf)
 
   if (G_LIKELY (env_dir_name == NULL)) {
     /* Creating the output folder for the CTF output files. */
-    strftime (dir_name, MAX_DIRNAME_LEN, "gstshark_%Y%m%d%H%M%S",
-        localtime (&now));
+    strftime (dir_name, MAX_DIRNAME_LEN, "gstshark_%F_%T", localtime (&now));
     ctf->ctf_dir_name = g_malloc (MAX_DIRNAME_LEN + 1);
     g_stpcpy (ctf->ctf_dir_name, dir_name);
   } else {

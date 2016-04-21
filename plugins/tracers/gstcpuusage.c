@@ -44,15 +44,13 @@
 GST_DEBUG_CATEGORY_STATIC (gst_cpuusage_debug);
 #define GST_CAT_DEFAULT gst_cpuusage_debug
 
-G_LOCK_DEFINE (_proc);
-
 #define _do_init \
     GST_DEBUG_CATEGORY_INIT (gst_cpuusage_debug, "cpuusage", 0, "cpuusage tracer");
 #define gst_cpuusage_tracer_parent_class parent_class
 G_DEFINE_TYPE_WITH_CODE (GstCPUUsageTracer, gst_cpuusage_tracer,
     GST_TYPE_TRACER, _do_init);
 
-static const char cpuusage_metadata_event[] = "event {\n\
+static const gchar cpuusage_metadata_event[] = "event {\n\
 	name = cpuusage;\n\
 	id = %d;\n\
 	stream_id = %d;\n\
@@ -64,12 +62,6 @@ static const char cpuusage_metadata_event[] = "event {\n\
 \n";
 
 gpointer cpuusage_thread_func (gpointer data);
-
-static void
-do_stats (GstTracer * obj, guint64 ts)
-{
-
-}
 
 /* tracer class */
 
@@ -123,11 +115,8 @@ static void
 gst_cpuusage_tracer_init (GstCPUUsageTracer * self)
 {
   gchar *metadata_event;
-  GstTracer *tracer = GST_TRACER (self);
 
   gst_cpu_usage_init (&(self->cpuusage));
-
-  gst_tracing_register_hook (tracer, "pad-push-pre", G_CALLBACK (do_stats));
 
   /* Create new thread to compute the cpu usage periodically */
   g_thread_new ("cpuusage_compute", cpuusage_thread_func, self);
@@ -136,7 +125,6 @@ gst_cpuusage_tracer_init (GstCPUUsageTracer * self)
               "min", G_TYPE_UINT, G_GINT64_CONSTANT (0), "max", G_TYPE_UINT, CPU_NUM_MAX, NULL), "load", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_DOUBLE, "description", G_TYPE_STRING, "Core load percentage", "flags", G_TYPE_STRING, "aggregated",       /* TODO: use gflags */
               "min", G_TYPE_DOUBLE, G_GUINT64_CONSTANT (0),
               "max", G_TYPE_DOUBLE, G_GUINT64_CONSTANT (100), NULL), NULL));
-
 
   metadata_event =
       g_strdup_printf (cpuusage_metadata_event, CPUUSAGE_EVENT_ID, 0);

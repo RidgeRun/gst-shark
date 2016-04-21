@@ -42,8 +42,6 @@
 GST_DEBUG_CATEGORY_STATIC (gst_scheduletime_debug);
 #define GST_CAT_DEFAULT gst_scheduletime_debug
 
-G_LOCK_DEFINE (_proc);
-
 #define _do_init \
     GST_DEBUG_CATEGORY_INIT (gst_scheduletime_debug, "scheduletime", 0, "scheduletime tracer");
 #define gst_scheduletime_tracer_parent_class parent_class
@@ -52,7 +50,7 @@ G_DEFINE_TYPE_WITH_CODE (GstScheduletimeTracer, gst_scheduletime_tracer,
 
 #define PAD_NAME_SIZE  (64)
 
-static const char scheduling_metadata_event[] = "event {\n\
+static const gchar scheduling_metadata_event[] = "event {\n\
 	name = scheduling;\n\
 	id = %d;\n\
 	stream_id = %d;\n\

@@ -57,7 +57,7 @@ static GQuark latency_probe_id;
 static GQuark latency_probe_pad;
 static GQuark latency_probe_ts;
 
-static const char interlatency_metadata_event[] = "event {\n\
+static const gchar interlatency_metadata_event[] = "event {\n\
 	name = interlatency;\n\
 	id = %d;\n\
 	stream_id = %d;\n\
