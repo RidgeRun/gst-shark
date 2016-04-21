@@ -84,7 +84,9 @@ sched_time_compute (GstTracer * self, guint64 ts, GstPad * pad)
   GHashTable *schedule_pads;
   GstSchedulePad *schedule_pad;
   GstSchedulePad *schedule_pad_new;
+  GString *timeString;
   gchar pad_name[PAD_NAME_SIZE];
+  guint64 time_diff;
 
   obj = (GObject *) self;
   schedule_time_tracer = GST_SCHEDULETIME_TRACER_CAST (self);
@@ -105,12 +107,16 @@ sched_time_compute (GstTracer * self, guint64 ts, GstPad * pad)
     return;
   }
 
-  if (schedule_pad->previous_time != 0)
+  if (schedule_pad->previous_time != 0) {
+    timeString = schedule_time_tracer->timeString;
+    time_diff = GST_CLOCK_DIFF (schedule_pad->previous_time, ts);
+    g_string_printf (timeString, "%" GST_TIME_FORMAT,
+        GST_TIME_ARGS (time_diff));
+
     gst_tracer_log_trace (gst_structure_new (pad_name,
-            "scheduling-time", G_TYPE_UINT64,
-            GST_CLOCK_DIFF (schedule_pad->previous_time, ts), NULL));
-  do_print_scheduling_event (SCHED_TIME_EVENT_ID, pad_name,
-      GST_CLOCK_DIFF (schedule_pad->previous_time, ts));
+            "scheduling-time", G_TYPE_STRING, timeString->str, NULL));
+    do_print_scheduling_event (SCHED_TIME_EVENT_ID, pad_name, time_diff);
+  }
   schedule_pad->previous_time = ts;
 }
 
@@ -153,6 +159,8 @@ gst_scheduletime_tracer_init (GstScheduletimeTracer * self)
 {
   GstTracer *tracer = GST_TRACER (self);
   gchar *metadata_event;
+
+  self->timeString = g_string_new ("0:00:00.000000000 ");
 
   self->schedule_pads =
       g_hash_table_new_full (g_direct_hash, g_direct_equal, key_destroy,
