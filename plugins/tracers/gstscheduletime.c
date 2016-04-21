@@ -72,90 +72,95 @@ schedule_pad_destroy (gpointer data)
 static void
 do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
 {
-  GstScheduletimeTracer *scheduletimeTracer;
-  GHashTable *schedulepads;
-  GstSchedulePad *schedulepad;
-  GstSchedulePad *schedulepad_new;
-  GstPad *padPeer;
+  GObject *obj;
+  GstScheduletimeTracer *schedule_time_tracer;
+  GHashTable *schedule_pads;
+  GstSchedulePad *schedule_pad;
+  GstSchedulePad *schedule_pad_new;
+  GstPad *pad_peer;
   GstElement *element;
   gchar *pad_sink;
   gchar pad_name[PAD_NAME_SIZE];
 
+  obj = (GObject *) self;
+  schedule_time_tracer = GST_SCHEDULETIME_TRACER_CAST (self);
+  pad_peer = gst_pad_get_peer (pad);
+  element = gst_pad_get_parent_element (pad_peer);
+  schedule_pads = schedule_time_tracer->schedule_pads;
 
-  scheduletimeTracer = GST_SCHEDULETIME_TRACER_CAST (self);
-  padPeer = gst_pad_get_peer (pad);
-  element = gst_pad_get_parent_element (padPeer);
-  schedulepads = scheduletimeTracer->schedulepads;
+  g_snprintf (pad_name, PAD_NAME_SIZE, "%s_%s", GST_DEBUG_PAD_NAME (pad_peer));
+  schedule_pad =
+      (GstSchedulePad *) g_hash_table_lookup (schedule_pads, pad_name);
 
-  g_snprintf (pad_name, PAD_NAME_SIZE, "%s_%s", GST_DEBUG_PAD_NAME (padPeer));
-  schedulepad = (GstSchedulePad *) g_hash_table_lookup (schedulepads, pad_name);
-
-  if (NULL == schedulepad) {
+  if (NULL == schedule_pad) {
     /* Add new pad sink */
-    schedulepad_new = g_new0 (GstSchedulePad, 1);
-    schedulepad_new->pad = padPeer;
-    schedulepad_new->previous_time = 0;
+    schedule_pad_new = g_new0 (GstSchedulePad, 1);
+    schedule_pad_new->pad = pad_peer;
+    schedule_pad_new->previous_time = 0;
     pad_sink =
-        g_strdup_printf ("%s_%s", GST_DEBUG_PAD_NAME (schedulepad_new->pad));
+        g_strdup_printf ("%s_%s", GST_DEBUG_PAD_NAME (schedule_pad_new->pad));
 
-    if (!g_hash_table_insert (schedulepads, pad_sink,
-            (gpointer) schedulepad_new)) {
-      GST_ERROR ("Failed to create schedule pad");
+    if (!g_hash_table_insert (schedule_pads, pad_sink,
+            (gpointer) schedule_pad_new)) {
+      GST_ERROR_OBJECT (obj, "Failed to create schedule pad");
     }
     return;
   }
 
-  if (schedulepad->previous_time != 0) {
+  if (schedule_pad->previous_time != 0) {
     gst_tracer_log_trace (gst_structure_new (GST_ELEMENT_NAME (element),
             "scheduling-time", G_TYPE_UINT64,
-            GST_CLOCK_DIFF (schedulepad->previous_time, ts), NULL));
+            GST_CLOCK_DIFF (schedule_pad->previous_time, ts), NULL));
   }
   do_print_scheduling_event (SCHED_TIME_EVENT_ID, GST_ELEMENT_NAME (element),
-      GST_CLOCK_DIFF (schedulepad->previous_time, ts));
+      GST_CLOCK_DIFF (schedule_pad->previous_time, ts));
 
-  schedulepad->previous_time = ts;
+  schedule_pad->previous_time = ts;
 }
 
 static void
 do_pull_range_pre (GstTracer * self, guint64 ts, GstPad * pad)
 {
-  GstScheduletimeTracer *scheduletimeTracer;
-  GHashTable *schedulepads;
-  GstSchedulePad *schedulepad;
-  GstSchedulePad *schedulepad_new;
+  GObject *obj;
+  GstScheduletimeTracer *schedule_time_tracer;
+  GHashTable *schedule_pads;
+  GstSchedulePad *schedule_pad;
+  GstSchedulePad *schedule_pad_new;
   GstElement *element;
   gchar *pad_sink;
   gchar pad_name[PAD_NAME_SIZE];
 
-  scheduletimeTracer = GST_SCHEDULETIME_TRACER_CAST (self);
+  obj = (GObject *) self;
+  schedule_time_tracer = GST_SCHEDULETIME_TRACER_CAST (self);
   element = gst_pad_get_parent_element (pad);
-  schedulepads = scheduletimeTracer->schedulepads;
+  schedule_pads = schedule_time_tracer->schedule_pads;
 
   g_snprintf (pad_name, PAD_NAME_SIZE, "%s_%s", GST_DEBUG_PAD_NAME (pad));
-  schedulepad = (GstSchedulePad *) g_hash_table_lookup (schedulepads, pad_name);
+  schedule_pad =
+      (GstSchedulePad *) g_hash_table_lookup (schedule_pads, pad_name);
 
-  if (NULL == schedulepad) {
+  if (NULL == schedule_pad) {
     /* Add new pad sink */
-    schedulepad_new = g_new0 (GstSchedulePad, 1);
-    schedulepad_new->pad = pad;
-    schedulepad_new->previous_time = 0;
+    schedule_pad_new = g_new0 (GstSchedulePad, 1);
+    schedule_pad_new->pad = pad;
+    schedule_pad_new->previous_time = 0;
     pad_sink =
-        g_strdup_printf ("%s_%s", GST_DEBUG_PAD_NAME (schedulepad_new->pad));
+        g_strdup_printf ("%s_%s", GST_DEBUG_PAD_NAME (schedule_pad_new->pad));
 
-    if (!g_hash_table_insert (schedulepads, pad_sink,
-            (gpointer) schedulepad_new)) {
-      GST_ERROR ("Failed to create schedule pad");
+    if (!g_hash_table_insert (schedule_pads, pad_sink,
+            (gpointer) schedule_pad_new)) {
+      GST_ERROR_OBJECT (obj, "Failed to create schedule pad");
     }
     return;
   }
 
-  if (schedulepad->previous_time != 0)
+  if (schedule_pad->previous_time != 0)
     gst_tracer_log_trace (gst_structure_new (GST_ELEMENT_NAME (element),
             "scheduling-time", G_TYPE_UINT64,
-            GST_CLOCK_DIFF (schedulepad->previous_time, ts), NULL));
+            GST_CLOCK_DIFF (schedule_pad->previous_time, ts), NULL));
   do_print_scheduling_event (SCHED_TIME_EVENT_ID, GST_ELEMENT_NAME (element),
-      GST_CLOCK_DIFF (schedulepad->previous_time, ts));
-  schedulepad->previous_time = ts;
+      GST_CLOCK_DIFF (schedule_pad->previous_time, ts));
+  schedule_pad->previous_time = ts;
 }
 
 
@@ -164,10 +169,10 @@ do_pull_range_pre (GstTracer * self, guint64 ts, GstPad * pad)
 static void
 gst_scheduletime_tracer_finalize (GObject * obj)
 {
-  GstScheduletimeTracer *scheduletimeTracer;
-  scheduletimeTracer = GST_SCHEDULETIME_TRACER (obj);
+  GstScheduletimeTracer *schedule_time_tracer;
+  schedule_time_tracer = GST_SCHEDULETIME_TRACER (obj);
 
-  g_hash_table_destroy (scheduletimeTracer->schedulepads);
+  g_hash_table_destroy (schedule_time_tracer->schedule_pads);
 
   G_OBJECT_CLASS (parent_class)->finalize (obj);
 }
@@ -187,7 +192,7 @@ gst_scheduletime_tracer_init (GstScheduletimeTracer * self)
   GstTracer *tracer = GST_TRACER (self);
   gchar *metadata_event;
 
-  self->schedulepads =
+  self->schedule_pads =
       g_hash_table_new_full (g_str_hash, g_str_equal, schedule_pad_destroy,
       schedule_pad_destroy);
 
