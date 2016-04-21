@@ -69,9 +69,6 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   GstProcTimeTracer *procTimeTracer;
   GstProcTime *procTime;
 
-  gchar *parentName;
-  gchar *peerParentName;
-  GstElement *element;
   GstPad *padPeer;
   gchar *name;
   GstClockTime time;
@@ -86,17 +83,10 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   procTime = &procTimeTracer->procTime;
   timeString = procTimeTracer->timeString;
 
-  element = gst_pad_get_parent_element (pad);
-  parentName = gst_element_get_name (element);
-
   padPeer = gst_pad_get_peer (pad);
-  element = gst_pad_get_parent_element (padPeer);
-  peerParentName = gst_element_get_name (element);
-
-  g_free (parentName);
-  g_free (peerParentName);
 
   gst_proctime_proc_time (procTime, &time, &name, padPeer, pad);
+
   if (NULL != name) {
     g_string_printf (timeString, "%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
@@ -118,6 +108,7 @@ do_element_new (GObject * self, GstClockTime ts, GstElement * element)
 
   gst_proctime_add_new_element (procTime, element);
 }
+
 
 /* tracer class */
 
