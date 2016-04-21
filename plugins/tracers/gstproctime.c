@@ -42,8 +42,6 @@
 GST_DEBUG_CATEGORY_STATIC (gst_proctime_debug);
 #define GST_CAT_DEFAULT gst_proctime_debug
 
-G_LOCK_DEFINE (_proc);
-
 #define _do_init \
     GST_DEBUG_CATEGORY_INIT (gst_proctime_debug, "proctime", 0, "proctime tracer");
 #define gst_proctime_tracer_parent_class parent_class
