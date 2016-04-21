@@ -69,57 +69,9 @@ schedule_pad_destroy (gpointer data)
   g_free (data);
 }
 
-static void
-do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
-{
-  GObject *obj;
-  GstScheduletimeTracer *schedule_time_tracer;
-  GHashTable *schedule_pads;
-  GstSchedulePad *schedule_pad;
-  GstSchedulePad *schedule_pad_new;
-  GstPad *pad_peer;
-  GstElement *element;
-  gchar *pad_sink;
-  gchar pad_name[PAD_NAME_SIZE];
-
-  obj = (GObject *) self;
-  schedule_time_tracer = GST_SCHEDULETIME_TRACER_CAST (self);
-  pad_peer = gst_pad_get_peer (pad);
-  element = gst_pad_get_parent_element (pad_peer);
-  schedule_pads = schedule_time_tracer->schedule_pads;
-
-  g_snprintf (pad_name, PAD_NAME_SIZE, "%s_%s", GST_DEBUG_PAD_NAME (pad_peer));
-  schedule_pad =
-      (GstSchedulePad *) g_hash_table_lookup (schedule_pads, pad_name);
-
-  if (NULL == schedule_pad) {
-    /* Add new pad sink */
-    schedule_pad_new = g_new0 (GstSchedulePad, 1);
-    schedule_pad_new->pad = pad_peer;
-    schedule_pad_new->previous_time = 0;
-    pad_sink =
-        g_strdup_printf ("%s_%s", GST_DEBUG_PAD_NAME (schedule_pad_new->pad));
-
-    if (!g_hash_table_insert (schedule_pads, pad_sink,
-            (gpointer) schedule_pad_new)) {
-      GST_ERROR_OBJECT (obj, "Failed to create schedule pad");
-    }
-    return;
-  }
-
-  if (schedule_pad->previous_time != 0) {
-    gst_tracer_log_trace (gst_structure_new (GST_ELEMENT_NAME (element),
-            "scheduling-time", G_TYPE_UINT64,
-            GST_CLOCK_DIFF (schedule_pad->previous_time, ts), NULL));
-  }
-  do_print_scheduling_event (SCHED_TIME_EVENT_ID, GST_ELEMENT_NAME (element),
-      GST_CLOCK_DIFF (schedule_pad->previous_time, ts));
-
-  schedule_pad->previous_time = ts;
-}
 
 static void
-do_pull_range_pre (GstTracer * self, guint64 ts, GstPad * pad)
+sched_time_compute (GstTracer * self, guint64 ts, GstPad * pad)
 {
   GObject *obj;
   GstScheduletimeTracer *schedule_time_tracer;
@@ -163,6 +115,15 @@ do_pull_range_pre (GstTracer * self, guint64 ts, GstPad * pad)
   schedule_pad->previous_time = ts;
 }
 
+static void
+do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
+{
+  GstPad *pad_peer;
+
+  pad_peer = gst_pad_get_peer (pad);
+
+  sched_time_compute (self, ts, pad_peer);
+}
 
 /* tracer class */
 
@@ -203,7 +164,7 @@ gst_scheduletime_tracer_init (GstScheduletimeTracer * self)
       G_CALLBACK (do_push_buffer_pre));
 
   gst_tracing_register_hook (tracer, "pad-pull-range-pre",
-      G_CALLBACK (do_pull_range_pre));
+      G_CALLBACK (sched_time_compute));
 
   gst_tracer_log_trace (gst_structure_new ("scheduletime.class", "time",
           GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE,
