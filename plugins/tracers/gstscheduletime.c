@@ -50,6 +50,10 @@ G_LOCK_DEFINE (_proc);
 G_DEFINE_TYPE_WITH_CODE (GstScheduletimeTracer, gst_scheduletime_tracer,
     GST_TYPE_TRACER, _do_init);
 
+#ifdef EVAL
+#define EVAL_TIME 10
+#endif
+
 static const gchar scheduling_metadata_event[] = "event {\n\
 	name = scheduling;\n\
 	id = %d;\n\
@@ -76,6 +80,11 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   GstPad *padPeer;
   GstElement *element;
 
+#ifdef EVAL
+  if (ts > EVAL_TIME * GST_SECOND)
+    return;
+#endif
+
   scheduletimeTracer = GST_SCHEDULETIME_TRACER_CAST (self);
   padPeer = gst_pad_get_peer (pad);
   element = gst_pad_get_parent_element (padPeer);
@@ -84,12 +93,13 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
       (GstSchedulePad *) g_hash_table_lookup (schedulepads,
       g_strdup_printf ("%s_%s", GST_DEBUG_PAD_NAME (padPeer)));
 
-  if (schedulepad->previous_time != 0)
+  if (schedulepad->previous_time != 0) {
     gst_tracer_log_trace (gst_structure_new (GST_ELEMENT_NAME (element),
             "scheduling-time", G_TYPE_UINT64,
             GST_CLOCK_DIFF (schedulepad->previous_time, ts), NULL));
-  do_print_scheduling_event (SCHED_TIME_EVENT_ID, GST_ELEMENT_NAME (element),
-      GST_CLOCK_DIFF (schedulepad->previous_time, ts));
+    do_print_scheduling_event (SCHED_TIME_EVENT_ID, GST_ELEMENT_NAME (element),
+        GST_CLOCK_DIFF (schedulepad->previous_time, ts));
+  }
 
   schedulepad->previous_time = ts;
 }
@@ -102,6 +112,11 @@ do_pull_range_pre (GstTracer * self, guint64 ts, GstPad * pad)
   GstSchedulePad *schedulepad;
   GstElement *element;
 
+#ifdef EVAL
+  if (ts > EVAL_TIME * GST_SECOND)
+    return;
+#endif
+
   scheduletimeTracer = GST_SCHEDULETIME_TRACER_CAST (self);
   element = gst_pad_get_parent_element (pad);
   schedulepads = scheduletimeTracer->schedulepads;
@@ -109,12 +124,13 @@ do_pull_range_pre (GstTracer * self, guint64 ts, GstPad * pad)
       (GstSchedulePad *) g_hash_table_lookup (schedulepads,
       g_strdup_printf ("%s_%s", GST_DEBUG_PAD_NAME (pad)));
 
-  if (schedulepad->previous_time != 0)
+  if (schedulepad->previous_time != 0) {
     gst_tracer_log_trace (gst_structure_new (GST_ELEMENT_NAME (element),
             "scheduling-time", G_TYPE_UINT64,
             GST_CLOCK_DIFF (schedulepad->previous_time, ts), NULL));
-  do_print_scheduling_event (SCHED_TIME_EVENT_ID, GST_ELEMENT_NAME (element),
-      GST_CLOCK_DIFF (schedulepad->previous_time, ts));
+    do_print_scheduling_event (SCHED_TIME_EVENT_ID, GST_ELEMENT_NAME (element),
+        GST_CLOCK_DIFF (schedulepad->previous_time, ts));
+  }
 
   schedulepad->previous_time = ts;
 }

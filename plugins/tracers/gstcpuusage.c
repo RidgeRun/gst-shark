@@ -52,6 +52,10 @@ G_LOCK_DEFINE (_proc);
 G_DEFINE_TYPE_WITH_CODE (GstCPUUsageTracer, gst_cpuusage_tracer,
     GST_TYPE_TRACER, _do_init);
 
+#ifdef EVAL
+#define EVAL_TIME 10
+#endif
+
 static const gchar cpuusage_metadata_event[] = "event {\n\
 	name = cpuusage;\n\
 	id = %d;\n\
@@ -96,6 +100,10 @@ cpuusage_thread_func (gpointer data)
   gint msg_id;
   gint cpu_num;
 
+#ifdef EVAL
+  gint sec_counter;
+#endif
+
   self = (GstCPUUsageTracer *) data;
   cpuusage = &self->cpuusage;
 
@@ -113,6 +121,13 @@ cpuusage_thread_func (gpointer data)
           (int) (cpu_usage[msg_id] * 100));
     }
     sleep (1);
+
+#ifdef EVAL
+    sec_counter++;
+    if (sec_counter > EVAL_TIME)
+      break;
+#endif
+
   }
   g_thread_exit (0);
 

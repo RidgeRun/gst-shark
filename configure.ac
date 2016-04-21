@@ -378,5 +378,14 @@ docs/version.entities
 tools/Makefile
 ])
 
+dnl Allow mainainer to build eval version
+AC_ARG_ENABLE(eval,
+    [  --enable-eval           Build the evaluation version of the plug-in (Disabled by default)],
+    [if test x$enableval = xyes; then
+        AC_MSG_NOTICE([Building the EVAL version of the plug-in])
+        AC_DEFINE(EVAL, 1, [Define this to build the evaluation version of the plug-in])
+    fi]
+)
+
 AC_OUTPUT
 

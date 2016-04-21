@@ -50,6 +50,10 @@ G_LOCK_DEFINE (_proc);
 G_DEFINE_TYPE_WITH_CODE (GstProcTimeTracer, gst_proctime_tracer,
     GST_TYPE_TRACER, _do_init);
 
+#ifdef EVAL
+#define EVAL_TIME 10
+#endif
+
 static const gchar proctime_metadata_event[] = "event {\n\
 	name = proctime;\n\
 	id = %d;\n\
@@ -74,6 +78,11 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   gchar *name;
   GstClockTime time;
   GString *timeString;
+
+#ifdef EVAL
+  if (ts > EVAL_TIME * GST_SECOND)
+    return;
+#endif
 
   procTimeTracer = GST_PROCTIME_TRACER_CAST (self);
   procTime = &procTimeTracer->procTime;
@@ -100,7 +109,6 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   }
 }
 
-
 static void
 do_element_new (GObject * self, GstClockTime ts, GstElement * element)
 {
@@ -112,7 +120,6 @@ do_element_new (GObject * self, GstClockTime ts, GstElement * element)
 
   gst_proctime_add_new_element (procTime, element);
 }
-
 
 /* tracer class */
 
