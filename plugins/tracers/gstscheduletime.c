@@ -50,6 +50,10 @@ G_DEFINE_TYPE_WITH_CODE (GstScheduletimeTracer, gst_scheduletime_tracer,
 
 #define PAD_NAME_SIZE  (64)
 
+#ifdef EVAL
+#define EVAL_TIME (10)
+#endif
+
 static const gchar scheduling_metadata_event[] = "event {\n\
 	name = scheduling;\n\
 	id = %d;\n\
@@ -85,6 +89,11 @@ sched_time_compute (GstTracer * self, guint64 ts, GstPad * pad)
   GString *timeString;
   gchar pad_name[PAD_NAME_SIZE];
   guint64 time_diff;
+
+#ifdef EVAL
+  if (ts > EVAL_TIME * GST_SECOND)
+    return;
+#endif
 
   obj = (GObject *) self;
   schedule_time_tracer = GST_SCHEDULETIME_TRACER_CAST (self);
