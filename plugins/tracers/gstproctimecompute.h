@@ -29,7 +29,9 @@ G_BEGIN_DECLS typedef struct
 {
   gchar *name;
   GstPad *srcPad;
+  GThread *srcthread;
   GstPad *sinkPad;
+  GThread *sinkthread;
   GstClockTime startTime;
 } GstProcTimeElement;
 
