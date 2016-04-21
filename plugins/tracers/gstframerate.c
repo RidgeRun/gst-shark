@@ -51,7 +51,7 @@ G_DEFINE_TYPE_WITH_CODE (GstFramerateTracer, gst_framerate_tracer,
     GST_TYPE_TRACER, _do_init);
 
 #ifdef EVAL
-#define EVAL_TIME 10
+#define EVAL_TIME (10)
 #endif
 
 typedef struct _GstFramerateHash GstFramerateHash;

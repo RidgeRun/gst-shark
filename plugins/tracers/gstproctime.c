@@ -51,7 +51,7 @@ G_DEFINE_TYPE_WITH_CODE (GstProcTimeTracer, gst_proctime_tracer,
     GST_TYPE_TRACER, _do_init);
 
 #ifdef EVAL
-#define EVAL_TIME 10
+#define EVAL_TIME (10)
 #endif
 
 static const gchar proctime_metadata_event[] = "event {\n\

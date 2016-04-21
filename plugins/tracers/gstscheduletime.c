@@ -51,7 +51,7 @@ G_DEFINE_TYPE_WITH_CODE (GstScheduletimeTracer, gst_scheduletime_tracer,
     GST_TYPE_TRACER, _do_init);
 
 #ifdef EVAL
-#define EVAL_TIME 10
+#define EVAL_TIME (10)
 #endif
 
 static const gchar scheduling_metadata_event[] = "event {\n\

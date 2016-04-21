@@ -53,7 +53,7 @@ G_DEFINE_TYPE_WITH_CODE (GstCPUUsageTracer, gst_cpuusage_tracer,
     GST_TYPE_TRACER, _do_init);
 
 #ifdef EVAL
-#define EVAL_TIME 10
+#define EVAL_TIME (10)
 #endif
 
 static const gchar cpuusage_metadata_event[] = "event {\n\
