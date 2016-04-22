@@ -50,7 +50,7 @@ typedef struct _GstCPUUsageTracerClass GstCPUUsageTracerClass;
 struct _GstCPUUsageTracer
 {
   GstTracer parent;
-  GstCPUUsage cpuusage;
+  GstCPUUsage cpu_usage;
 };
 
 struct _GstCPUUsageTracerClass
