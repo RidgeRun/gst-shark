@@ -30,28 +30,27 @@
 #include <unistd.h>
 #include <string.h>
 
-
 void
-gst_cpu_usage_init (GstCPUUsage * cpuusage)
+gst_cpu_usage_init (GstCPUUsage * cpu_usage)
 {
   gint32 cpu_num;
 
-  g_return_if_fail (cpuusage);
+  g_return_if_fail (cpu_usage);
 
-  memset (cpuusage, 0, sizeof (GstCPUUsage));
+  memset (cpu_usage, 0, sizeof (GstCPUUsage));
 
   if ((cpu_num = sysconf (_SC_NPROCESSORS_CONF)) == -1) {
     GST_WARNING ("failed to get number of cpus");
     cpu_num = 1;
   }
 
-  cpuusage->cpu_num = cpu_num;
+  cpu_usage->cpu_num = cpu_num;
 }
 
 void
-gst_cpu_usage_compute (GstCPUUsage * cpuusage)
+gst_cpu_usage_compute (GstCPUUsage * cpu_usage)
 {
-  gdouble *cpu_usage;
+  gdouble *cpu_load;
   gint32 cpu_num;
   gint cpu_id;
   FILE *fd;
@@ -76,20 +75,20 @@ gst_cpu_usage_compute (GstCPUUsage * cpuusage)
   gboolean cpu_array_sel;
   gint ret;
 
-  g_return_if_fail (cpuusage);
+  g_return_if_fail (cpu_usage);
 
-  user = cpuusage->user;
-  user_aux = cpuusage->user_aux;
-  nice = cpuusage->nice;
-  nice_aux = cpuusage->nice_aux;
-  system = cpuusage->system;
-  system_aux = cpuusage->system_aux;
-  idle = cpuusage->idle;
-  idle_aux = cpuusage->idle_aux;
+  user = cpu_usage->user;
+  user_aux = cpu_usage->user_aux;
+  nice = cpu_usage->nice;
+  nice_aux = cpu_usage->nice_aux;
+  system = cpu_usage->system;
+  system_aux = cpu_usage->system_aux;
+  idle = cpu_usage->idle;
+  idle_aux = cpu_usage->idle_aux;
 
-  cpu_array_sel = cpuusage->cpu_array_sel;
-  cpu_usage = cpuusage->cpu_usage;
-  cpu_num = cpuusage->cpu_num;
+  cpu_array_sel = cpu_usage->cpu_array_sel;
+  cpu_load = cpu_usage->cpu_load;
+  cpu_num = cpu_usage->cpu_num;
 
 
 
@@ -115,7 +114,7 @@ gst_cpu_usage_compute (GstCPUUsage * cpuusage)
           ((user[cpu_id] + nice[cpu_id] + system[cpu_id] + idle[cpu_id]) -
           (user_aux[cpu_id] + nice_aux[cpu_id] + system_aux[cpu_id] +
               idle_aux[cpu_id]));
-      cpu_usage[cpu_id] = num_value / den_value;
+      cpu_load[cpu_id] = num_value / den_value;
     }
     cpu_array_sel = 1;
   } else {
@@ -138,13 +137,13 @@ gst_cpu_usage_compute (GstCPUUsage * cpuusage)
           ((user_aux[cpu_id] + nice_aux[cpu_id] + system_aux[cpu_id] +
               idle_aux[cpu_id]) - (user[cpu_id] + nice[cpu_id] +
               system[cpu_id] + idle[cpu_id]));
-      cpu_usage[cpu_id] = num_value / den_value;
+      cpu_load[cpu_id] = num_value / den_value;
     }
     cpu_array_sel = 0;
   }
 
   (void) ret;
 
-  cpuusage->cpu_array_sel = cpu_array_sel;
+  cpu_usage->cpu_array_sel = cpu_array_sel;
   fclose (fd);
 }

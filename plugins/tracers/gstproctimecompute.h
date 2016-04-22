@@ -28,11 +28,11 @@
 G_BEGIN_DECLS typedef struct
 {
   gchar *name;
-  GstPad *srcPad;
-  GThread *srcthread;
-  GstPad *sinkPad;
-  GThread *sinkthread;
-  GstClockTime startTime;
+  GstPad *src_pad;
+  GThread *src_thread;
+  GstPad *sink_pad;
+  GThread *sink_thread;
+  GstClockTime start_time;
 } GstProcTimeElement;
 
 typedef struct
@@ -42,15 +42,15 @@ typedef struct
   GstClock clock;
 } GstProcTime;
 
-void gst_proctime_init (GstProcTime * procTime);
+void gst_proctime_init (GstProcTime * proc_time);
 
-void gst_proctime_add_new_element (GstProcTime * procTime,
+void gst_proctime_add_new_element (GstProcTime * proc_time,
     GstElement * element);
 
-void gst_proctime_proc_time (GstProcTime * procTime,
-    GstClockTime * time, gchar ** name, GstPad * peerPad, GstPad * srcPad);
+void gst_proctime_proc_time (GstProcTime * proc_time,
+    GstClockTime * time, gchar ** name, GstPad * peer_pad, GstPad * src_pad);
 
-void gst_proctime_finalize (GstProcTime * procTime);
+void gst_proctime_finalize (GstProcTime * proc_time);
 
 G_END_DECLS
 #endif //__GST_PROC_CTIME_COMPUTE_H__
