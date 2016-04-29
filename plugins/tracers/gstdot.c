@@ -23,12 +23,15 @@
 #endif /*  */
 
 #include <gst/gst.h>
-#include <gvc.h>
 #include <glib.h>
 #include <glib/gstdio.h>
-#include <cgraph.h>
-#include "gstctf.h"
 
+#ifdef ENABLE_GRAPHVIZ
+#  include <cgraph.h>
+#  include <gvc.h>
+#endif
+
+#include "gstctf.h"
 #include "gstdot.h"
 
 typedef struct _GstDotRenderThread GstDotRenderThread;
@@ -153,6 +156,7 @@ gst_dot_do_render (const gchar * dot_string, GstDotRender render, gpointer args)
   return TRUE;
 }
 
+#ifdef ENABLE_GRAPHVIZ
 gboolean
 gst_dot_x11_render (const gchar * dot_string, gpointer args)
 {
@@ -170,3 +174,10 @@ gst_dot_x11_render (const gchar * dot_string, gpointer args)
 
   return TRUE;
 }
+#else
+gboolean
+gst_dot_x11_render (const gchar * dot_string, gpointer args)
+{
+  return TRUE;
+}
+#endif
