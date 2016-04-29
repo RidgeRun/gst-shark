@@ -37,7 +37,7 @@ libgstsharktracers_@GST_SHARK_API_VERSION@_la_CFLAGS = \
 libgstsharktracers_@GST_SHARK_API_VERSION@_la_LIBADD = \
 	$(GST_SHARK_OBJ_LIBS) \
 	$(GST_LIBS) \
-	$(top_builddir)/plugins/tracers/libgstshark-@GST_SHARK_API_VERSION@.la 
+	libgstshark-@GST_SHARK_API_VERSION@.la
 
 libgstsharktracers_@GST_SHARK_API_VERSION@_la_LDFLAGS = \
 	$(GST_SHARK_PLUGIN_LDFLAGS)
