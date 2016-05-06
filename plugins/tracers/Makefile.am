@@ -4,7 +4,8 @@ libgstshark_@GST_SHARK_API_VERSION@_la_SOURCES = \
 	gstdot.c \
 	gstcpuusagecompute.c \
 	gstproctimecompute.c \
-	gstctf.c
+	gstctf.c \
+	gstparser.c
 
 libgstshark_@GST_SHARK_API_VERSION@_la_CFLAGS = \
 	$(GST_SHARK_OBJ_CFLAGS) \
@@ -55,7 +56,8 @@ noinst_HEADERS = \
 	gstinterlatency.h \
 	gstscheduletime.h \
 	gstframerate.h \
-	gstctf.h
+	gstctf.h \
+	gstparser.h
 
 CLEANFILES = *.gcno *.gcda *.gcov *.gcov.out
 
