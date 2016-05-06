@@ -238,6 +238,19 @@ AS_IF([test "x$enable_graphviz" != "xno"],
         AC_DEFINE(ENABLE_GRAPHVIZ, 1, [Define this to enable Graphviz capabilities])
 )
 
+dnl Gio
+GIO_REQ=2.0
+PKG_CHECK_MODULES(GIO, [
+  libgio >= $GIO_REQ
+], [
+  AC_SUBST(GIO_CFLAGS)
+  AC_SUBST(GIO_LIBS)
+],[
+  AC_MSG_ERROR([
+    Please install libgio development packages (libgio)
+  ])
+])
+
 dnl building of unit test libraries
 AC_ARG_ENABLE(check,
   AS_HELP_STRING([--disable-check],[disable building unit test libraries]),

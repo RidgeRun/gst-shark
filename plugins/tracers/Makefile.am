@@ -4,19 +4,22 @@ libgstshark_@GST_SHARK_API_VERSION@_la_SOURCES = \
 	gstdot.c \
 	gstcpuusagecompute.c \
 	gstproctimecompute.c \
-	gstctf.c
+	gstctf.c \
+	gstparser.c
 
 libgstshark_@GST_SHARK_API_VERSION@_la_CFLAGS = \
 	$(GST_SHARK_OBJ_CFLAGS) \
 	$(GST_CFLAGS) \
 	$(GVC_CFLAGS)  \
+	$(GIO_CFLAGS) \
 	-DGST_USE_UNSTABLE_API \
 	-Wno-undef
 
 libgstshark_@GST_SHARK_API_VERSION@_la_LIBADD = \
 	$(GST_SHARK_OBJ_LIBS) \
 	$(GST_LIBS) \
-	$(GVC_LIBS)
+	$(GVC_LIBS) \
+	$(GIO_LIBS)
 
 plugin_LTLIBRARIES = libgstsharktracers-@GST_SHARK_API_VERSION@.la
 
@@ -55,7 +58,8 @@ noinst_HEADERS = \
 	gstinterlatency.h \
 	gstscheduletime.h \
 	gstframerate.h \
-	gstctf.h
+	gstctf.h \
+	gstparser.h
 
 CLEANFILES = *.gcno *.gcda *.gcov *.gcov.out
 
