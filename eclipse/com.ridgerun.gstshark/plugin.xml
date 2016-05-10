@@ -4,12 +4,12 @@
    <extension
          point="org.eclipse.ui.handlers">
       <handler
-            commandId="com.ridgerun.gsttune.commands.showdot"
-            class="com.ridgerun.gsttune.handlers.ShowDotHandler">
+            commandId="com.ridgerun.gstshark.commands.showdot"
+            class="com.ridgerun.gstshark.handlers.ShowDotHandler">
       </handler>
       <handler
-            commandId="com.ridgerun.gsttune.commands.opentrace"
-            class="com.ridgerun.gsttune.handlers.OpenTrace">
+            commandId="com.ridgerun.gstshark.commands.opentrace"
+            class="com.ridgerun.gstshark.handlers.OpenTrace">
       </handler>
    </extension>
    <extension
@@ -18,19 +18,19 @@
             locationURI="menu:org.eclipse.ui.main.menu?after=additions">
          <!-- GstTune Main Menu Interface -->
          <menu
-               id="com.ridgerun.gsttune.menus.gsttuneMenu"
+               id="com.ridgerun.gstshark.menus.gstsharkMenu"
                label="GstShark"
                mnemonic="M">
             <!-- Pipeline Graphics -->
             <command
-                  commandId="com.ridgerun.gsttune.commands.showdot"
+                  commandId="com.ridgerun.gstshark.commands.showdot"
                   label="Show Pipeline Diagram"
-                  id="com.ridgerun.gsttune.menus.sampleCommand"
+                  id="com.ridgerun.gstshark.menus.sampleCommand"
                   mnemonic="S">
             </command>
             <!-- GstTune Menu Options Others -->
             <command
-                  commandId="com.ridgerun.gsttune.commands.opentrace"
+                  commandId="com.ridgerun.gstshark.commands.opentrace"
                   label="Open Trace..."
                   style="push">
             </command>   
@@ -40,7 +40,7 @@
    <extension
          point="org.eclipse.ui.bindings">
       <key
-            commandId="com.ridgerun.gsttune.commands.sampleCommand"
+            commandId="com.ridgerun.gstshark.commands.sampleCommand"
             contextId="org.eclipse.ui.contexts.window"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="M1+6">
