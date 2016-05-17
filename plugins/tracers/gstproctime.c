@@ -52,6 +52,10 @@ G_DEFINE_TYPE_WITH_CODE (GstProcTimeTracer, gst_proctime_tracer,
 #define EVAL_TIME (10)
 #endif
 
+#ifdef GST_STABLE_RELEASE
+static GstTracerRecord *tr_proctime;
+#endif
+
 static const gchar proctime_metadata_event[] = "event {\n\
 	name = proctime;\n\
 	id = %d;\n\
@@ -90,9 +94,12 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   if (NULL != name) {
     g_string_printf (time_string, "%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
+#ifdef GST_STABLE_RELEASE
+    gst_tracer_record_log (tr_proctime, time_string->str);
+#else
     gst_tracer_log_trace (gst_structure_new (name,
             "time", G_TYPE_STRING, time_string->str, NULL));
-
+#endif
     do_print_proctime_event (PROCTIME_EVENT_ID, name, time);
   }
 
@@ -152,10 +159,24 @@ gst_proctime_tracer_init (GstProcTimeTracer * self)
   gst_tracing_register_hook (tracer, "element-new",
       G_CALLBACK (do_element_new));
 
-  gst_tracer_log_trace (gst_structure_new ("proctime.class", "time",
-          GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE,
-              G_TYPE_INT64, "description", G_TYPE_STRING,
-              "Processing time (Microseconds)", NULL), NULL));
+#ifdef GST_STABLE_RELEASE
+  tr_proctime = gst_tracer_record_new ("proctime.class",
+      "time", GST_TYPE_STRUCTURE, gst_structure_new ("value",
+          "type", G_TYPE_GTYPE, G_TYPE_UINT64,
+          "description", G_TYPE_STRING, "Processing time [us]",
+          "flags", GST_TYPE_TRACER_VALUE_FLAGS,
+          GST_TRACER_VALUE_FLAGS_AGGREGATED, "min", G_TYPE_UINT64,
+          G_GUINT64_CONSTANT (0), "max", G_TYPE_UINT64, G_MAXUINT64, NULL),
+      NULL);
+#else
+  gst_tracer_log_trace (gst_structure_new ("proctime.class",
+          "time", GST_TYPE_STRUCTURE, gst_structure_new ("value",
+              "type", G_TYPE_GTYPE, G_TYPE_UINT64,
+              "description", G_TYPE_STRING, "Processing time [us]",
+              "flags", G_TYPE_STRING, "aggregated",
+              "min", G_TYPE_UINT64, G_GUINT64_CONSTANT (0),
+              "max", G_TYPE_UINT64, G_MAXUINT64, NULL), NULL));
+#endif
 
   metadata_event =
       g_strdup_printf (proctime_metadata_event, PROCTIME_EVENT_ID, 0);

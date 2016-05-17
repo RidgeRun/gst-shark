@@ -54,6 +54,10 @@ G_DEFINE_TYPE_WITH_CODE (GstScheduletimeTracer, gst_scheduletime_tracer,
 #define EVAL_TIME (10)
 #endif
 
+#ifdef GST_STABLE_RELEASE
+static GstTracerRecord *tr_schedule;
+#endif
+
 static const gchar scheduling_metadata_event[] = "event {\n\
 	name = scheduling;\n\
 	id = %d;\n\
@@ -120,8 +124,12 @@ sched_time_compute (GstTracer * self, guint64 ts, GstPad * pad)
     g_string_printf (time_string, "%" GST_TIME_FORMAT,
         GST_TIME_ARGS (time_diff));
 
+#ifdef GST_STABLE_RELEASE
+    gst_tracer_record_log (tr_schedule, time_string->str);
+#else
     gst_tracer_log_trace (gst_structure_new (pad_name,
             "scheduling-time", G_TYPE_STRING, time_string->str, NULL));
+#endif
     do_print_scheduling_event (SCHED_TIME_EVENT_ID, pad_name, time_diff);
   }
   schedule_pad->previous_time = ts;
@@ -184,10 +192,23 @@ gst_scheduletime_tracer_init (GstScheduletimeTracer * self)
   gst_tracing_register_hook (tracer, "pad-pull-range-pre",
       G_CALLBACK (sched_time_compute));
 
-  gst_tracer_log_trace (gst_structure_new ("scheduletime.class", "time",
-          GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE,
-              G_TYPE_INT64, "description", G_TYPE_STRING,
-              "Scheduling time (Nanoseconds)", NULL), NULL));
+#ifdef GST_STABLE_RELEASE
+  tr_schedule = gst_tracer_record_new ("scheduletime.class",
+      "time", GST_TYPE_STRUCTURE, gst_structure_new ("value",
+          "type", G_TYPE_GTYPE, G_TYPE_INT64,
+          "description", G_TYPE_STRING, "Scheduling time [ns]",
+          "flags", GST_TYPE_TRACER_VALUE_FLAGS,
+          GST_TRACER_VALUE_FLAGS_AGGREGATED, "min", G_TYPE_INT64,
+          G_GINT64_CONSTANT (0), "max", G_TYPE_INT64, G_MAXINT64, NULL), NULL);
+#else
+  gst_tracer_log_trace (gst_structure_new ("scheduletime.class",
+          "time", GST_TYPE_STRUCTURE, gst_structure_new ("value",
+              "type", G_TYPE_GTYPE, G_TYPE_INT64,
+              "description", G_TYPE_STRING, "Scheduling time [ns]",
+              "flags", G_TYPE_STRING, "aggregated",
+              "min", G_TYPE_INT64, G_GINT64_CONSTANT (0),
+              "max", G_TYPE_INT64, G_MAXINT64, NULL), NULL));
+#endif
 
   metadata_event =
       g_strdup_printf (scheduling_metadata_event, SCHED_TIME_EVENT_ID, 0);

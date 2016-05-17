@@ -213,13 +213,28 @@ AC_SUBST(GLIB_PREFIX)
 
 dnl GStreamer
 GST_REQ_MAJMIN=1.0
-GST_REQ_MINVER=1.0.0
+GST_REQ_MINVER=1.7.1
 AG_GST_CHECK_GST([$GST_REQ_MAJMIN], [$GST_REQ_MINVER], [yes])
 AG_GST_CHECK_GST_BASE([$GST_REQ_MAJMIN], [$GST_REQ_MINVER], [yes])
 AG_GST_CHECK_GST_CHECK([$GST_REQ_MAJMIN], [$GST_REQ_MINVER], [yes])
 
-GVC_REQ=2.38
+GST_REQ_STABLE=1.8.1
+PKG_CHECK_MODULES(GSTREAMER, [
+  gstreamer-1.0 >= $GST_REQ_STABLE
+], [
+  AC_DEFINE(GST_STABLE_RELEASE, 1, [Define this to use the tracers API of GStreamer version >= $GST_REQ_STABLE])
+  AC_MSG_NOTICE([
+    Version of GStreamer used is >= ($GST_REQ_STABLE)
+  ])
+],[
+  AC_MSG_WARN([
+    Version of GStreamer is not the latest stable revision avialable ($GST_REQ_STABLE),
+    Gst-Shark will work with the minimal required version ($GST_REQ_MINVER)
+  ])
+])
+
 dnl Graphviz
+GVC_REQ=2.38
 AC_ARG_ENABLE(graphviz,
     AS_HELP_STRING([--disable-graphviz],[Disable graphviz capabilities (Enabled by default)]))
 
