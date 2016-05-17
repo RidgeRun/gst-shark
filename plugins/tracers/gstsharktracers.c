@@ -36,10 +36,12 @@
 static gboolean
 plugin_init (GstPlugin * plugin)
 {
+#ifdef GST_CPUUSAGE_ENABLE
   if (!gst_tracer_register (plugin, "cpuusage",
           gst_cpuusage_tracer_get_type ())) {
     return FALSE;
   }
+#endif
   if (!gst_tracer_register (plugin, "graphic", gst_graphic_tracer_get_type ())) {
     return FALSE;
   }
