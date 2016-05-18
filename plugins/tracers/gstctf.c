@@ -903,9 +903,12 @@ gst_ctf_close (void)
     g_free (ctf_descriptor->host_name);
   }
   /* Closes the stream, releasing resources related to it. */
-  res = g_output_stream_close (ctf_descriptor->output_stream, NULL, &error);
-  if (FALSE == res) {
-    GST_ERROR ("Failed to close output stream");
+  if (NULL != ctf_descriptor->output_stream)
+  {
+    res = g_output_stream_close (ctf_descriptor->output_stream, NULL, &error);
+    if (FALSE == res) {
+        GST_ERROR ("Failed to close output stream");
+    }
   }
 
   if (NULL != ctf_descriptor->socket_client) {
