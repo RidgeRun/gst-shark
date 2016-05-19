@@ -26,8 +26,8 @@
  * SECTION:gstinterlatency
  * @short_description: log processing latencies stats
  *
- * A tracing module that determines latencies between src and intermediate elements 
- * by injecting custom events at sources and process them in the pads. 
+ * A tracing module that determines latencies between src and intermediate elements
+ * by injecting custom events at sources and process them in the pads.
  */
 /* TODO(ensonic): if there are two sources feeding into a mixer/muxer and later
  * we fan-out with tee and have two sinks, each sink would get all two events,
@@ -76,7 +76,7 @@ static const gchar interlatency_metadata_event[] = "event {\n\
 /* data helpers */
 
 /*
- * Get the element/bin owning the pad. 
+ * Get the element/bin owning the pad.
  *
  * in: a normal pad
  * out: the element
@@ -111,12 +111,14 @@ get_real_pad_parent (GstPad * pad)
 /* hooks */
 
 static void
-log_latency (const GstStructure * data, GstPad * sink_pad, guint64 sink_ts)
+log_latency (GstInterLatencyTracer * interlatency_tracer,
+    const GstStructure * data, GstPad * sink_pad, guint64 sink_ts)
 {
   GstPad *src_pad;
   guint64 src_ts;
   gchar *src, *sink;
   guint64 time;
+  GString *time_string;
 
   gst_structure_id_get (data,
       latency_probe_pad, GST_TYPE_PAD, &src_pad,
@@ -127,10 +129,14 @@ log_latency (const GstStructure * data, GstPad * sink_pad, guint64 sink_ts)
 
   time = GST_CLOCK_DIFF (src_ts, sink_ts);
 
+  time_string = interlatency_tracer->time_string;
+  g_string_printf (time_string, "%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
+
   /* TODO(ensonic): report format is still unstable */
-  gst_tracer_log_trace (gst_structure_new ("latency",
-          "src", G_TYPE_STRING, src,
-          "element", G_TYPE_STRING, sink, "time", G_TYPE_UINT64, time, NULL));
+  gst_tracer_log_trace (gst_structure_new ("interlatency",
+          "pad", G_TYPE_STRING, src,
+          "pad", G_TYPE_STRING, sink, "time", G_TYPE_STRING, time_string->str,
+          NULL));
   do_print_interlatency_event (INTERLATENCY_EVENT_ID, src, sink, time);
 
   g_free (src);
@@ -151,7 +157,8 @@ send_latency_probe (GstElement * parent, GstPad * pad, guint64 ts)
 }
 
 static void
-calculate_latency (GstElement * parent, GstPad * pad, guint64 ts)
+calculate_latency (GstInterLatencyTracer * interlatency_tracer,
+    GstElement * parent, GstPad * pad, guint64 ts)
 {
 
 #ifdef EVAL
@@ -162,7 +169,7 @@ calculate_latency (GstElement * parent, GstPad * pad, guint64 ts)
   if (parent && (!GST_IS_BIN (parent))) {
     GstEvent *ev = g_object_get_qdata ((GObject *) pad, latency_probe_id);
 
-    log_latency (gst_event_get_structure (ev), pad, ts);
+    log_latency (interlatency_tracer, gst_event_get_structure (ev), pad, ts);
     gst_event_unref (ev);
   }
 }
@@ -171,42 +178,54 @@ static void
 do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
 {
   GstElement *parent = get_real_pad_parent (pad);
+  GstInterLatencyTracer *interlatency_tracer;
+
+  interlatency_tracer = GST_INTERLATENCY_TRACER_CAST (self);
 
   if (GST_OBJECT_FLAG_IS_SET (parent, GST_ELEMENT_FLAG_SOURCE))
     send_latency_probe (parent, pad, ts);
   else
-    calculate_latency (parent, pad, ts);
+    calculate_latency (interlatency_tracer, parent, pad, ts);
 }
 
 static void
 do_pull_range_pre (GstTracer * self, guint64 ts, GstPad * pad)
 {
+  GstInterLatencyTracer *interlatency_tracer;
+
   GstPad *peer_pad = GST_PAD_PEER (pad);
   GstElement *parent_peer = get_real_pad_parent (peer_pad);
+
+  interlatency_tracer = GST_INTERLATENCY_TRACER_CAST (self);
 
   if (GST_OBJECT_FLAG_IS_SET (parent_peer, GST_ELEMENT_FLAG_SOURCE))
     send_latency_probe (parent_peer, peer_pad, ts);
   else
-    calculate_latency (parent_peer, peer_pad, ts);
+    calculate_latency (interlatency_tracer, parent_peer, peer_pad, ts);
 }
 
 static void
 do_push_buffer_post (GstTracer * self, guint64 ts, GstPad * pad)
 {
+  GstInterLatencyTracer *interlatency_tracer;
   GstPad *peer_pad = GST_PAD_PEER (pad);
   GstElement *parent_peer = get_real_pad_parent (peer_pad);
 
+  interlatency_tracer = GST_INTERLATENCY_TRACER_CAST (self);
+
   if (GST_OBJECT_FLAG_IS_SET (parent_peer, GST_ELEMENT_FLAG_SINK))
-    calculate_latency (parent_peer, peer_pad, ts);
+    calculate_latency (interlatency_tracer, parent_peer, peer_pad, ts);
 }
 
 static void
 do_pull_range_post (GstTracer * self, guint64 ts, GstPad * pad)
 {
+  GstInterLatencyTracer *interlatency_tracer;
   GstElement *parent = get_real_pad_parent (pad);
 
+  interlatency_tracer = GST_INTERLATENCY_TRACER_CAST (self);
   if (GST_OBJECT_FLAG_IS_SET (parent, GST_ELEMENT_FLAG_SINK))
-    calculate_latency (parent, pad, ts);
+    calculate_latency (interlatency_tracer, parent, pad, ts);
 }
 
 static void
@@ -256,7 +275,7 @@ gst_interlatency_tracer_class_init (GstInterLatencyTracerClass * klass)
           "type", G_TYPE_GTYPE, G_TYPE_UINT64,
           "description", G_TYPE_STRING,
               "time it took for the buffer to go from src to each element ns",
-          "flags", G_TYPE_STRING, "aggregated",  /* TODO: use gflags */ 
+          "flags", G_TYPE_STRING, "aggregated",  /* TODO: use gflags */
           "min", G_TYPE_UINT64, G_GUINT64_CONSTANT (0),
           "max", G_TYPE_UINT64, G_MAXUINT64,
           NULL),
@@ -284,6 +303,8 @@ gst_interlatency_tracer_init (GstInterLatencyTracer * self)
       G_CALLBACK (do_pull_range_post));
   gst_tracing_register_hook (tracer, "pad-push-event-pre",
       G_CALLBACK (do_push_event_pre));
+
+  self->time_string = g_string_new ("0:00:00.000000000 ");
 
   metadata_event =
       g_strdup_printf (interlatency_metadata_event, INTERLATENCY_EVENT_ID, 0);

@@ -50,7 +50,7 @@ typedef struct _GstInterLatencyTracerClass GstInterLatencyTracerClass;
 struct _GstInterLatencyTracer
 {
   GstTracer parent;
-
+  GString *time_string;
   /*< private > */
 };
 

@@ -99,7 +99,7 @@ do_print_framerate (gpointer * data)
   while (g_hash_table_iter_next (&iter, &key, &value)) {
     pad_table = (GstFramerateHash *) value;
     gst_tracer_log_trace (gst_structure_new ("framerate",
-            "source-pad", G_TYPE_STRING, pad_table->fullname,
+            "pad", G_TYPE_STRING, pad_table->fullname,
             "fps", G_TYPE_INT, pad_table->counter, NULL));
     do_print_framerate_event (FPS_EVENT_ID, pad_table->fullname,
         pad_table->counter);
@@ -154,7 +154,7 @@ do_pad_push_buffer_pre (GstFramerateTracer * self, guint64 ts, GstPad * pad,
 
   /* The full name of every pad has the format elementName.padName and it is going 
      to be used for displaying the framerate in a friendly user way */
-  fullname = g_strdup_printf ("%s.%s", GST_DEBUG_PAD_NAME (pad));
+  fullname = g_strdup_printf ("%s_%s", GST_DEBUG_PAD_NAME (pad));
 
   /* Function contains on the Hash table returns TRUE if the key already exists */
   if (g_hash_table_contains (self->frame_counters, pad)) {

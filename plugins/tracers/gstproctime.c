@@ -90,8 +90,9 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   if (NULL != name) {
     g_string_printf (time_string, "%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
-    gst_tracer_log_trace (gst_structure_new (name,
-            "time", G_TYPE_STRING, time_string->str, NULL));
+    gst_tracer_log_trace (gst_structure_new ("proctime", "element",
+            G_TYPE_STRING, name, "time", G_TYPE_STRING, time_string->str,
+            NULL));
 
     do_print_proctime_event (PROCTIME_EVENT_ID, name, time);
   }

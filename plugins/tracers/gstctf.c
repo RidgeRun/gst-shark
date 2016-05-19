@@ -478,10 +478,6 @@ ctf_process_env_var (void)
     g_free (env_line);
   }
 
-  g_printf ("host: %s:%d\n", ctf_descriptor->host_name,
-      ctf_descriptor->port_number);
-  g_printf ("directory: %s\n", ctf_descriptor->env_dir_name);
-
   if (G_UNLIKELY (g_getenv ("GST_SHARK_CTF_DISABLE") != NULL)) {
     env_dir_name = (gchar *) g_getenv ("PWD");
     ctf_descriptor->file_output_disable = TRUE;
