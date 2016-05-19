@@ -50,7 +50,7 @@ gst_cpu_usage_init (GstCPUUsage * cpu_usage)
 void
 gst_cpu_usage_compute (GstCPUUsage * cpu_usage)
 {
-  gdouble *cpu_load;
+  gfloat *cpu_load;
   gint32 cpu_num;
   gint cpu_id;
   FILE *fd;
@@ -70,8 +70,8 @@ gst_cpu_usage_compute (GstCPUUsage * cpu_usage)
   gint steal;                   /* Time spent in other OSes when in virtualized env */
   gint quest;                   /* Time spent running a virtual CPU for guest OS    */
   gint quest_nice;              /* Time spent running niced guest */
-  gdouble num_value;
-  gdouble den_value;
+  gfloat num_value;
+  gfloat den_value;
   gboolean cpu_array_sel;
   gint ret;
 
@@ -114,7 +114,7 @@ gst_cpu_usage_compute (GstCPUUsage * cpu_usage)
           ((user[cpu_id] + nice[cpu_id] + system[cpu_id] + idle[cpu_id]) -
           (user_aux[cpu_id] + nice_aux[cpu_id] + system_aux[cpu_id] +
               idle_aux[cpu_id]));
-      cpu_load[cpu_id] = num_value / den_value;
+      cpu_load[cpu_id] = 100 * (num_value / den_value);
     }
     cpu_array_sel = 1;
   } else {
@@ -137,7 +137,7 @@ gst_cpu_usage_compute (GstCPUUsage * cpu_usage)
           ((user_aux[cpu_id] + nice_aux[cpu_id] + system_aux[cpu_id] +
               idle_aux[cpu_id]) - (user[cpu_id] + nice[cpu_id] +
               system[cpu_id] + idle[cpu_id]));
-      cpu_load[cpu_id] = num_value / den_value;
+      cpu_load[cpu_id] = 100 * (num_value / den_value);
     }
     cpu_array_sel = 0;
   }

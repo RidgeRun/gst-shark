@@ -34,7 +34,7 @@ G_BEGIN_DECLS
 {
   /* CPU core number */
   gint cpu_num;
-  gdouble cpu_load[CPU_NUM_MAX];
+  gfloat cpu_load[CPU_NUM_MAX];
 
   gint user[CPU_NUM_MAX];       /* Time spent in user mode */
   gint user_aux[CPU_NUM_MAX];   /* Time spent in user mode */

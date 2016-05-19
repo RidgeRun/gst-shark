@@ -38,7 +38,7 @@ gchar *get_ctf_path_name (void);
 gboolean gst_ctf_init (void);
 void gst_ctf_close (void);
 void add_metadata_event_struct (const gchar * metadata_event);
-void do_print_cpuusage_event (event_id id, guint32 cpunum, guint64 cpuload);
+void do_print_cpuusage_event (event_id id, guint32 cpunum, gfloat * cpuload);
 void do_print_proctime_event (event_id id, gchar * elementname, guint64 time);
 void do_print_framerate_event (event_id id, const gchar * padname, guint64 fps);
 void do_print_interlatency_event (event_id id,

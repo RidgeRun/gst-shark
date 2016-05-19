@@ -76,6 +76,10 @@ typedef guint32 ctf_header_timestamp;
 #define CTF_EVENT_WRITE_INT64(int64,mem) \
   *(guint64*)mem = int64; \
   mem += sizeof(guint64);
+  
+#define CTF_EVENT_WRITE_FLOAT(float_val,mem) \
+  *(gfloat*)mem = float_val; \
+  mem += sizeof(gfloat);
 
 #define CTF_EVENT_WRITE_HEADER(id,mem) \
   /* Write event ID */  \
@@ -655,12 +659,13 @@ add_metadata_event_struct (const gchar * metadata_event)
 
 
 void
-do_print_cpuusage_event (event_id id, guint32 cpunum, guint64 cpuload)
+do_print_cpuusage_event (event_id id, guint32 cpu_num, gfloat * cpuload)
 {
   GError *error;
   guint8 *mem;
   guint8 *event_mem;
   gsize event_size;
+  gint cpu_idx;
 
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
@@ -669,10 +674,13 @@ do_print_cpuusage_event (event_id id, guint32 cpunum, guint64 cpuload)
   g_mutex_lock (&ctf_descriptor->mutex);
   /* Add CTF header */
   CTF_EVENT_WRITE_HEADER (id, event_mem);
-  /* Write CPU number */
-  CTF_EVENT_WRITE_INT32 (cpunum, event_mem);
-  /* Write CPU load */
-  CTF_EVENT_WRITE_INT64 (cpuload, event_mem);
+  /* Write CPU load for each CPU */
+  for (cpu_idx = 0; cpu_idx < cpu_num; ++cpu_idx)
+  {
+    /* Write CPU load */
+    CTF_EVENT_WRITE_FLOAT (cpuload[cpu_idx], event_mem);
+  }
+
   /* Computer event size */
   event_size = event_mem - (mem + TCP_HEADER_SIZE);
 
@@ -691,7 +699,6 @@ do_print_cpuusage_event (event_id id, guint32 cpunum, guint64 cpuload)
 
   g_mutex_unlock (&ctf_descriptor->mutex);
 }
-
 
 void
 do_print_proctime_event (event_id id, gchar * elementname, guint64 time)
