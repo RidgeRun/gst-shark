@@ -450,7 +450,7 @@ static void
 ctf_process_env_var (void)
 {
   const gchar *env_loc_value;
-  gchar dir_name[30];
+  gchar dir_name[MAX_DIRNAME_LEN];
   gchar *env_dir_name;
   gchar *env_line;
   gint size_env_path = 0;
@@ -482,10 +482,6 @@ ctf_process_env_var (void)
     g_free (env_line);
   }
 
-  g_printf ("host: %s:%d\n", ctf_descriptor->host_name,
-      ctf_descriptor->port_number);
-  g_printf ("directory: %s\n", ctf_descriptor->env_dir_name);
-
   if (G_UNLIKELY (g_getenv ("GST_SHARK_CTF_DISABLE") != NULL)) {
     env_dir_name = (gchar *) g_getenv ("PWD");
     ctf_descriptor->file_output_disable = TRUE;
@@ -495,8 +491,7 @@ ctf_process_env_var (void)
 
   if (G_LIKELY (env_dir_name == NULL)) {
     /* Creating the output folder for the CTF output files. */
-    strftime (dir_name, MAX_DIRNAME_LEN, "gstshark_%Y%m%d%H%M%S",
-        localtime (&now));
+    strftime (dir_name, MAX_DIRNAME_LEN, "gstshark_%F_%T", localtime (&now));
     ctf_descriptor->dir_name = g_malloc (MAX_DIRNAME_LEN + 1);
     g_stpcpy (ctf_descriptor->dir_name, dir_name);
   } else {
@@ -910,9 +905,11 @@ gst_ctf_close (void)
     g_free (ctf_descriptor->host_name);
   }
   /* Closes the stream, releasing resources related to it. */
-  res = g_output_stream_close (ctf_descriptor->output_stream, NULL, &error);
-  if (FALSE == res) {
-    GST_ERROR ("Failed to close output stream");
+  if (NULL != ctf_descriptor->output_stream) {
+    res = g_output_stream_close (ctf_descriptor->output_stream, NULL, &error);
+    if (FALSE == res) {
+      GST_ERROR ("Failed to close output stream");
+    }
   }
 
   if (NULL != ctf_descriptor->socket_client) {

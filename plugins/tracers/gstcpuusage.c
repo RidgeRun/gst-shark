@@ -112,7 +112,7 @@ cpu_usage_thread_func (gpointer data)
     gst_cpu_usage_compute (cpu_usage);
 
     for (msg_id = 0; msg_id < cpu_num; ++msg_id) {
-      gst_tracer_log_trace (gst_structure_new ("cpu",
+      gst_tracer_log_trace (gst_structure_new ("cpuusage",
               "number", G_TYPE_INT, msg_id,
               "load", G_TYPE_DOUBLE, cpu_load[msg_id], NULL));
     }

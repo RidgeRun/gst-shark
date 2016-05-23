@@ -120,8 +120,9 @@ sched_time_compute (GstTracer * self, guint64 ts, GstPad * pad)
     g_string_printf (time_string, "%" GST_TIME_FORMAT,
         GST_TIME_ARGS (time_diff));
 
-    gst_tracer_log_trace (gst_structure_new (pad_name,
-            "scheduling-time", G_TYPE_STRING, time_string->str, NULL));
+    gst_tracer_log_trace (gst_structure_new ("scheduletime", "pad",
+            G_TYPE_STRING, pad_name, "time", G_TYPE_STRING, time_string->str,
+            NULL));
     do_print_scheduling_event (SCHED_TIME_EVENT_ID, pad_name, time_diff);
   }
   schedule_pad->previous_time = ts;
