@@ -267,6 +267,20 @@ AC_ARG_ENABLE(check,
       *) BUILD_CHECK=yes ;;
     esac
 ])
+
+dnl checking the OS to enable reading of CPU usage
+case $host_os in
+  linux*)
+    AC_DEFINE(GST_CPUUSAGE_ENABLE, 1, [Define this to enable the tracer for reading of the CPU usage])
+    AC_MSG_NOTICE([
+      The reading of the CPU usage is enabled
+    ]) ;;
+  *)
+    AC_MSG_WARN([
+      CPU Usage is not currently supported on your platform
+    ]) ;;
+esac
+
 dnl bit of a misnomer, but keep the conditional named like this so we don't
 dnl have to change too much elsewhere
 AM_CONDITIONAL(HAVE_CHECK, test "x$BUILD_CHECK" = "xyes")
