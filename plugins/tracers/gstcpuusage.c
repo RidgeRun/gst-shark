@@ -29,6 +29,7 @@
 #endif
 
 #include <unistd.h>
+#include <string.h>
 #include "gstcpuusage.h"
 #include "gstcpuusagecompute.h"
 #include "gstctf.h"
@@ -54,16 +55,21 @@ G_DEFINE_TYPE_WITH_CODE (GstCPUUsageTracer, gst_cpuusage_tracer,
 #define EVAL_TIME (10)
 #endif
 
-static const gchar cpuusage_metadata_event[] = "event {\n\
-	name = cpuusage;\n\
-	id = %d;\n\
-	stream_id = %d;\n\
-	fields := struct {\n\
-		integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } _cpunum;\n\
-		integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _cpuload;\n\
-	};\n\
+
+static const gchar cpuusage_metadata_event_header[] = "\
+event {\n\
+    name = cpuusage;\n\
+    id = %d;\n\
+    stream_id = %d;\n\
+    fields := struct {\n";
+
+static const gchar cpuusage_metadata_event_footer[] = "\
+    };\n\
 };\n\
 \n";
+
+static const gchar floating_point_event_field[] =
+"        floating_point { exp_dig = %lu; mant_dig = %d; byte_order = le; align = 8; } _cpu%d;\n";
 
 gpointer cpu_usage_thread_func (gpointer data);
 
@@ -88,7 +94,7 @@ cpu_usage_thread_func (gpointer data)
 {
   GstCPUUsageTracer *self;
   GstCPUUsage *cpu_usage;
-  gdouble *cpu_load;
+  gfloat *cpu_load;
   gint msg_id;
   gint cpu_num;
 
@@ -108,10 +114,10 @@ cpu_usage_thread_func (gpointer data)
     for (msg_id = 0; msg_id < cpu_num; ++msg_id) {
       gst_tracer_log_trace (gst_structure_new ("cpu",
               "number", G_TYPE_INT, msg_id,
-              "load", G_TYPE_DOUBLE, cpu_load[msg_id] * 100, NULL));
-      do_print_cpuusage_event (CPUUSAGE_EVENT_ID, msg_id,
-          (int) (cpu_load[msg_id] * 100));
+              "load", G_TYPE_DOUBLE, cpu_load[msg_id], NULL));
     }
+    do_print_cpuusage_event (CPUUSAGE_EVENT_ID, cpu_num,
+          cpu_load);
     sleep (1);
 
 #ifdef EVAL
@@ -126,12 +132,67 @@ cpu_usage_thread_func (gpointer data)
   return NULL;
 }
 
+static void create_metadata_event(gint cpu_num)
+{
+    gchar * mem;
+    gchar * mem_start;
+    gchar * event_header;
+    gsize str_size;
+       gsize mem_size;
+    gint msg_id;
+    gint number_of_bytes;
+
+    event_header = g_strdup_printf (cpuusage_metadata_event_header, CPUUSAGE_EVENT_ID, 0);
+
+    str_size = strlen(event_header);
+
+    /* Compute event description size
+     * size = header + fields + footer
+     */
+    mem_size = str_size + cpu_num * sizeof(floating_point_event_field) + sizeof(cpuusage_metadata_event_footer);
+    mem_start = g_malloc(mem_size);
+    mem = mem_start;
+
+    /* Add event header */
+    mem += g_strlcpy (mem,event_header,mem_size);
+    mem_size -= str_size;
+
+    /* Add event fields */
+    for (msg_id = 0; msg_id < cpu_num; ++msg_id)
+    {
+        /* floating point field definition:
+         * http://diamon.org/ctf/#spec4.1.7
+         */
+        number_of_bytes = g_snprintf (mem,
+            mem_size,
+            floating_point_event_field,
+            (sizeof(gfloat) * CHAR_BIT - FLT_MANT_DIG),
+            FLT_MANT_DIG,
+            msg_id);
+
+        mem += number_of_bytes;
+        mem_size -= number_of_bytes;
+    }
+
+    /* Add event footer */
+    g_strlcpy (mem,
+           cpuusage_metadata_event_footer,
+           mem_size);
+
+    /* Add event in metadata file */
+    add_metadata_event_struct (mem_start);
+    /* Free allocated memory */
+    g_free (mem_start);
+    g_free (event_header);
+}
+
 static void
 gst_cpuusage_tracer_init (GstCPUUsageTracer * self)
 {
-  gchar *metadata_event;
+  GstCPUUsage *cpu_usage;
 
-  gst_cpu_usage_init (&(self->cpu_usage));
+  cpu_usage = &self->cpu_usage;
+  gst_cpu_usage_init (cpu_usage);
 
   /* Create new thread to compute the cpu usage periodically */
   g_thread_new ("cpuusage_compute", cpu_usage_thread_func, self);
@@ -141,8 +202,5 @@ gst_cpuusage_tracer_init (GstCPUUsageTracer * self)
               "min", G_TYPE_DOUBLE, G_GUINT64_CONSTANT (0),
               "max", G_TYPE_DOUBLE, G_GUINT64_CONSTANT (100), NULL), NULL));
 
-  metadata_event =
-      g_strdup_printf (cpuusage_metadata_event, CPUUSAGE_EVENT_ID, 0);
-  add_metadata_event_struct (metadata_event);
-  g_free (metadata_event);
+  create_metadata_event(CPU_USAGE_ARRAY_LENGTH (cpu_usage));
 }
