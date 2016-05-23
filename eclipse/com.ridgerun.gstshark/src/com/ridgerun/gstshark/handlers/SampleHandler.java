@@ -1,4 +1,4 @@
-package com.ridgerun.gsttune.handlers;
+package com.ridgerun.gstshark.handlers;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -27,7 +27,7 @@ public class SampleHandler extends AbstractHandler {
 		IWorkbenchWindow window = HandlerUtil.getActiveWorkbenchWindowChecked(event);
 		MessageDialog.openInformation(
 				window.getShell(),
-				"Gsttune",
+				"GstShark",
 				"Hello, Eclipse world");
 		return null;
 	}

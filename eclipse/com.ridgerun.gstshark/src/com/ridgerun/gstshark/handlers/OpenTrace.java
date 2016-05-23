@@ -1,4 +1,4 @@
-package com.ridgerun.gsttune.handlers;
+package com.ridgerun.gstshark.handlers;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;

@@ -1,4 +1,4 @@
-package com.ridgerun.gsttune.handlers;
+package com.ridgerun.gstshark.handlers;
 
 import java.awt.Dimension;
 import java.io.File;
