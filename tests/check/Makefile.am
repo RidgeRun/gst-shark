@@ -39,7 +39,7 @@ AM_CFLAGS = \
 	$(GST_CHECK_FLAGS) \
 	-I$(top_srcdir)/plugins/tracers 
 LDADD =	\
-	$(top_builddir)/plugins/tracers/libgstshark-@GST_SHARK_API_VERSION@.la \
+	$(top_builddir)/plugins/tracers/libgstshark.la \
 	$(GST_SHARK_OBJ_LIBS) \
 	$(GST_LIBS) \
 	$(GST_CHECK_LIBS)

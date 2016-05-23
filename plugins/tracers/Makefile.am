@@ -1,13 +1,13 @@
-lib_LTLIBRARIES = libgstshark-@GST_SHARK_API_VERSION@.la
+lib_LTLIBRARIES = libgstshark.la
 
-libgstshark_@GST_SHARK_API_VERSION@_la_SOURCES = \
+libgstshark_la_SOURCES = \
 	gstdot.c \
 	gstcpuusagecompute.c \
 	gstproctimecompute.c \
 	gstctf.c \
 	gstparser.c
 
-libgstshark_@GST_SHARK_API_VERSION@_la_CFLAGS = \
+libgstshark_la_CFLAGS = \
 	$(GST_SHARK_OBJ_CFLAGS) \
 	$(GST_CFLAGS) \
 	$(GVC_CFLAGS)  \
@@ -15,15 +15,15 @@ libgstshark_@GST_SHARK_API_VERSION@_la_CFLAGS = \
 	-DGST_USE_UNSTABLE_API \
 	-Wno-undef
 
-libgstshark_@GST_SHARK_API_VERSION@_la_LIBADD = \
+libgstshark_la_LIBADD = \
 	$(GST_SHARK_OBJ_LIBS) \
 	$(GST_LIBS) \
 	$(GVC_LIBS) \
 	$(GIO_LIBS)
 
-plugin_LTLIBRARIES = libgstsharktracers-@GST_SHARK_API_VERSION@.la
+plugin_LTLIBRARIES = libgstsharktracers.la
 
-libgstsharktracers_@GST_SHARK_API_VERSION@_la_SOURCES = \
+libgstsharktracers_la_SOURCES = \
 	gstsharktracers.c \
 	gstgraphic.c \
 	gstcpuusage.c \
@@ -32,20 +32,20 @@ libgstsharktracers_@GST_SHARK_API_VERSION@_la_SOURCES = \
 	gstscheduletime.c \
 	gstframerate.c
 
-libgstsharktracers_@GST_SHARK_API_VERSION@_la_CFLAGS = \
+libgstsharktracers_la_CFLAGS = \
 	$(GST_SHARK_OBJ_CFLAGS) \
 	$(GST_CFLAGS) \
 	-DGST_USE_UNSTABLE_API
 
-libgstsharktracers_@GST_SHARK_API_VERSION@_la_LIBADD = \
+libgstsharktracers_la_LIBADD = \
 	$(GST_SHARK_OBJ_LIBS) \
 	$(GST_LIBS) \
-	libgstshark-@GST_SHARK_API_VERSION@.la
+	libgstshark.la
 
-libgstsharktracers_@GST_SHARK_API_VERSION@_la_LDFLAGS = \
+libgstsharktracers_la_LDFLAGS = \
 	$(GST_SHARK_PLUGIN_LDFLAGS)
 
-libgstsharktracers_@GST_SHARK_API_VERSION@_la_LIBTOOLFLAGS = \
+libgstsharktracers_la_LIBTOOLFLAGS = \
 	$(GST_SHARK_PLUGIN_LIBTOOLFLAGS)
 
 noinst_HEADERS = \
@@ -63,8 +63,8 @@ noinst_HEADERS = \
 
 CLEANFILES = *.gcno *.gcda *.gcov *.gcov.out
 
-%.c.gcov: .libs/libgstshark_@GST_SHARK_API_VERSION@_la-%.gcda %.c
+%.c.gcov: .libs/libgstshark_la-%.gcda %.c
 	$(GCOV) -b -f -o $^ > $@.out
 
-gcov: $(libgstshark_@GST_SHARK_API_VERSION@_la_SOURCES:=.gcov)
+gcov: $(libgstshark_la_SOURCES:=.gcov)
 

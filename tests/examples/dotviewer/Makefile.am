@@ -8,4 +8,4 @@ AM_CFLAGS = \
 LDADD = \
 	$(GST_LIBS) \
 	$(GVC_LIBS) \
-	$(top_builddir)/plugins/tracers/libgstshark-@GST_SHARK_API_VERSION@.la
+	$(top_builddir)/plugins/tracers/libgstshark.la

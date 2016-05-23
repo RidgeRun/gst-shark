@@ -55,6 +55,9 @@ G_DEFINE_TYPE_WITH_CODE (GstCPUUsageTracer, gst_cpuusage_tracer,
 #define EVAL_TIME (10)
 #endif
 
+#ifdef GST_STABLE_RELEASE
+static GstTracerRecord *tr_cpuusage;
+#endif
 
 static const gchar cpuusage_metadata_event_header[] = "\
 event {\n\
@@ -69,7 +72,7 @@ static const gchar cpuusage_metadata_event_footer[] = "\
 \n";
 
 static const gchar floating_point_event_field[] =
-"        floating_point { exp_dig = %lu; mant_dig = %d; byte_order = le; align = 8; } _cpu%d;\n";
+    "        floating_point { exp_dig = %lu; mant_dig = %d; byte_order = le; align = 8; } _cpu%d;\n";
 
 gpointer cpu_usage_thread_func (gpointer data);
 
@@ -95,8 +98,8 @@ cpu_usage_thread_func (gpointer data)
   GstCPUUsageTracer *self;
   GstCPUUsage *cpu_usage;
   gfloat *cpu_load;
-  gint msg_id;
-  gint cpu_num;
+  gint cpu_id;
+  gint cpu_load_len;
 
 #ifdef EVAL
   gint sec_counter;
@@ -106,18 +109,21 @@ cpu_usage_thread_func (gpointer data)
   cpu_usage = &self->cpu_usage;
 
   cpu_load = CPU_USAGE_ARRAY (cpu_usage);
-  cpu_num = CPU_USAGE_ARRAY_LENGTH (cpu_usage);
+  cpu_load_len = CPU_USAGE_ARRAY_LENGTH (cpu_usage);
 
   while (1) {
     gst_cpu_usage_compute (cpu_usage);
 
-    for (msg_id = 0; msg_id < cpu_num; ++msg_id) {
+    for (cpu_id = 0; cpu_id < cpu_load_len; ++cpu_id) {
+#ifdef GST_STABLE_RELEASE
+      gst_tracer_record_log (tr_cpuusage, cpu_id, cpu_load[cpu_id]);
+#else
       gst_tracer_log_trace (gst_structure_new ("cpuusage",
-              "number", G_TYPE_INT, msg_id,
-              "load", G_TYPE_DOUBLE, cpu_load[msg_id], NULL));
+              "number", G_TYPE_UINT, cpu_id,
+              "load", G_TYPE_DOUBLE, cpu_load[cpu_id], NULL));
+#endif
     }
-    do_print_cpuusage_event (CPUUSAGE_EVENT_ID, cpu_num,
-          cpu_load);
+    do_print_cpuusage_event (CPUUSAGE_EVENT_ID, cpu_load_len, cpu_load);
     sleep (1);
 
 #ifdef EVAL
@@ -132,58 +138,57 @@ cpu_usage_thread_func (gpointer data)
   return NULL;
 }
 
-static void create_metadata_event(gint cpu_num)
+static void
+create_metadata_event (gint cpu_num)
 {
-    gchar * mem;
-    gchar * mem_start;
-    gchar * event_header;
-    gsize str_size;
-       gsize mem_size;
-    gint msg_id;
-    gint number_of_bytes;
+  gchar *mem;
+  gchar *mem_start;
+  gchar *event_header;
+  gsize str_size;
+  gsize mem_size;
+  gint msg_id;
+  gint number_of_bytes;
 
-    event_header = g_strdup_printf (cpuusage_metadata_event_header, CPUUSAGE_EVENT_ID, 0);
+  event_header =
+      g_strdup_printf (cpuusage_metadata_event_header, CPUUSAGE_EVENT_ID, 0);
 
-    str_size = strlen(event_header);
+  str_size = strlen (event_header);
 
-    /* Compute event description size
-     * size = header + fields + footer
+  /* Compute event description size
+   * size = header + fields + footer
+   */
+  mem_size =
+      str_size + cpu_num * sizeof (floating_point_event_field) +
+      sizeof (cpuusage_metadata_event_footer);
+  mem_start = g_malloc (mem_size);
+  mem = mem_start;
+
+  /* Add event header */
+  mem += g_strlcpy (mem, event_header, mem_size);
+  mem_size -= str_size;
+
+  /* Add event fields */
+  for (msg_id = 0; msg_id < cpu_num; ++msg_id) {
+    /* floating point field definition:
+     * http://diamon.org/ctf/#spec4.1.7
      */
-    mem_size = str_size + cpu_num * sizeof(floating_point_event_field) + sizeof(cpuusage_metadata_event_footer);
-    mem_start = g_malloc(mem_size);
-    mem = mem_start;
+    number_of_bytes = g_snprintf (mem,
+        mem_size,
+        floating_point_event_field,
+        (sizeof (gfloat) * CHAR_BIT - FLT_MANT_DIG), FLT_MANT_DIG, msg_id);
 
-    /* Add event header */
-    mem += g_strlcpy (mem,event_header,mem_size);
-    mem_size -= str_size;
+    mem += number_of_bytes;
+    mem_size -= number_of_bytes;
+  }
 
-    /* Add event fields */
-    for (msg_id = 0; msg_id < cpu_num; ++msg_id)
-    {
-        /* floating point field definition:
-         * http://diamon.org/ctf/#spec4.1.7
-         */
-        number_of_bytes = g_snprintf (mem,
-            mem_size,
-            floating_point_event_field,
-            (sizeof(gfloat) * CHAR_BIT - FLT_MANT_DIG),
-            FLT_MANT_DIG,
-            msg_id);
+  /* Add event footer */
+  g_strlcpy (mem, cpuusage_metadata_event_footer, mem_size);
 
-        mem += number_of_bytes;
-        mem_size -= number_of_bytes;
-    }
-
-    /* Add event footer */
-    g_strlcpy (mem,
-           cpuusage_metadata_event_footer,
-           mem_size);
-
-    /* Add event in metadata file */
-    add_metadata_event_struct (mem_start);
-    /* Free allocated memory */
-    g_free (mem_start);
-    g_free (event_header);
+  /* Add event in metadata file */
+  add_metadata_event_struct (mem_start);
+  /* Free allocated memory */
+  g_free (mem_start);
+  g_free (event_header);
 }
 
 static void
@@ -194,13 +199,36 @@ gst_cpuusage_tracer_init (GstCPUUsageTracer * self)
   cpu_usage = &self->cpu_usage;
   gst_cpu_usage_init (cpu_usage);
 
-  /* Create new thread to compute the cpu usage periodically */
-  g_thread_new ("cpuusage_compute", cpu_usage_thread_func, self);
-
-  gst_tracer_log_trace (gst_structure_new ("cpuusage.class", "number", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_INT, "description", G_TYPE_STRING, "Core number", "flags", G_TYPE_STRING, "aggregated",     /* TODO: use gflags */
-              "min", G_TYPE_UINT, G_GINT64_CONSTANT (0), "max", G_TYPE_UINT, CPU_NUM_MAX, NULL), "load", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_DOUBLE, "description", G_TYPE_STRING, "Core load percentage", "flags", G_TYPE_STRING, "aggregated",       /* TODO: use gflags */
+#ifdef GST_STABLE_RELEASE
+  tr_cpuusage = gst_tracer_record_new ("cpuusage.class",
+      "number", GST_TYPE_STRUCTURE, gst_structure_new ("value",
+          "type", G_TYPE_GTYPE, G_TYPE_UINT,
+          "description", G_TYPE_STRING, "Core number",
+          "flags", GST_TYPE_TRACER_VALUE_FLAGS,
+          GST_TRACER_VALUE_FLAGS_AGGREGATED, "min", G_TYPE_UINT, 0, "max",
+          G_TYPE_UINT, CPU_NUM_MAX, NULL), "load", GST_TYPE_STRUCTURE,
+      gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_DOUBLE,
+          "description", G_TYPE_STRING, "Core load percentage [%]", "flags",
+          GST_TYPE_TRACER_VALUE_FLAGS, GST_TRACER_VALUE_FLAGS_AGGREGATED, "min",
+          G_TYPE_DOUBLE, 0, "max", G_TYPE_DOUBLE, 100, NULL), NULL);
+#else
+  gst_tracer_log_trace (gst_structure_new ("cpuusage.class",
+          "number", GST_TYPE_STRUCTURE, gst_structure_new ("value",
+              "type", G_TYPE_GTYPE, G_TYPE_UINT,
+              "description", G_TYPE_STRING, "Core number",
+              "flags", G_TYPE_STRING, "aggregated",
+              "min", G_TYPE_UINT, G_GUINT64_CONSTANT (0),
+              "max", G_TYPE_UINT, CPU_NUM_MAX, NULL),
+          "load", GST_TYPE_STRUCTURE, gst_structure_new ("value",
+              "type", G_TYPE_GTYPE, G_TYPE_DOUBLE,
+              "description", G_TYPE_STRING, "Core load percentage [%]",
+              "flags", G_TYPE_STRING, "aggregated",
               "min", G_TYPE_DOUBLE, G_GUINT64_CONSTANT (0),
               "max", G_TYPE_DOUBLE, G_GUINT64_CONSTANT (100), NULL), NULL));
+#endif
 
-  create_metadata_event(CPU_USAGE_ARRAY_LENGTH (cpu_usage));
+  create_metadata_event (CPU_USAGE_ARRAY_LENGTH (cpu_usage));
+
+  /* Create new thread to compute the cpu usage periodically */
+  g_thread_new ("cpuusage_compute", cpu_usage_thread_func, self);
 }

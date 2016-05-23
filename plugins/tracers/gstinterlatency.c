@@ -61,15 +61,19 @@ static GQuark latency_probe_id;
 static GQuark latency_probe_pad;
 static GQuark latency_probe_ts;
 
+#ifdef GST_STABLE_RELEASE
+static GstTracerRecord *tr_interlatency;
+#endif
+
 static const gchar interlatency_metadata_event[] = "event {\n\
-	name = interlatency;\n\
-	id = %d;\n\
-	stream_id = %d;\n\
-	fields := struct {\n\
-		string src;\n\
-		string element;\n\
-		integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _time;\n\
-	};\n\
+    name = interlatency;\n\
+    id = %d;\n\
+    stream_id = %d;\n\
+    fields := struct {\n\
+        string src;\n\
+        string element;\n\
+        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _time;\n\
+    };\n\
 };\n\
 \n";
 
@@ -132,11 +136,15 @@ log_latency (GstInterLatencyTracer * interlatency_tracer,
   time_string = interlatency_tracer->time_string;
   g_string_printf (time_string, "%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
+#ifdef GST_STABLE_RELEASE
+  gst_tracer_record_log (tr_interlatency, src, sink, time_string->str);
+#else
   /* TODO(ensonic): report format is still unstable */
   gst_tracer_log_trace (gst_structure_new ("interlatency",
           "pad", G_TYPE_STRING, src,
-          "pad", G_TYPE_STRING, sink, "time", G_TYPE_STRING, time_string->str,
-          NULL));
+          "pad", G_TYPE_STRING, sink,
+          "time", G_TYPE_STRING, time_string->str, NULL));
+#endif
   do_print_interlatency_event (INTERLATENCY_EVENT_ID, src, sink, time);
 
   g_free (src);
@@ -264,22 +272,34 @@ gst_interlatency_tracer_class_init (GstInterLatencyTracerClass * klass)
 
   /* announce trace formats */
   /* *INDENT-OFF* */
-  gst_tracer_log_trace (gst_structure_new ("latency.class",
-      "src", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-          "related-to", G_TYPE_STRING, "pad",  /* TODO: use genum */
+#ifdef GST_STABLE_RELEASE
+  tr_interlatency = gst_tracer_record_new ("interlatency.class",
+      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PAD,
           NULL),
-      "element", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-          "related-to", G_TYPE_STRING, "pad",  /* TODO: use genum */
+      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PAD,
           NULL),
-      "time", GST_TYPE_STRUCTURE, gst_structure_new ("value",
-          "type", G_TYPE_GTYPE, G_TYPE_UINT64,
-          "description", G_TYPE_STRING,
-              "time it took for the buffer to go from src to each element ns",
-          "flags", G_TYPE_STRING, "aggregated",  /* TODO: use gflags */
-          "min", G_TYPE_UINT64, G_GUINT64_CONSTANT (0),
-          "max", G_TYPE_UINT64, G_MAXUINT64,
+      "time", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PROCESS,
+          NULL),
+      NULL);
+#else
+  gst_tracer_log_trace (gst_structure_new ("interlatency.class",
+      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "related-to", G_TYPE_STRING, "pad", /* TODO: use genum */
+          NULL),
+      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "related-to", G_TYPE_STRING, "pad", /* TODO: use genum */
+          NULL),
+      "time", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "related-to", G_TYPE_STRING, "process", /* TODO: use genum */
           NULL),
       NULL));
+#endif
   /* *INDENT-ON* */
 }
 

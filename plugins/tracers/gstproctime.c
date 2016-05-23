@@ -52,14 +52,18 @@ G_DEFINE_TYPE_WITH_CODE (GstProcTimeTracer, gst_proctime_tracer,
 #define EVAL_TIME (10)
 #endif
 
+#ifdef GST_STABLE_RELEASE
+static GstTracerRecord *tr_proctime;
+#endif
+
 static const gchar proctime_metadata_event[] = "event {\n\
-	name = proctime;\n\
-	id = %d;\n\
-	stream_id = %d;\n\
-	fields := struct {\n\
+    name = proctime;\n\
+    id = %d;\n\
+    stream_id = %d;\n\
+    fields := struct {\n\
         string element; \n\
-		integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _time;\n\
-	};\n\
+        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _time;\n\
+    };\n\
 };\n\
 \n";
 
@@ -90,10 +94,13 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   if (NULL != name) {
     g_string_printf (time_string, "%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
-    gst_tracer_log_trace (gst_structure_new ("proctime", "element",
-            G_TYPE_STRING, name, "time", G_TYPE_STRING, time_string->str,
-            NULL));
-
+#ifdef GST_STABLE_RELEASE
+    gst_tracer_record_log (tr_proctime, name, time_string->str);
+#else
+    gst_tracer_log_trace (gst_structure_new ("proctime",
+            "element", G_TYPE_STRING, name,
+            "time", G_TYPE_STRING, time_string->str, NULL));
+#endif
     do_print_proctime_event (PROCTIME_EVENT_ID, name, time);
   }
 
@@ -153,10 +160,20 @@ gst_proctime_tracer_init (GstProcTimeTracer * self)
   gst_tracing_register_hook (tracer, "element-new",
       G_CALLBACK (do_element_new));
 
-  gst_tracer_log_trace (gst_structure_new ("proctime.class", "time",
-          GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE,
-              G_TYPE_INT64, "description", G_TYPE_STRING,
-              "Processing time (Microseconds)", NULL), NULL));
+#ifdef GST_STABLE_RELEASE
+  tr_proctime = gst_tracer_record_new ("proctime.class",
+      "element", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+          GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), "time", GST_TYPE_STRUCTURE,
+      gst_structure_new ("scope", "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+          GST_TRACER_VALUE_SCOPE_PROCESS, NULL), NULL);
+#else
+  gst_tracer_log_trace (gst_structure_new ("proctime.class", "element", GST_TYPE_STRUCTURE, gst_structure_new ("scope", "related-to", G_TYPE_STRING, "element", /* TODO: use genum */
+              NULL), "time", GST_TYPE_STRUCTURE, gst_structure_new ("scope", "related-to", G_TYPE_STRING, "process",    /* TODO: use genum */
+              NULL), NULL));
+#endif
 
   metadata_event =
       g_strdup_printf (proctime_metadata_event, PROCTIME_EVENT_ID, 0);
