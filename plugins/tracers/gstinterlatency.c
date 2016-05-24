@@ -141,8 +141,8 @@ log_latency (GstInterLatencyTracer * interlatency_tracer,
 #else
   /* TODO(ensonic): report format is still unstable */
   gst_tracer_log_trace (gst_structure_new ("interlatency",
-          "pad", G_TYPE_STRING, src,
-          "pad", G_TYPE_STRING, sink,
+          "from_pad", G_TYPE_STRING, src,
+          "to_pad", G_TYPE_STRING, sink,
           "time", G_TYPE_STRING, time_string->str, NULL));
 #endif
   do_print_interlatency_event (INTERLATENCY_EVENT_ID, src, sink, time);
@@ -274,11 +274,11 @@ gst_interlatency_tracer_class_init (GstInterLatencyTracerClass * klass)
   /* *INDENT-OFF* */
 #ifdef GST_STABLE_RELEASE
   tr_interlatency = gst_tracer_record_new ("interlatency.class",
-      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+      "from_pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
           "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PAD,
           NULL),
-      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+      "to_pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
           "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PAD,
           NULL),
@@ -289,10 +289,10 @@ gst_interlatency_tracer_class_init (GstInterLatencyTracerClass * klass)
       NULL);
 #else
   gst_tracer_log_trace (gst_structure_new ("interlatency.class",
-      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+      "from_pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
           "related-to", G_TYPE_STRING, "pad", /* TODO: use genum */
           NULL),
-      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+      "to_pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
           "related-to", G_TYPE_STRING, "pad", /* TODO: use genum */
           NULL),
       "time", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
