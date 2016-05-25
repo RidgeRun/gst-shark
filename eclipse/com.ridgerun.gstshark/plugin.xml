@@ -46,4 +46,13 @@
             sequence="M1+6">
       </key>
    </extension>
+   <extension
+         point="org.eclipse.ui.views">
+      <view
+            class="com.ridgerun.gstshark.GstSharkView"
+            id="com.ridgerun.gstshark.view"
+            name="gstsharkview"
+            restorable="true">
+      </view>
+   </extension>
 </plugin>
