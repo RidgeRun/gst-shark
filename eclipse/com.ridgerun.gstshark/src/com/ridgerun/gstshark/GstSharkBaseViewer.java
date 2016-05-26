@@ -18,64 +18,104 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 
 	private ITmfTrace _trace = null;
 	private String _event = null;
-	//private static final String FIELD_VALUE = "fakesink0_sink";
-	private static final String FIELD_VALUE = "queue0_sink";
-	
+
+
 	public GstSharkBaseViewer(Composite parent, String title, String xLabel, String yLabel, String event) {
 		super(parent, title, xLabel, yLabel);
 		_event = event;
 	}
-	
-	private ITmfEvent getNextFilteredByName(ITmfContext ctx, String name) {
+
+	private List<ITmfEvent> getEventsByFieldValue (String fieldName, String fieldValue, List<ITmfEvent> eventList ) {
+
+		List<ITmfEvent> eventListFiltered = new ArrayList<ITmfEvent>();
+
+		for (int event_idx = 0; event_idx  < eventList.size(); ++event_idx) {
+
+			if (!eventList.get(event_idx).getContent().getField("elementname").getValue().equals(fieldValue))
+			{
+				eventListFiltered.add(eventList.get(event_idx));
+			}
+		}
+		return eventListFiltered;
+	}
+
+
+	private List<String> getFieldValues (String fieldName,List<ITmfEvent> events) {
+		List<String> fieldValueList = new ArrayList<String>();
+		boolean value_in_list = false;
+		String fieldValue;
+
+		fieldValue = events.get(0).getContent().getField(fieldName).getValue().toString();
+		System.out.println(String.format("Field Value %s",fieldValue));
+		fieldValueList.add(fieldValue);
+
+		for (int event_idx = 1; event_idx  < events.size(); ++event_idx) {
+
+			fieldValue = events.get(event_idx).getContent().getField(fieldName).getValue().toString();
+			/* Verify if the value is already in the field values list */
+			for (int field_idx = 0; field_idx < fieldValueList.size(); ++field_idx) {
+
+				if ( 0 == fieldValueList.get(field_idx).compareTo(fieldValue))
+				{
+					// if
+					value_in_list = true;
+					break;
+				}
+			}
+			// Add the field value if the value was not already in the list
+			if (false == value_in_list)
+			{
+				fieldValueList.add(fieldValue);
+				System.out.println(String.format("Field Value %s",fieldValue));
+			}
+			value_in_list = false;
+		}
+
+		return fieldValueList;
+	}
+
+
+	private ITmfEvent getNextFilteredByEventName(ITmfContext ctx, String name) {
 		ITmfEvent event = null;
-		String eventName;
-		
+
 		do {
 			event = _trace.getNext(ctx);
-			// Avoid while verification if there is not a next event in the list 
+			// Avoid while verification if there is not a next event in the list
 			if (event == null)
 			{
 				return null;
 			}
-			eventName = event.getName().toString();
-			//System.out.println(String.format("Event name %s",eventName));
-			
-			// Avoid while verification if the event is init because this event doesn't have a field
-			if (0 == eventName.compareTo("init"))
-			{
-				continue;
-			}
-			
-	  } while (null == event || !event.getName().equals(name) || !event.getContent().getField("elementname").getValue().equals(FIELD_VALUE));
-	  //} while (null == event || !event.getName().equals(name) || !event.getContent().getField("elementname").getValue().equals("identity0_sink"));
+	  } while (null == event || !event.getName().equals(name));
 
 		return event;
 	}
-	
+
+
 	private List<ITmfEvent> getEventsInRange (long start, long end) {
 		List<ITmfEvent> events = new ArrayList<ITmfEvent>();
 		ITmfTimestamp startTimestamp = _trace.createTimestamp(start);
 		ITmfTimestamp endTimestamp = _trace.createTimestamp(end);
 		System.out.println(String.format("Range is %s to %s", startTimestamp.toString(), endTimestamp.toString()));
 		ITmfContext ctx = _trace.seekEvent(startTimestamp);
-		ITmfEvent event = getNextFilteredByName(ctx, _event);
+		ITmfEvent event = getNextFilteredByEventName(ctx, _event);
 
 		while (null != event && 0 > event.getTimestamp().compareTo(endTimestamp)) {
 			events.add(event);
-			event = getNextFilteredByName(ctx, _event);
+			event = getNextFilteredByEventName(ctx, _event);
 		}
-		if (events.size() > 0)
-		{
-		  System.out.println(String.format("Last ts %s - end %s", events.get(events.size()-1).getTimestamp(), endTimestamp));
-		}
-		
+		System.out.println(String.format("Last ts %s - end %s", events.get(events.size()-1).getTimestamp(), endTimestamp));
+
 		return events;
 	}
-	
-	
-	
+
+
 	@Override
 	protected void updateData(long start, long end, int nb, IProgressMonitor monitor) {
+		List <ITmfEvent> eventsListFilterdByName;
+		List <ITmfEvent> eventsListFilterdByFieldValue;
+		double x_values[];
+		double y_values[];
+
 		System.out.print(String.format("Starting time: %d\n", getStartTime()));
 		System.out.print(String.format("End time: %d\n", getEndTime()));
 		System.out.print(String.format("W Start time: %d\n", getWindowStartTime()));
@@ -87,56 +127,52 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 		System.out.println(end);
 		System.out.println(nb);
 		System.out.println(getTimeOffset());
-			
-		List <ITmfEvent> events = getEventsInRange(start, end);
-		
-		if (events.size() == 0)
+
+		// Filter all the event in the time range based in the name of the events
+		eventsListFilterdByName = getEventsInRange(start, end);
+
+		System.out.print(String.format("events_new.size: %d\n", eventsListFilterdByName.size()));
+
+		// Create a list of all the field values for the field name given
+		List<String> fieldValuesList = getFieldValues ("elementname",eventsListFilterdByName);
+
+		// Filter all the event in the time range based in the name field value
+		for (int fieldValueListIdx = 0; fieldValueListIdx < fieldValuesList.size(); ++fieldValueListIdx)
 		{
-			System.out.println("**** Event Size = 0");
-			//updateDisplay();
-			return;
+			eventsListFilterdByFieldValue =  getEventsByFieldValue ("elementname", fieldValuesList.get(fieldValueListIdx).toString(), eventsListFilterdByName );
+
+			System.out.print(String.format("eventsListFilterdByFieldValue.size: %d\n", eventsListFilterdByFieldValue.size()));
+
+			x_values = new double[eventsListFilterdByFieldValue.size()];
+			y_values = new double[eventsListFilterdByFieldValue.size()];
+
+			for (int i = 0; i < eventsListFilterdByFieldValue.size(); ++i) {
+				x_values[i] = eventsListFilterdByFieldValue.get(i).getTimestamp().getValue() - getTimeOffset();
+				y_values[i] = new Double(eventsListFilterdByFieldValue.get(i).getContent().getField("time").getValue().toString());
+			}
+			setXAxis(x_values);
+			setSeries(fieldValuesList.get(fieldValueListIdx).toString(), y_values);
+			updateDisplay();
 		}
-		
-		//events = resizeEventList (events, nb);
-		double xx[] = new double[events.size()];
-		double y[] = new double[events.size()];
-		System.out.println("===========================");
-		for (int i = 0; i < events.size(); ++i) {
-			xx[i] = events.get(i).getTimestamp().getValue() - getTimeOffset();
-			y[i] = new Double(events.get(i).getContent().getField("time").getValue().toString());
-
-			//System.out.print(String.format("%f - %f\n", x[i], y[i]));
-		}
-		double x[] = getXAxis(start, end, events.size());
-		System.out.println(String.format("%f - %f - %f", x[0], xx[0], y[0]));
-		//System.out.println(String.format("%f - %f - %f", x[x.length-1], xx[x.length-1], y[x.length-1]));
-
-		System.out.println("===========================");
-
-		//clearContent();
-		setXAxis(xx);
-		setSeries(FIELD_VALUE, y);
-		updateDisplay();
-	}	
+	}
 
 	@Override
 	public void loadTrace(ITmfTrace trace) {
 		super.loadTrace(trace);
 		_trace = trace;
 	}
-	
+
 	@Override
 	protected void createSeries() {
 		ITmfContext context = _trace.seekEvent(0);
 		ITmfEvent event = _trace.getNext(context);
 		while (event != null) {
 			if ("scheduling".equals(event.getName())) {
-				
-				
+
+
 				break;
 			}
 			event = _trace.getNext(context);
 		}
-		//addSeries("test1");
     }
 }
