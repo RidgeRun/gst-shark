@@ -17,9 +17,12 @@ import org.eclipse.tracecompass.tmf.ui.viewers.xycharts.linecharts.TmfCommonXLin
 public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 
 	private ITmfTrace _trace = null;
+	private String _event = null;
+	private static final String FIELD_VALUE = "fakesink0_sink";
 	
-	public GstSharkBaseViewer(Composite parent, String title, String xLabel, String yLabel) {
+	public GstSharkBaseViewer(Composite parent, String title, String xLabel, String yLabel, String event) {
 		super(parent, title, xLabel, yLabel);
+		_event = event;
 	}
 	
 	private ITmfEvent getNextFilteredByName(ITmfContext ctx, String name) {
@@ -27,7 +30,7 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 		
 		do {
 			event = _trace.getNext(ctx);
-	  } while (null == event || !event.getName().equals(name) || !event.getContent().getField("elementname").getValue().equals("fakesink0_sink"));
+	  } while (null == event || !event.getName().equals(name) || !event.getContent().getField("elementname").getValue().equals(FIELD_VALUE));
 	  //} while (null == event || !event.getName().equals(name) || !event.getContent().getField("elementname").getValue().equals("identity0_sink"));
 
 		return event;
@@ -39,13 +42,16 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 		ITmfTimestamp endTimestamp = _trace.createTimestamp(end);
 		System.out.println(String.format("Range is %s to %s", startTimestamp.toString(), endTimestamp.toString()));
 		ITmfContext ctx = _trace.seekEvent(startTimestamp);
-		ITmfEvent event = getNextFilteredByName(ctx, "scheduling");
+		ITmfEvent event = getNextFilteredByName(ctx, _event);
 
 		while (null != event && 0 > event.getTimestamp().compareTo(endTimestamp)) {
 			events.add(event);
-			event = getNextFilteredByName(ctx, "scheduling");
+			event = getNextFilteredByName(ctx, _event);
 		}
-		System.out.println(String.format("Last ts %s - end %s", events.get(events.size()-1).getTimestamp(), endTimestamp));
+		if (events.size() > 0)
+		{
+		  System.out.println(String.format("Last ts %s - end %s", events.get(events.size()-1).getTimestamp(), endTimestamp));
+		}
 		
 		return events;
 	}
@@ -65,11 +71,16 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 		System.out.println(end);
 		System.out.println(nb);
 		System.out.println(getTimeOffset());
-		
-		
-		
-		
+			
 		List <ITmfEvent> events = getEventsInRange(start, end);
+		
+		if (events.size() == 0)
+		{
+			System.out.println("**** Event Size = 0");
+			//updateDisplay();
+			return;
+		}
+		
 		//events = resizeEventList (events, nb);
 		double xx[] = new double[events.size()];
 		double y[] = new double[events.size()];

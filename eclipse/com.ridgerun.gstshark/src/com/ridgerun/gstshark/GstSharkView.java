@@ -32,7 +32,7 @@ public class GstSharkView extends TmfChartView {
 	@Override
 	protected TmfXYChartViewer createChartViewer(Composite arg0) {
 		// TODO Auto-generated method stub
-		return new GstSharkBaseViewer(arg0,"Scheduling time", "Event time", "time (nanoseconds)");
+		return new GstSharkBaseViewer(arg0,"Scheduling time", "Event time", "time (nanoseconds)","scheduling");
 	}
 	
 	@TmfSignalHandler
