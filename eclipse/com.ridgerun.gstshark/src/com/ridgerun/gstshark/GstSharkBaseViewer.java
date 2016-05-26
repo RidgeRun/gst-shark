@@ -18,7 +18,8 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 
 	private ITmfTrace _trace = null;
 	private String _event = null;
-	private static final String FIELD_VALUE = "fakesink0_sink";
+	//private static final String FIELD_VALUE = "fakesink0_sink";
+	private static final String FIELD_VALUE = "queue0_sink";
 	
 	public GstSharkBaseViewer(Composite parent, String title, String xLabel, String yLabel, String event) {
 		super(parent, title, xLabel, yLabel);
@@ -27,9 +28,24 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 	
 	private ITmfEvent getNextFilteredByName(ITmfContext ctx, String name) {
 		ITmfEvent event = null;
+		String eventName;
 		
 		do {
 			event = _trace.getNext(ctx);
+			// Avoid while verification if there is not a next event in the list 
+			if (event == null)
+			{
+				return null;
+			}
+			eventName = event.getName().toString();
+			//System.out.println(String.format("Event name %s",eventName));
+			
+			// Avoid while verification if the event is init because this event doesn't have a field
+			if (0 == eventName.compareTo("init"))
+			{
+				continue;
+			}
+			
 	  } while (null == event || !event.getName().equals(name) || !event.getContent().getField("elementname").getValue().equals(FIELD_VALUE));
 	  //} while (null == event || !event.getName().equals(name) || !event.getContent().getField("elementname").getValue().equals("identity0_sink"));
 
@@ -99,7 +115,7 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 
 		//clearContent();
 		setXAxis(xx);
-		setSeries("fakesink0_sink", y);
+		setSeries(FIELD_VALUE, y);
 		updateDisplay();
 	}	
 
