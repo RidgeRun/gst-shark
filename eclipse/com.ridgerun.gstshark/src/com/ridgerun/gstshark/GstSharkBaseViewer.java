@@ -26,6 +26,8 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 	}
 
 	private List<ITmfEvent> getEventsByFieldValue (String fieldName, String fieldValue, List<ITmfEvent> eventList ) {
+		
+		System.out.println(String.format("getEventsByFieldValue: %s %s",fieldName,fieldValue));
 
 		List<ITmfEvent> eventListFiltered = new ArrayList<ITmfEvent>();
 
@@ -45,8 +47,9 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 		boolean value_in_list = false;
 		String fieldValue;
 
+		System.out.println("getFieldValues:");
 		fieldValue = events.get(0).getContent().getField(fieldName).getValue().toString();
-		System.out.println(String.format("Field Value %s",fieldValue));
+		System.out.println(String.format("  %s",fieldValue));
 		fieldValueList.add(fieldValue);
 
 		for (int event_idx = 1; event_idx  < events.size(); ++event_idx) {
@@ -131,14 +134,18 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 		// Filter all the event in the time range based in the name of the events
 		eventsListFilterdByName = getEventsInRange(start, end);
 
-		System.out.print(String.format("events_new.size: %d\n", eventsListFilterdByName.size()));
+		System.out.print(String.format("eventsListFilterdByName.size: %d\n", eventsListFilterdByName.size()));
 
 		// Create a list of all the field values for the field name given
 		List<String> fieldValuesList = getFieldValues ("elementname",eventsListFilterdByName);
 
-		// Filter all the event in the time range based in the name field value
+		String fieldValueName;
+		// For each field value, create a series of data. 
 		for (int fieldValueListIdx = 0; fieldValueListIdx < fieldValuesList.size(); ++fieldValueListIdx)
 		{
+			fieldValueName = fieldValuesList.get(fieldValueListIdx).toString();
+			System.out.print(String.format("fieldValueName: %s\n", fieldValueName));
+			// Filter all the event in the time range based in the name field value
 			eventsListFilterdByFieldValue =  getEventsByFieldValue ("elementname", fieldValuesList.get(fieldValueListIdx).toString(), eventsListFilterdByName );
 
 			System.out.print(String.format("eventsListFilterdByFieldValue.size: %d\n", eventsListFilterdByFieldValue.size()));
@@ -147,7 +154,12 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 			y_values = new double[eventsListFilterdByFieldValue.size()];
 
 			for (int i = 0; i < eventsListFilterdByFieldValue.size(); ++i) {
-				x_values[i] = eventsListFilterdByFieldValue.get(i).getTimestamp().getValue() - getTimeOffset();
+				
+				eventsListFilterdByFieldValue.get(i).getTimestamp().toString();
+				
+				System.out.print(String.format("  timestamp[%d]: %s\n", i,eventsListFilterdByFieldValue.get(i).getTimestamp().toString() ));
+				
+				x_values[i] = eventsListFilterdByFieldValue.get(i).getTimestamp().getValue() - getTimeOffset() - 10000000000L*60*60*21;
 				y_values[i] = new Double(eventsListFilterdByFieldValue.get(i).getContent().getField("time").getValue().toString());
 			}
 			setXAxis(x_values);
