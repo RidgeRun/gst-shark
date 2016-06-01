@@ -33,7 +33,7 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 
 		for (int event_idx = 0; event_idx  < eventList.size(); ++event_idx) {
 
-			if (!eventList.get(event_idx).getContent().getField("elementname").getValue().equals(fieldValue))
+			if (eventList.get(event_idx).getContent().getField("elementname").getValue().equals(fieldValue))
 			{
 				eventListFiltered.add(eventList.get(event_idx));
 			}
