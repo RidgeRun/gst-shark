@@ -69,7 +69,7 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 			if (false == value_in_list)
 			{
 				fieldValueList.add(fieldValue);
-				System.out.println(String.format("Field Value %s",fieldValue));
+				System.out.println(String.format("  %s",fieldValue));
 			}
 			value_in_list = false;
 		}
@@ -106,7 +106,11 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 			events.add(event);
 			event = getNextFilteredByEventName(ctx, _event);
 		}
-		System.out.println(String.format("Last ts %s - end %s", events.get(events.size()-1).getTimestamp(), endTimestamp));
+		if ((null != events) && (0 < events.size() ))
+		{
+			System.out.println(String.format("events.size: %d", events.size()));
+			System.out.println(String.format("Last ts %s - end %s", events.get(events.size()-1).getTimestamp(), endTimestamp));
+		}
 
 		return events;
 	}
@@ -135,6 +139,12 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 		eventsListFilterdByName = getEventsInRange(start, end);
 
 		System.out.print(String.format("eventsListFilterdByName.size: %d\n", eventsListFilterdByName.size()));
+		
+		if ((null == eventsListFilterdByName) || (0 == eventsListFilterdByName.size()))
+		{
+			System.out.println("WARNING: Event list is null or empty");
+			return;
+		}
 
 		// Create a list of all the field values for the field name given
 		List<String> fieldValuesList = getFieldValues ("elementname",eventsListFilterdByName);
@@ -159,7 +169,10 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 				
 				System.out.print(String.format("  timestamp[%d]: %s\n", i,eventsListFilterdByFieldValue.get(i).getTimestamp().toString() ));
 				
-				x_values[i] = eventsListFilterdByFieldValue.get(i).getTimestamp().getValue() - getTimeOffset() - 10000000000L*60*60*21;
+				/* Remove offset
+				 * x_values[i] = eventsListFilterdByFieldValue.get(i).getTimestamp().getValue() - getTimeOffset() - 10000000000L*60*60*21;
+				 */
+				x_values[i] = eventsListFilterdByFieldValue.get(i).getTimestamp().getValue() - getTimeOffset();
 				y_values[i] = new Double(eventsListFilterdByFieldValue.get(i).getContent().getField("time").getValue().toString());
 			}
 			setXAxis(x_values);
