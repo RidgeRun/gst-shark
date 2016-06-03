@@ -65,12 +65,12 @@ event {
     stream_id = 0;
 };
 event {
-	name = scheduling;
-	id = 5;
-	stream_id = 0;
-	fields := struct {
-		string elementname;
-		integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _time;
-	};
+    name = framerate;
+    id = 4;
+    stream_id = 0;
+    fields := struct {
+        string padname;
+        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _fps;
+    };
 };
 
