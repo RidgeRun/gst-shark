@@ -54,5 +54,11 @@
             name="gstsharkview"
             restorable="true">
       </view>
+      <view
+             class="com.ridgerun.gstshark.GstSharkCpuUsageView"
+             id="com.ridgerun.gstshark.cpuusage"
+             name="gstsharkCpuUsage"
+             restorable="true">
+       </view>
    </extension>
 </plugin>
