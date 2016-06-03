@@ -33,7 +33,7 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 
 		for (int event_idx = 0; event_idx  < eventList.size(); ++event_idx) {
 
-			if (eventList.get(event_idx).getContent().getField("elementname").getValue().equals(fieldValue))
+			if (eventList.get(event_idx).getContent().getField("padname").getValue().equals(fieldValue))
 			{
 				eventListFiltered.add(eventList.get(event_idx));
 			}
@@ -147,7 +147,7 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 		}
 
 		// Create a list of all the field values for the field name given
-		List<String> fieldValuesList = getFieldValues ("elementname",eventsListFilterdByName);
+		List<String> fieldValuesList = getFieldValues ("padname",eventsListFilterdByName);
 
 		String fieldValueName;
 		// For each field value, create a series of data. 
@@ -156,7 +156,7 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 			fieldValueName = fieldValuesList.get(fieldValueListIdx).toString();
 			System.out.print(String.format("fieldValueName: %s\n", fieldValueName));
 			// Filter all the event in the time range based in the name field value
-			eventsListFilterdByFieldValue =  getEventsByFieldValue ("elementname", fieldValuesList.get(fieldValueListIdx).toString(), eventsListFilterdByName );
+			eventsListFilterdByFieldValue =  getEventsByFieldValue ("padname", fieldValuesList.get(fieldValueListIdx).toString(), eventsListFilterdByName );
 
 			System.out.print(String.format("eventsListFilterdByFieldValue.size: %d\n", eventsListFilterdByFieldValue.size()));
 
@@ -173,7 +173,7 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 				 * x_values[i] = eventsListFilterdByFieldValue.get(i).getTimestamp().getValue() - getTimeOffset() - 10000000000L*60*60*21;
 				 */
 				x_values[i] = eventsListFilterdByFieldValue.get(i).getTimestamp().getValue() - getTimeOffset();
-				y_values[i] = new Double(eventsListFilterdByFieldValue.get(i).getContent().getField("time").getValue().toString());
+				y_values[i] = new Double(eventsListFilterdByFieldValue.get(i).getContent().getField("fps").getValue().toString());
 			}
 			setXAxis(x_values);
 			setSeries(fieldValuesList.get(fieldValueListIdx).toString(), y_values);
@@ -192,7 +192,7 @@ public class GstSharkBaseViewer extends TmfCommonXLineChartViewer {
 		ITmfContext context = _trace.seekEvent(0);
 		ITmfEvent event = _trace.getNext(context);
 		while (event != null) {
-			if ("scheduling".equals(event.getName())) {
+			if ("framerate".equals(event.getName())) {
 
 
 				break;
