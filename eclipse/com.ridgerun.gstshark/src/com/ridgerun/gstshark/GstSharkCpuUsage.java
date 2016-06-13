@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import javax.swing.text.html.HTMLDocument.Iterator;
-
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.tracecompass.tmf.core.event.ITmfEvent;
@@ -26,60 +24,6 @@ public class GstSharkCpuUsage extends TmfCommonXLineChartViewer {
 		super(parent, title, xLabel, yLabel);
 		_event = event;
 	}
-
-	//private List<ITmfEvent> getEventsByFieldValue (String fieldName, List<ITmfEvent> eventList ) {
-		
-		//System.out.println(String.format("getEventsByFieldValue: %s",fieldName));
-
-		//List<ITmfEvent> eventListFiltered = new ArrayList<ITmfEvent>();
-
-		//for (int event_idx = 0; event_idx  < eventList.size(); ++event_idx) {
-
-			//if (eventList.get(event_idx).getContent().getField("padname").getValue().equals(fieldValue))
-			//{
-				//eventListFiltered.add(eventList.get(event_idx));
-			//}
-		//}
-		//return eventListFiltered;
-	//}
-
-
-	@SuppressWarnings("unused")
-	private List<String> getFieldValues (String fieldName,List<ITmfEvent> events) {
-		List<String> fieldValueList = new ArrayList<String>();
-		boolean value_in_list = false;
-		String fieldValue;
-
-		System.out.println("getFieldValues:");
-		fieldValue = events.get(0).getContent().getField(fieldName).getValue().toString();
-		System.out.println(String.format("  %s",fieldValue));
-		fieldValueList.add(fieldValue);
-
-		for (int event_idx = 1; event_idx  < events.size(); ++event_idx) {
-
-			fieldValue = events.get(event_idx).getContent().getField(fieldName).getValue().toString();
-			/* Verify if the value is already in the field values list */
-			for (int field_idx = 0; field_idx < fieldValueList.size(); ++field_idx) {
-
-				if ( 0 == fieldValueList.get(field_idx).compareTo(fieldValue))
-				{
-					// if
-					value_in_list = true;
-					break;
-				}
-			}
-			// Add the field value if the value was not already in the list
-			if (false == value_in_list)
-			{
-				fieldValueList.add(fieldValue);
-				System.out.println(String.format("  %s",fieldValue));
-			}
-			value_in_list = false;
-		}
-
-		return fieldValueList;
-	}
-
 
 	private ITmfEvent getNextFilteredByEventName(ITmfContext ctx, String name) {
 		ITmfEvent event = null;
@@ -122,11 +66,9 @@ public class GstSharkCpuUsage extends TmfCommonXLineChartViewer {
 	@Override
 	protected void updateData(long start, long end, int nb, IProgressMonitor monitor) {
 		List <ITmfEvent> eventsListFilterdByName;
-		//List <ITmfEvent> eventsListFilterdByFieldValue;
 		double x_values[];
 		double refx_values[] = new double[2];
 		double y_values[];
-		int cpu_num;
 		String fieldValueName;
 		ITmfTimestamp startTimestamp = _trace.createTimestamp(start);
 		ITmfTimestamp endTimestamp = _trace.createTimestamp(end);
@@ -157,19 +99,10 @@ public class GstSharkCpuUsage extends TmfCommonXLineChartViewer {
 			System.out.println("WARNING: Event list is null or empty");
 			return;
 		}
-
-		// Create a list of all the field values for the field name given
-		//List<String> fieldValuesList = getFieldValues ("padname",eventsListFilterdByName);
-		List<String> fieldValuesList = new ArrayList<String>();
-		/* TODO: create the list dynamically */
-		//fieldValuesList.add("cpu0");
-		//fieldValuesList.add("cpu1");
-		//fieldValuesList.add("cpu2");
-		//fieldValuesList.add("cpu3");
-		
+	
 		System.out.print(String.format("eventsListFilterdByFieldValue[0] name: %s\n", eventsListFilterdByName.get(0).getName()));
 		
-		// Create a list of the amount of cpus reported by an event
+		// Create a list of the amount of cpus reported by event
 		
 		Collection<String> fieldNamesColl;
 		
@@ -179,25 +112,11 @@ public class GstSharkCpuUsage extends TmfCommonXLineChartViewer {
 		
 		java.util.Iterator<String> itr =  fieldNamesColl.iterator();
 		
+		// For each field name, create a series of data. 
 		while(itr.hasNext())
-		{		
-			//System.out.print(String.format("fieldNames: %s\n", itr.next()));
-			fieldValuesList.add(itr.next());
-		}
-		
-		for(cpu_num = 0; cpu_num < fieldValuesList.size(); ++cpu_num)
 		{
-			System.out.print(String.format("fieldNames: %s\n", fieldValuesList.get(cpu_num)));
-		}
-		
-		
-		// For each field value, create a series of data. 
-		for (int fieldValueListIdx = 0; fieldValueListIdx < fieldValuesList.size(); ++fieldValueListIdx)
-		{
-			fieldValueName = fieldValuesList.get(fieldValueListIdx).toString();
+			fieldValueName = itr.next();
 			System.out.print(String.format("fieldValueName: %s\n", fieldValueName));
-
-			System.out.print(String.format("eventsListFilterdByFieldValue.size: %d\n", eventsListFilterdByName.size()));
 
 			x_values = new double[eventsListFilterdByName.size()];
 			y_values = new double[eventsListFilterdByName.size()];
@@ -205,10 +124,10 @@ public class GstSharkCpuUsage extends TmfCommonXLineChartViewer {
 			for (int i = 0; i < eventsListFilterdByName.size(); ++i) {
 				/* Remove offset with 10000000000L*60*60*21 */
 				x_values[i] = eventsListFilterdByName.get(i).getTimestamp().getValue() - getTimeOffset() - 10000000000L*60*60*21;
-				y_values[i] = new Double(eventsListFilterdByName.get(i).getContent().getField(fieldValuesList.get(fieldValueListIdx).toString()).getValue().toString());
+				y_values[i] = new Double(eventsListFilterdByName.get(i).getContent().getField(fieldValueName).getValue().toString());
 			}
 			setXAxis(x_values);
-			setSeries(fieldValuesList.get(fieldValueListIdx).toString(), y_values);
+			setSeries(fieldValueName, y_values);
 			updateDisplay();
 		}
 	}
