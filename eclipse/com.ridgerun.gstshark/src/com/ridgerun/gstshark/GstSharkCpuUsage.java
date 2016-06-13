@@ -3,8 +3,10 @@ package com.ridgerun.gstshark;
 
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
+import javax.swing.text.html.HTMLDocument.Iterator;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.swt.widgets.Composite;
@@ -122,7 +124,12 @@ public class GstSharkCpuUsage extends TmfCommonXLineChartViewer {
 		List <ITmfEvent> eventsListFilterdByName;
 		//List <ITmfEvent> eventsListFilterdByFieldValue;
 		double x_values[];
+		double refx_values[] = new double[2];
 		double y_values[];
+		int cpu_num;
+		String fieldValueName;
+		ITmfTimestamp startTimestamp = _trace.createTimestamp(start);
+		ITmfTimestamp endTimestamp = _trace.createTimestamp(end);
 
 		System.out.print(String.format("Starting time: %d\n", getStartTime()));
 		System.out.print(String.format("End time: %d\n", getEndTime()));
@@ -143,6 +150,10 @@ public class GstSharkCpuUsage extends TmfCommonXLineChartViewer {
 		
 		if ((null == eventsListFilterdByName) || (0 == eventsListFilterdByName.size()))
 		{
+			refx_values[0] = startTimestamp.getValue() - getTimeOffset() - 10000000000L*60*60*21;
+			refx_values[1] = endTimestamp.getValue() - getTimeOffset() - 10000000000L*60*60*21;
+			setXAxis(refx_values);
+			updateDisplay();
 			System.out.println("WARNING: Event list is null or empty");
 			return;
 		}
@@ -151,12 +162,35 @@ public class GstSharkCpuUsage extends TmfCommonXLineChartViewer {
 		//List<String> fieldValuesList = getFieldValues ("padname",eventsListFilterdByName);
 		List<String> fieldValuesList = new ArrayList<String>();
 		/* TODO: create the list dynamically */
-		fieldValuesList.add("cpu0");
-		fieldValuesList.add("cpu1");
-		fieldValuesList.add("cpu2");
-		fieldValuesList.add("cpu3");
-
-		String fieldValueName;
+		//fieldValuesList.add("cpu0");
+		//fieldValuesList.add("cpu1");
+		//fieldValuesList.add("cpu2");
+		//fieldValuesList.add("cpu3");
+		
+		System.out.print(String.format("eventsListFilterdByFieldValue[0] name: %s\n", eventsListFilterdByName.get(0).getName()));
+		
+		// Create a list of the amount of cpus reported by an event
+		
+		Collection<String> fieldNamesColl;
+		
+		fieldNamesColl = eventsListFilterdByName.get(0).getContent().getFieldNames();
+		
+		System.out.print(String.format("fieldNamesColl.size: %d\n", fieldNamesColl.size()));
+		
+		java.util.Iterator<String> itr =  fieldNamesColl.iterator();
+		
+		while(itr.hasNext())
+		{		
+			//System.out.print(String.format("fieldNames: %s\n", itr.next()));
+			fieldValuesList.add(itr.next());
+		}
+		
+		for(cpu_num = 0; cpu_num < fieldValuesList.size(); ++cpu_num)
+		{
+			System.out.print(String.format("fieldNames: %s\n", fieldValuesList.get(cpu_num)));
+		}
+		
+		
 		// For each field value, create a series of data. 
 		for (int fieldValueListIdx = 0; fieldValueListIdx < fieldValuesList.size(); ++fieldValueListIdx)
 		{
