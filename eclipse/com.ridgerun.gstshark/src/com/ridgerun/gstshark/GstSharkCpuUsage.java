@@ -18,6 +18,8 @@ public class GstSharkCpuUsage extends TmfCommonXLineChartViewer {
 
 	private ITmfTrace _trace = null;
 	private String _event = null;
+	// Minimal time displayed on plot
+	private static final long MIN_TIME = 2000000000; 
 
 
 	public GstSharkCpuUsage(Composite parent, String title, String xLabel, String yLabel, String event) {
@@ -68,6 +70,7 @@ public class GstSharkCpuUsage extends TmfCommonXLineChartViewer {
 		List <ITmfEvent> eventsListFilterdByName;
 		double x_values[];
 		double refx_values[] = new double[2];
+		double refy_values[] = new double[2];
 		double y_values[];
 		String fieldValueName;
 		ITmfTimestamp startTimestamp = _trace.createTimestamp(start);
@@ -86,17 +89,27 @@ public class GstSharkCpuUsage extends TmfCommonXLineChartViewer {
 		System.out.println(getTimeOffset());
 
 		// Filter all the event in the time range based in the name of the events
+		
+		if (end < MIN_TIME)
+		{
+			end = MIN_TIME;
+		}
+		
 		eventsListFilterdByName = getEventsInRange(start, end);
 
 		System.out.print(String.format("eventsListFilterdByName.size: %d\n", eventsListFilterdByName.size()));
 		
-		if ((null == eventsListFilterdByName) || (0 == eventsListFilterdByName.size()))
+		if ((null == eventsListFilterdByName) || (1 >= eventsListFilterdByName.size()))
 		{
-			refx_values[0] = startTimestamp.getValue() - getTimeOffset() - 10000000000L*60*60*21;
-			refx_values[1] = endTimestamp.getValue() - getTimeOffset() - 10000000000L*60*60*21;
+			System.out.print(String.format("startTimestamp.getValue() %d %s\n",startTimestamp.getValue(),startTimestamp.toString() ));
+			System.out.print(String.format("endTimestamp.getValue()   %d %s\n",endTimestamp.getValue(),endTimestamp.toString() ));
+			System.out.print(String.format("getTimeOffset()           %d\n",getTimeOffset() ));
+			
+			refx_values[0] = startTimestamp.getValue() - 10000000000L*60*60*21;
+			refx_values[1] = endTimestamp.getValue() - 10000000000L*60*60*21;
 			setXAxis(refx_values);
-			updateDisplay();
-			System.out.println("WARNING: Event list is null or empty");
+			
+			System.out.println("WARNING: Event list is null empty or there is only one event ");
 			return;
 		}
 	
