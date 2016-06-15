@@ -71,7 +71,7 @@ static const gchar framerate_metadata_event[] = "event {\n\
     id = %d;\n\
     stream_id = %d;\n\
     fields := struct {\n\
-        string padname;\n\
+        string pad;\n\
         integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _fps;\n\
     };\n\
 };\n\
