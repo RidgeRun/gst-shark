@@ -59,6 +59,8 @@ G_DEFINE_TYPE_WITH_CODE (GstFramerateTracer, gst_framerate_tracer,
 static GstTracerRecord *tr_framerate;
 #endif
 
+static void create_metadata_event (GHashTable *);
+
 typedef struct _GstFramerateHash GstFramerateHash;
 
 struct _GstFramerateHash
@@ -67,16 +69,19 @@ struct _GstFramerateHash
   guint counter;
 };
 
-static const gchar framerate_metadata_event[] = "event {\n\
+static const gchar framerate_metadata_event_header[] = "event {\n\
     name = framerate;\n\
     id = %d;\n\
     stream_id = %d;\n\
-    fields := struct {\n\
-        string padname;\n\
-        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _fps;\n\
+    fields := struct {\n";
+
+static const gchar framerate_metadata_event_footer[] = "\
     };\n\
 };\n\
 \n";
+
+static const gchar framerate_metadata_event_field[] =
+    "      integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } %s;\n";
 
 static void
 log_framerate (GstDebugCategory * cat, const gchar * fmt, ...)
@@ -98,6 +103,11 @@ do_print_framerate (gpointer * data)
 
   self = (GstFramerateTracer *) data;
 
+  if (!self->metadata_written) {
+    create_metadata_event (self->frame_counters);
+    self->metadata_written = TRUE;
+  }
+
   /* Using the iterator functions to go through the Hash table and print the framerate 
      of every element stored */
   g_hash_table_iter_init (&iter, self->frame_counters);
@@ -112,6 +122,7 @@ do_print_framerate (gpointer * data)
             "pad", G_TYPE_STRING, pad_table->fullname,
             "fps", G_TYPE_UINT, pad_table->counter, NULL));
 #endif
+
     do_print_framerate_event (FPS_EVENT_ID, pad_table->fullname,
         pad_table->counter);
     pad_table->counter = 0;
@@ -191,6 +202,22 @@ do_pad_push_buffer_pre (GstFramerateTracer * self, guint64 ts, GstPad * pad,
 }
 
 static void
+do_pad_push_list_pre (GstFramerateTracer * self, GstClockTime ts, GstPad * pad,
+    GstBufferList * list)
+{
+  // We aren't doing anything with the buffer, we can reuse push_buffer using NULL
+  do_pad_push_buffer_pre (self, ts, pad, NULL);
+}
+
+static void
+do_pad_pull_range_pre (GstFramerateTracer * self, GstClockTime ts, GstPad * pad,
+    guint64 offset, guint size)
+{
+  // We aren't doing anything with the buffer, we can reuse push_buffer using NULL
+  do_pad_push_buffer_pre (self, ts, pad, NULL);
+}
+
+static void
 do_element_change_state_post (GstFramerateTracer * self, guint64 ts,
     GstElement * element, GstStateChange transition,
     GstStateChangeReturn result)
@@ -236,17 +263,16 @@ gst_framerate_tracer_class_init (GstFramerateTracerClass * klass)
   gobject_class->finalize = gst_framerate_tracer_finalize;
 }
 
-
 static void
 gst_framerate_tracer_init (GstFramerateTracer * self)
 {
   GstTracer *tracer = GST_TRACER (self);
-  gchar *metadata_event;
 
   self->frame_counters =
       g_hash_table_new_full (g_direct_hash, g_direct_equal,
       do_destroy_hashtable_key, do_destroy_hashtable_value);
   self->start_timer = FALSE;
+  self->metadata_written = FALSE;
 
   gst_tracing_register_hook (tracer, "pad-push-pre",
       G_CALLBACK (do_pad_push_buffer_pre));
@@ -282,8 +308,34 @@ gst_framerate_tracer_init (GstFramerateTracer * self)
               "min", G_TYPE_UINT, G_GUINT64_CONSTANT (0),
               "max", G_TYPE_UINT, G_GUINT64_CONSTANT (5000), NULL), NULL));
 #endif
+}
 
-  metadata_event = g_strdup_printf (framerate_metadata_event, FPS_EVENT_ID, 0);
-  add_metadata_event_struct (metadata_event);
-  g_free (metadata_event);
+static void
+create_metadata_event (GHashTable * frame_counters)
+{
+  GString *builder;
+  GHashTableIter iter;
+  gpointer key, value;
+  gchar *cstring;
+
+  builder = g_string_new (NULL);
+
+  g_string_printf (builder, framerate_metadata_event_header, FPS_EVENT_ID, 0);
+
+  g_hash_table_iter_init (&iter, frame_counters);
+  while (g_hash_table_iter_next (&iter, &key, &value)) {
+    g_string_append_printf (builder, framerate_metadata_event_field,
+        ((GstFramerateHash *) value)->fullname);
+  }
+
+  /* Add event footer */
+  g_string_append (builder, framerate_metadata_event_footer);
+
+  cstring = g_string_free (builder, FALSE);
+
+  /* Add event in metadata file */
+  add_metadata_event_struct (cstring);
+  g_free (cstring);
+
+
 }

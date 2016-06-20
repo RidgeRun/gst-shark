@@ -49,6 +49,7 @@ struct _GstFramerateTracer
 
   GHashTable *frame_counters;
   gboolean start_timer;
+  gboolean metadata_written;
 };
 
 struct _GstFramerateTracerClass
