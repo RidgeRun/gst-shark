@@ -20,10 +20,11 @@
 
 /**
  * SECTION: gstframerate
- * @short_description: shows the framerate on every SRC pad of the pipeline
+ * @short_description: shows the framerate on every pad in the pipeline.
  *
  * A tracing module that displays the amount of frames per second on every
- * SRC pad of every element of the running pipeline.
+ * SRC or SINK pad of every element of the running pipeline, depending on 
+ * the scheduling mode.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -249,6 +250,10 @@ gst_framerate_tracer_init (GstFramerateTracer * self)
 
   gst_tracing_register_hook (tracer, "pad-push-pre",
       G_CALLBACK (do_pad_push_buffer_pre));
+  gst_tracing_register_hook (tracer, "pad-push-list-pre",
+      G_CALLBACK (do_pad_push_list_pre));
+  gst_tracing_register_hook (tracer, "pad-pull-range-pre",
+      G_CALLBACK (do_pad_pull_range_pre));
 
   gst_tracing_register_hook (tracer, "element-change-state-post",
       G_CALLBACK (do_element_change_state_post));
