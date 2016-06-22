@@ -59,7 +59,8 @@ G_DEFINE_TYPE_WITH_CODE (GstFramerateTracer, gst_framerate_tracer,
 static GstTracerRecord *tr_framerate;
 #endif
 
-static void create_metadata_event (GHashTable *);
+static gchar *make_char_array_valid (gchar * src);
+static void create_metadata_event (GHashTable * table);
 
 typedef struct _GstFramerateHash GstFramerateHash;
 
@@ -100,8 +101,15 @@ do_print_framerate (gpointer * data)
   GHashTableIter iter;
   gpointer key, value;
   GstFramerateHash *pad_table;
+  guint size;
+  guint64 *pad_counts;
+  guint32 pad_idx;
 
-  self = (GstFramerateTracer *) data;
+  self = GST_FRAMERATE_TRACER (data);
+
+  size = g_hash_table_size (self->frame_counters);
+  pad_counts = g_malloc (size * sizeof (guint64));
+  pad_idx = 0;
 
   if (!self->metadata_written) {
     create_metadata_event (self->frame_counters);
@@ -123,13 +131,16 @@ do_print_framerate (gpointer * data)
             "fps", G_TYPE_UINT, pad_table->counter, NULL));
 #endif
 
-    do_print_framerate_event (FPS_EVENT_ID, pad_table->fullname,
-        pad_table->counter);
+    pad_counts[pad_idx] = pad_table->counter;
+    pad_idx++;
+
     pad_table->counter = 0;
     if (!self->start_timer) {
       return FALSE;
     }
   }
+  do_print_framerate_event (FPS_EVENT_ID, size, pad_counts);
+  g_free (pad_counts);
 
   return TRUE;
 }
@@ -193,7 +204,7 @@ do_pad_push_buffer_pre (GstFramerateTracer * self, guint64 ts, GstPad * pad,
     /* Reserving memory space for every structure that is going to be stored as a 
        value in the Hash table */
     pad_frames = g_malloc (sizeof (GstFramerateHash));
-    pad_frames->fullname = g_strdup (fullname);
+    pad_frames->fullname = make_char_array_valid (g_strdup (fullname));
     pad_frames->counter = value;
     g_hash_table_insert (self->frame_counters, pad, (gpointer) pad_frames);
   }
@@ -338,4 +349,20 @@ create_metadata_event (GHashTable * frame_counters)
   g_free (cstring);
 
 
+}
+
+static gchar *
+make_char_array_valid (gchar * src)
+{
+  gchar *c;
+
+  g_return_val_if_fail (src, NULL);
+
+  for (c = src; '\0' != *c; c++) {
+    if ('-' == *c) {
+      *c = '_';
+    }
+  }
+
+  return src;
 }
