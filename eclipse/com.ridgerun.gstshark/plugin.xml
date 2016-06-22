@@ -60,5 +60,11 @@
              name="gstsharkCpuUsage"
              restorable="true">
        </view>
+      <view
+            class="com.ridgerun.gstshark.GstSharkFrameRateView"
+            id="com.ridgerun.gstshark.framerate"
+            name="gstsharkFrameRate"
+            restorable="true">
+      </view>
    </extension>
 </plugin>
