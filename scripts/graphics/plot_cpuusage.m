@@ -88,7 +88,6 @@ end
 
 figure('Name','CPU usage')
 
-
 # Show plot legend
 switch CPU_USAGE_AVERAGE
     case 0
@@ -105,6 +104,8 @@ switch CPU_USAGE_AVERAGE
       legend(cpu_name_list)
 end
 
+# Calculate the greatest time value
+timestamp_max = max(max(timestamp_mat));
 
 tracer.cpuusage.timestamp_mat = timestamp_mat;
 tracer.cpuusage.cpu = value_mat;
@@ -113,7 +114,4 @@ tracer.cpuusage.cpu_name_list = cpu_name_list;
 title('CPU usage','fontsize',FONTSIZE)
 xlabel('time (seconds)','fontsize',FONTSIZE)
 ylabel('Usage (%)','fontsize',FONTSIZE)
-
-
-
-
+xlim([0,timestamp_max])
