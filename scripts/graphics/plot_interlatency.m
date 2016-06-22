@@ -96,4 +96,8 @@ ylabel('time (nanoseconds)','fontsize',FONTSIZE)
 legend(pad_name_list)
 xlim([0,timestamp_max])
 
+tracer.interlatency.timestamp_mat = timestamp_mat;
+tracer.interlatency.time_mat = time_mat;
+tracer.interlatency.pad_name_list = pad_name_list;
+
 fclose(fileID);

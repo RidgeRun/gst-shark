@@ -22,3 +22,6 @@ ylabel('time (nanoseconds)','fontsize',FONTSIZE)
 legend(element_name_list)
 xlim([0,timestamp_max])
 
+tracer.scheduling.timestamp_mat = timestamp_mat;
+tracer.scheduling.time_mat = time_mat;
+tracer.scheduling.pad_name_list = element_name_list;

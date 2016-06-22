@@ -25,7 +25,3 @@ xlim([0,timestamp_max])
 tracer.framerate.timestamp_mat = timestamp_mat;
 tracer.framerate.fps_mat = fps_mat;
 tracer.framerate.element_name_list = element_name_list;
-
-
-%~ print tracer -dpdf -append
-
