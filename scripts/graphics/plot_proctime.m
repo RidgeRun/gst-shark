@@ -11,17 +11,6 @@ FALSE = 0;
 
 [element_name_list, timestamp_mat, time_mat] = load_serie_timestamp_value('proctime.mat');
 
-# Calculate the greatest time value
-timestamp_max = max(max(timestamp_mat));
-
-figure('Name','Processing time')
-plot(timestamp_mat',time_mat','linewidth',LINEWIDTH)
-title('Processing time','fontsize',FONTSIZE)
-xlabel('time (seconds)','fontsize',FONTSIZE)
-ylabel('time (nanoseconds)','fontsize',FONTSIZE)
-legend(element_name_list)
-xlim([0,timestamp_max])
-
 tracer.proctime.timestamp_mat = timestamp_mat;
 tracer.proctime.time_mat = time_mat;
 tracer.proctime.element_name_list = element_name_list;

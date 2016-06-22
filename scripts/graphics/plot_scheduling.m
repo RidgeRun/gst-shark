@@ -11,17 +11,6 @@ FALSE = 0;
 
 [element_name_list, timestamp_mat, time_mat] = load_serie_timestamp_value('scheduling.mat');
 
-# Calculate the greatest time value
-timestamp_max = max(max(timestamp_mat));
-
-figure('Name','Scheduling')
-plot(timestamp_mat',time_mat','linewidth',LINEWIDTH)
-title('Scheduling','fontsize',FONTSIZE)
-xlabel('time (seconds)','fontsize',FONTSIZE)
-ylabel('time (nanoseconds)','fontsize',FONTSIZE)
-legend(element_name_list)
-xlim([0,timestamp_max])
-
 tracer.scheduling.timestamp_mat = timestamp_mat;
 tracer.scheduling.time_mat = time_mat;
 tracer.scheduling.pad_name_list = element_name_list;

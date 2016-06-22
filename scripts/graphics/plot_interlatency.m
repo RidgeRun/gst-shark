@@ -85,17 +85,6 @@ while (count == 1)
     end
 end
 
-# Calculate the greatest time value
-timestamp_max = max(max(timestamp_mat));
-
-figure('Name','Interlatency')
-plot(timestamp_mat',time_mat','linewidth',LINEWIDTH)
-title('Interlatency','fontsize',FONTSIZE)
-xlabel('time (seconds)','fontsize',FONTSIZE)
-ylabel('time (nanoseconds)','fontsize',FONTSIZE)
-legend(pad_name_list)
-xlim([0,timestamp_max])
-
 tracer.interlatency.timestamp_mat = timestamp_mat;
 tracer.interlatency.time_mat = time_mat;
 tracer.interlatency.pad_name_list = pad_name_list;
