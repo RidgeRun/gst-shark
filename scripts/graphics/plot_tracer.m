@@ -155,9 +155,11 @@ function plot_tracer(tracer,savefig,format)
     end
     
     if ((1 == isfield(tracer,'cpuusage')) && (1 == isfield(tracer,'framerate')))
-    # Create legend name list 
+        # Create legend name list 
         legend_list = tracer.framerate.element_name_list;
         legend_list{end+1} = tracer.cpuusage.cpu_name_list{1};
+
+        timestamp_max = max(max(max(tracer.framerate.timestamp_mat)),max(tracer.cpuusage.timestamp_mat(1,:)));
 
         figure('Name','Frame rate and CPU usage')
         [hAx,hLine1,hLine2] = plotyy(tracer.framerate.timestamp_mat',tracer.framerate.fps_mat',tracer.cpuusage.timestamp_mat(1,:),tracer.cpuusage.cpu_mat(1,:));
@@ -167,6 +169,19 @@ function plot_tracer(tracer,savefig,format)
         xlabel('time (seconds)','fontsize',FONTSIZE)
         ylabel(hAx(1),'FPS','fontsize',FONTSIZE)
         ylabel(hAx(2),'CPU usage (%)','fontsize',FONTSIZE)
+        xlim([0,timestamp_max])
+
+        if (TRUE == savefig)
+            disp('Save cpuusage vs framerate figure...')
+            switch format
+                case 'pdf'
+                    print tracer -dpdf -append
+                case 'png'
+                    print('cpuusage_framerate','-dpng');
+                otherwise
+                    printf('octave: WARN: %s is not supported',format)
+            end
+        end
     end
 
 end
