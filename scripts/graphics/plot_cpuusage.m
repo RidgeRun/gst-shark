@@ -2,12 +2,6 @@
 
 # Configuration
 RESULT = 0;
-FONTSIZE = 14;
-LINEWIDTH = 1;
-# CPU_USAGE_AVERAGE = 0 Doesn't displays the average CPU usage.
-# CPU_USAGE_AVERAGE = 1 Displays also the average CPU usage.
-# CPU_USAGE_AVERAGE = 2 Displays only the average CPU usage.
-CPU_USAGE_AVERAGE = 1;
 
 # Constants
 TRUE = 1;
@@ -39,6 +33,9 @@ while (1 == count)
     end
 end
 
+if (0 == event_count)
+    return
+end
 
 # Creata matrix to store the data
 # Use cpu_num + 1 to add the average value
@@ -73,47 +70,13 @@ end
 fclose(fileID);
 
 
-if (1 == CPU_USAGE_AVERAGE) || (2 == CPU_USAGE_AVERAGE)
-    # Create cpu name list
-    cpu_name_list{1} = 'CPU average';
-    # Compute the average CPU usage
-    value_mat(1,:) = mean(value_mat(2:end,:));
+cpu_name_list{1} = 'CPU average';
+# Compute the average CPU usage
+value_mat(1,:) = mean(value_mat(2:end,:));
+for cpu_idx = 1 : (cpu_num)
+    cpu_name_list{cpu_idx + 1} = sprintf('CPU %d',cpu_idx);
 end
-
-if (0 == CPU_USAGE_AVERAGE) || (1 == CPU_USAGE_AVERAGE)
-    for cpu_idx = 1 : (cpu_num)
-        cpu_name_list{cpu_idx + 1} = sprintf('CPU %d',cpu_idx);
-    end
-end
-
-figure('Name','CPU usage')
-
-
-# Show plot legend
-switch CPU_USAGE_AVERAGE
-    case 0
-        plot(timestamp_mat(2:end,:)',value_mat(2:end,:)','linewidth',LINEWIDTH)
-        legend(cpu_name_list{2:end})
-    case 1
-        plot(timestamp_mat',value_mat','linewidth',LINEWIDTH)
-        legend(cpu_name_list)
-    case 2
-        plot(timestamp_mat(1,:)',value_mat(1,:)','linewidth',LINEWIDTH)
-        legend(cpu_name_list{1})
-   otherwise
-      plot(timestamp_mat',value_mat','linewidth',LINEWIDTH)
-      legend(cpu_name_list)
-end
-
 
 tracer.cpuusage.timestamp_mat = timestamp_mat;
-tracer.cpuusage.cpu = value_mat;
+tracer.cpuusage.cpu_mat = value_mat;
 tracer.cpuusage.cpu_name_list = cpu_name_list;
-
-title('CPU usage','fontsize',FONTSIZE)
-xlabel('time (seconds)','fontsize',FONTSIZE)
-ylabel('Usage (%)','fontsize',FONTSIZE)
-
-
-
-

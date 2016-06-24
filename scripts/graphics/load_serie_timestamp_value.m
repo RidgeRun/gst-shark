@@ -18,6 +18,12 @@ function [serie_name_list,timestamp_mat,value_mat] = load_serie_timestamp_value(
     # Compute How many series need to be created
 
     [timestamp count] = fscanf(fileID,'[%s]');
+    if (0 == count)
+        serie_name_list{1} = "";
+        timestamp_mat = 0;
+        value_mat = 0;
+        return
+    end
     [serie_val count] = fscanf(fileID,'%s\"');
     [time count] = fscanf(fileID,'%d');
 

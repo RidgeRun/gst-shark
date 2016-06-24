@@ -16,6 +16,12 @@ count = 1;
 # Compute How many series need to be created
 
 [timestamp1 count] = fscanf(fileID,'[%s]');
+if (0 == count)
+    serie_name_list{1} = "";
+    timestamp_mat = 0;
+    value_mat = 0;
+    return
+end
 [from_pad count] = fscanf(fileID,'%s\"');
 [to_pad count] = fscanf(fileID,'%s\"');
 [time count] = fscanf(fileID,'%d');
@@ -85,11 +91,8 @@ while (count == 1)
     end
 end
 
-figure('Name','Interlatency')
-plot(timestamp_mat',time_mat','linewidth',LINEWIDTH)
-title('Interlatency','fontsize',FONTSIZE)
-xlabel('time (seconds)','fontsize',FONTSIZE)
-ylabel('time (nanoseconds)','fontsize',FONTSIZE)
-legend(pad_name_list)
+tracer.interlatency.timestamp_mat = timestamp_mat;
+tracer.interlatency.time_mat = time_mat;
+tracer.interlatency.pad_name_list = pad_name_list;
 
 fclose(fileID);

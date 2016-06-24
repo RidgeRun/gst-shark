@@ -32,7 +32,7 @@ for i = 1:nargin
             plot_scheduling
             figs_num = figs_num + 1;
         case '--savefig'
-            GSTSHARK_SAVEFIG = 1;
+            GSTSHARK_SAVEFIG = TRUE;
         otherwise
             if (0 !=length(tracer_name))
                 printf('octave: WARN: %s tracer does not exit',tracer_name)
@@ -40,18 +40,7 @@ for i = 1:nargin
     end
 end
 
-if (TRUE == GSTSHARK_SAVEFIG)
-    disp('Save figures...')
-    for fig_idx = 1 : figs_num
-        print tracer -dpdf -append
-        close
-    end
-end
-
-
-if ((1 == isfield(tracer,'cpuusage')) && (1 == isfield(tracer,'framerate')))
-    plot_framerate_cpuusage
-end
+plot_tracer(tracer,GSTSHARK_SAVEFIG,'pdf')
 
 printf ("\n")
 
