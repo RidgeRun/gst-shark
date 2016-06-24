@@ -33,6 +33,9 @@ while (1 == count)
     end
 end
 
+if (0 == event_count)
+    return
+end
 
 # Creata matrix to store the data
 # Use cpu_num + 1 to add the average value

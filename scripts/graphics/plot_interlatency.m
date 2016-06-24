@@ -16,6 +16,12 @@ count = 1;
 # Compute How many series need to be created
 
 [timestamp1 count] = fscanf(fileID,'[%s]');
+if (0 == count)
+    serie_name_list{1} = "";
+    timestamp_mat = 0;
+    value_mat = 0;
+    return
+end
 [from_pad count] = fscanf(fileID,'%s\"');
 [to_pad count] = fscanf(fileID,'%s\"');
 [time count] = fscanf(fileID,'%d');
