@@ -76,7 +76,7 @@ typedef guint32 ctf_header_timestamp;
 #define CTF_EVENT_WRITE_INT64(int64,mem) \
   *(guint64*)mem = int64; \
   mem += sizeof(guint64);
-  
+
 #define CTF_EVENT_WRITE_FLOAT(float_val,mem) \
   *(gfloat*)mem = float_val; \
   mem += sizeof(gfloat);
@@ -458,7 +458,7 @@ ctf_process_env_var (void)
   GstCTFParser *parser;
   time_t now = time (NULL);
 
-  env_loc_value = g_getenv ("GST_SHARK_TRACE_LOC");
+  env_loc_value = g_getenv ("GST_SHARK_LOCATION");
 
   if (NULL != env_loc_value) {
 
@@ -670,8 +670,7 @@ do_print_cpuusage_event (event_id id, guint32 cpu_num, gfloat * cpuload)
   /* Add CTF header */
   CTF_EVENT_WRITE_HEADER (id, event_mem);
   /* Write CPU load for each CPU */
-  for (cpu_idx = 0; cpu_idx < cpu_num; ++cpu_idx)
-  {
+  for (cpu_idx = 0; cpu_idx < cpu_num; ++cpu_idx) {
     /* Write CPU load */
     CTF_EVENT_WRITE_FLOAT (cpuload[cpu_idx], event_mem);
   }
