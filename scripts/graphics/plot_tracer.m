@@ -121,7 +121,7 @@ function plot_tracer(tracer,savefig,format)
                 case 'pdf'
                     print tracer -dpdf -append
                 case 'png'
-                    print('interlatency','-dpng');
+                    print('proctime','-dpng');
                 otherwise
                     printf('octave: WARN: %s is not supported',format)
             end
