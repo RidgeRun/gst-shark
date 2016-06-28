@@ -63,7 +63,7 @@ static const gchar scheduling_metadata_event[] = "event {\n\
     id = %d;\n\
     stream_id = %d;\n\
     fields := struct {\n\
-        string elementname;\n\
+        string pad;\n\
         integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _time;\n\
     };\n\
 };\n\

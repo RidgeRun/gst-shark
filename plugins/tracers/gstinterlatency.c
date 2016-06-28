@@ -70,8 +70,8 @@ static const gchar interlatency_metadata_event[] = "event {\n\
     id = %d;\n\
     stream_id = %d;\n\
     fields := struct {\n\
-        string src;\n\
-        string element;\n\
+        string from_pad;\n\
+        string to_pad;\n\
         integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _time;\n\
     };\n\
 };\n\
