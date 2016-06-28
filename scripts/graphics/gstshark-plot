@@ -51,6 +51,18 @@ do
         -s|--savefig)
         SAVEFIG="--savefig"
         shift # past argument
+
+        key="$1"
+        case $key in
+            png)
+            FORMAT="png"
+            shift
+            ;;
+            pdf)
+            FORMAT="pdf"
+            shift
+            ;;
+        esac
         ;;
         -p|--persist)
         PERSIST="--persist"
@@ -63,14 +75,13 @@ do
     esac
 done
 
-
 # Create plots
-octave -qf ${PERSIST} ./gstshark-plot.m "${tracer_list[@]}" "${SAVEFIG}"
+octave -qf ${PERSIST} ./gstshark-plot.m "${tracer_list[@]}" "${SAVEFIG}" "${FORMAT}"
 
 # Remove files
 for tracer in "${tracer_list[@]}"
 do
     rm ${tracer}.log ${tracer}.mat -f
 done
-
+rm -f datastream.log
 
