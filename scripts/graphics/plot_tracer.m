@@ -1,4 +1,4 @@
-function plot_tracer(tracer,savefig,format)
+function plot_tracer(tracer,savefig,format,legend_location)
     TRUE=1;
     
     FONTSIZE = 14;
@@ -17,16 +17,16 @@ function plot_tracer(tracer,savefig,format)
         switch CPU_USAGE_AVERAGE
             case 0
                 plot(tracer.cpuusage.timestamp_mat(2:end,:)',tracer.cpuusage.cpu_mat(2:end,:)','linewidth',LINEWIDTH)
-                legend(tracer.cpuusage.cpu_name_list{2:end})
+                legend(tracer.cpuusage.cpu_name_list{2:end},'Location',legend_location)
             case 1
                 plot(tracer.cpuusage.timestamp_mat',tracer.cpuusage.cpu_mat','linewidth',LINEWIDTH)
-                legend(tracer.cpuusage.cpu_name_list)
+                legend(tracer.cpuusage.cpu_name_list,'Location',legend_location)
             case 2
                 plot(tracer.cpuusage.timestamp_mat(1,:)',tracer.cpuusage.cpu_mat(1,:)','linewidth',LINEWIDTH)
-                legend(tracer.cpuusage.cpu_name_list{1})
+                legend(tracer.cpuusage.cpu_name_list{1},'Location',legend_location)
            otherwise
               plot(tracer.cpuusage.timestamp_mat',tracer.cpuusage.cpu_mat','linewidth',LINEWIDTH)
-              legend(tracer.cpuusage.cpu_name_list)
+              legend(tracer.cpuusage.cpu_name_list,'Location',legend_location)
         end
 
         # Calculate the greatest time value
@@ -60,7 +60,7 @@ function plot_tracer(tracer,savefig,format)
         title('Frame rate','fontsize',FONTSIZE)
         xlabel('time (seconds)','fontsize',FONTSIZE)
         ylabel('Frame per second','fontsize',FONTSIZE)
-        legend(tracer.framerate.element_name_list)
+        legend(tracer.framerate.element_name_list,'Location',legend_location)
         xlim([0,timestamp_max])
         
         if (TRUE == savefig)
@@ -86,7 +86,7 @@ function plot_tracer(tracer,savefig,format)
         title('Interlatency','fontsize',FONTSIZE)
         xlabel('time (seconds)','fontsize',FONTSIZE)
         ylabel('time (nanoseconds)','fontsize',FONTSIZE)
-        legend(tracer.interlatency.pad_name_list)
+        legend(tracer.interlatency.pad_name_list,'Location',legend_location)
         xlim([0,timestamp_max])
         
         if (TRUE == savefig)
@@ -112,7 +112,7 @@ function plot_tracer(tracer,savefig,format)
         title('Processing time','fontsize',FONTSIZE)
         xlabel('time (seconds)','fontsize',FONTSIZE)
         ylabel('time (nanoseconds)','fontsize',FONTSIZE)
-        legend(tracer.proctime.element_name_list)
+        legend(tracer.proctime.element_name_list,'Location',legend_location)
         xlim([0,timestamp_max])
         
         if (TRUE == savefig)
@@ -138,7 +138,7 @@ function plot_tracer(tracer,savefig,format)
         title('Scheduling','fontsize',FONTSIZE)
         xlabel('time (seconds)','fontsize',FONTSIZE)
         ylabel('time (nanoseconds)','fontsize',FONTSIZE)
-        legend(tracer.scheduling.pad_name_list)
+        legend(tracer.scheduling.pad_name_list,'Location',legend_location)
         xlim([0,timestamp_max])
         
         if (TRUE == savefig)
@@ -163,7 +163,7 @@ function plot_tracer(tracer,savefig,format)
 
         figure('Name','Frame rate and CPU usage')
         [hAx,hLine1,hLine2] = plotyy(tracer.framerate.timestamp_mat',tracer.framerate.fps_mat',tracer.cpuusage.timestamp_mat(1,:),tracer.cpuusage.cpu_mat(1,:));
-        legend(legend_list)
+        legend(legend_list,'Location',legend_location)
 
         title('Frame rate and CPU usage','fontsize',FONTSIZE)
         xlabel('time (seconds)','fontsize',FONTSIZE)

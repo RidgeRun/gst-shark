@@ -64,6 +64,22 @@ do
             ;;
         esac
         ;;
+        -l|--legend)
+        #~ SAVEFIG="--savefig"
+        shift # past argument
+
+        key="$1"
+        case $key in
+            outside)
+            LEGEND="northeastoutside"
+            shift
+            ;;
+            inside)
+            LEGEND="northeast"
+            shift
+            ;;
+        esac
+        ;;
         -p|--persist)
         PERSIST="--persist"
         shift # past argument
@@ -76,7 +92,7 @@ do
 done
 
 # Create plots
-octave -qf ${PERSIST} ./gstshark-plot.m "${tracer_list[@]}" "${SAVEFIG}" "${FORMAT}"
+octave -qf ${PERSIST} ./gstshark-plot.m "${tracer_list[@]}" "${SAVEFIG}" "${FORMAT}" "${LEGEND}"
 
 # Remove files
 for tracer in "${tracer_list[@]}"
