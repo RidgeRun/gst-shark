@@ -47,18 +47,12 @@ public class GstSharkCpuUsage extends TmfCommonXLineChartViewer {
 		List<ITmfEvent> events = new ArrayList<ITmfEvent>();
 		ITmfTimestamp startTimestamp = _trace.createTimestamp(start);
 		ITmfTimestamp endTimestamp = _trace.createTimestamp(end);
-		System.out.println(String.format("Range is %s to %s", startTimestamp.toString(), endTimestamp.toString()));
 		ITmfContext ctx = _trace.seekEvent(startTimestamp);
 		ITmfEvent event = getNextFilteredByEventName(ctx, _event);
 
 		while (null != event && 0 > event.getTimestamp().compareTo(endTimestamp)) {
 			events.add(event);
 			event = getNextFilteredByEventName(ctx, _event);
-		}
-		if ((null != events) && (0 < events.size() ))
-		{
-			System.out.println(String.format("events.size: %d", events.size()));
-			System.out.println(String.format("Last ts %s - end %s", events.get(events.size()-1).getTimestamp(), endTimestamp));
 		}
 
 		return events;
@@ -76,20 +70,7 @@ public class GstSharkCpuUsage extends TmfCommonXLineChartViewer {
 		ITmfTimestamp startTimestamp = _trace.createTimestamp(start);
 		ITmfTimestamp endTimestamp = _trace.createTimestamp(end);
 
-		System.out.print(String.format("Starting time: %d\n", getStartTime()));
-		System.out.print(String.format("End time: %d\n", getEndTime()));
-		System.out.print(String.format("W Start time: %d\n", getWindowStartTime()));
-		System.out.print(String.format("W end time: %d\n", getWindowEndTime()));
-		System.out.print(String.format("S start time: %d\n", getSelectionBeginTime()));
-		System.out.print(String.format("S end time: %d\n", getSelectionEndTime()));
-
-		System.out.println(start);
-		System.out.println(end);
-		System.out.println(nb);
-		System.out.println(getTimeOffset());
-
 		// Filter all the event in the time range based in the name of the events
-		
 		if (end < MIN_TIME)
 		{
 			end = MIN_TIME;
@@ -97,23 +78,15 @@ public class GstSharkCpuUsage extends TmfCommonXLineChartViewer {
 		
 		eventsListFilterdByName = getEventsInRange(start, end);
 
-		System.out.print(String.format("eventsListFilterdByName.size: %d\n", eventsListFilterdByName.size()));
-		
 		if ((null == eventsListFilterdByName) || (1 >= eventsListFilterdByName.size()))
 		{
-			System.out.print(String.format("startTimestamp.getValue() %d %s\n",startTimestamp.getValue(),startTimestamp.toString() ));
-			System.out.print(String.format("endTimestamp.getValue()   %d %s\n",endTimestamp.getValue(),endTimestamp.toString() ));
-			System.out.print(String.format("getTimeOffset()           %d\n",getTimeOffset() ));
-			
 			refx_values[0] = startTimestamp.getValue() - 10000000000L*60*60*21;
 			refx_values[1] = endTimestamp.getValue() - 10000000000L*60*60*21;
 			setXAxis(refx_values);
 			
-			System.out.println("WARNING: Event list is null empty or there is only one event ");
+			System.err.println("WARNING: Event list is null empty or there is only one event ");
 			return;
 		}
-	
-		System.out.print(String.format("eventsListFilterdByFieldValue[0] name: %s\n", eventsListFilterdByName.get(0).getName()));
 		
 		// Create a list of the amount of cpus reported by event
 		
@@ -121,15 +94,12 @@ public class GstSharkCpuUsage extends TmfCommonXLineChartViewer {
 		
 		fieldNamesColl = eventsListFilterdByName.get(0).getContent().getFieldNames();
 		
-		System.out.print(String.format("fieldNamesColl.size: %d\n", fieldNamesColl.size()));
-		
 		java.util.Iterator<String> itr =  fieldNamesColl.iterator();
 		
 		// For each field name, create a series of data. 
 		while(itr.hasNext())
 		{
 			fieldValueName = itr.next();
-			System.out.print(String.format("fieldValueName: %s\n", fieldValueName));
 
 			x_values = new double[eventsListFilterdByName.size()];
 			y_values = new double[eventsListFilterdByName.size()];
