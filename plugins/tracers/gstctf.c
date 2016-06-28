@@ -733,12 +733,13 @@ do_print_proctime_event (event_id id, gchar * elementname, guint64 time)
 }
 
 void
-do_print_framerate_event (event_id id, const gchar * padname, guint64 fps)
+do_print_framerate_event (event_id id, guint32 pad_num, guint64 * fps)
 {
   GError *error;
   guint8 *mem;
   guint8 *event_mem;
   gsize event_size;
+  guint32 pad_idx;
 
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
@@ -747,12 +748,14 @@ do_print_framerate_event (event_id id, const gchar * padname, guint64 fps)
   g_mutex_lock (&ctf_descriptor->mutex);
   /* Add CTF header */
   CTF_EVENT_WRITE_HEADER (id, event_mem);
-  /* Write Pad name */
-  CTF_EVENT_WRITE_STRING (padname, event_mem);
-  /* Write FPS */
-  CTF_EVENT_WRITE_INT64 (fps, event_mem)
-      /* Computer event size */
-      event_size = event_mem - (mem + TCP_HEADER_SIZE);
+
+  for (pad_idx = 0; pad_idx < pad_num; ++pad_idx) {
+    /* Write FPS */
+    CTF_EVENT_WRITE_INT64 (fps[pad_idx], event_mem);
+  }
+
+  /* Computer event size */
+  event_size = event_mem - (mem + TCP_HEADER_SIZE);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem = mem + TCP_HEADER_SIZE;

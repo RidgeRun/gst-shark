@@ -46,4 +46,25 @@
             sequence="M1+6">
       </key>
    </extension>
+   <extension
+         point="org.eclipse.ui.views">
+      <view
+            class="com.ridgerun.gstshark.GstSharkView"
+            id="com.ridgerun.gstshark.view"
+            name="gstsharkview"
+            restorable="true">
+      </view>
+      <view
+             class="com.ridgerun.gstshark.GstSharkCpuUsageView"
+             id="com.ridgerun.gstshark.cpuusage"
+             name="gstsharkCpuUsage"
+             restorable="true">
+       </view>
+      <view
+            class="com.ridgerun.gstshark.GstSharkFrameRateView"
+            id="com.ridgerun.gstshark.framerate"
+            name="gstsharkFrameRate"
+            restorable="true">
+      </view>
+   </extension>
 </plugin>
