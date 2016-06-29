@@ -77,6 +77,8 @@ static const gchar interlatency_metadata_event[] = "event {\n\
 };\n\
 \n";
 
+static void gst_interlatency_tracer_dispose (GObject * object);
+
 /* data helpers */
 
 /*
@@ -178,7 +180,6 @@ calculate_latency (GstInterLatencyTracer * interlatency_tracer,
     GstEvent *ev = g_object_get_qdata ((GObject *) pad, latency_probe_id);
 
     log_latency (interlatency_tracer, gst_event_get_structure (ev), pad, ts);
-    gst_event_unref (ev);
   }
 }
 
@@ -251,11 +252,11 @@ do_push_event_pre (GstTracer * self, guint64 ts, GstPad * pad, GstEvent * ev)
       if (gst_structure_get_name_id (data) == latency_probe_id) {
         /* store event and calculate latency when the buffer that follows
          * has been processed */
-        g_object_set_qdata ((GObject *) pad, latency_probe_id,
-            gst_event_ref (ev));
+        g_object_set_qdata_full ((GObject *) pad, latency_probe_id,
+            gst_event_ref (ev), (GDestroyNotify) gst_event_unref);
         if (GST_OBJECT_FLAG_IS_SET (parent_peer, GST_ELEMENT_FLAG_SINK))
-          g_object_set_qdata ((GObject *) peer_pad, latency_probe_id,
-              gst_event_ref (ev));
+          g_object_set_qdata_full ((GObject *) peer_pad, latency_probe_id,
+              gst_event_ref (ev), (GDestroyNotify) gst_event_unref);
       }
     }
   }
@@ -266,6 +267,10 @@ do_push_event_pre (GstTracer * self, guint64 ts, GstPad * pad, GstEvent * ev)
 static void
 gst_interlatency_tracer_class_init (GstInterLatencyTracerClass * klass)
 {
+  GObjectClass *oclass;
+
+  oclass = G_OBJECT_CLASS (klass);
+
   latency_probe_id = g_quark_from_static_string ("latency_probe.id");
   latency_probe_pad = g_quark_from_static_string ("latency_probe.pad");
   latency_probe_ts = g_quark_from_static_string ("latency_probe.ts");
@@ -301,6 +306,8 @@ gst_interlatency_tracer_class_init (GstInterLatencyTracerClass * klass)
       NULL));
 #endif
   /* *INDENT-ON* */
+
+  oclass->dispose = gst_interlatency_tracer_dispose;
 }
 
 static void
@@ -330,4 +337,14 @@ gst_interlatency_tracer_init (GstInterLatencyTracer * self)
       g_strdup_printf (interlatency_metadata_event, INTERLATENCY_EVENT_ID, 0);
   add_metadata_event_struct (metadata_event);
   g_free (metadata_event);
+}
+
+static void
+gst_interlatency_tracer_dispose (GObject * object)
+{
+  GstInterLatencyTracer *self;
+
+  self = GST_INTERLATENCY_TRACER (object);
+
+  g_string_free (self->time_string, TRUE);
 }
