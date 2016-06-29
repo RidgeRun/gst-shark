@@ -1,15 +1,39 @@
 #! /bin/bash
 
+# Ridgerun GstShark
+
+# Display help message
+if [ $1 == "--help" ]
+then
+    echo "Ridgerun Gstshark"
+    echo
+    echo "usage : $0 DIR [options]"
+    echo
+    echo "  DIR                            Input trace directory"
+    echo "  --help                         This help message"
+    echo "  -s, --savefig [pdf|png]         Save the graphics generated"
+    echo "                                 FORMAT: Output file format, png or pdf"
+    echo "                                 (default: pdf)"
+    echo "  -p, --persist                  keep octave console open"
+    echo "  -l, --legend <inside|outside>  Indicate the position of the legend"
+    echo "                                 over each graphic generated"
+    echo "                                 (default: inside)"
+    echo
+    exit
+fi
+
 # Verify if there is at least a parameter
 if [ $# -lt 1 ]
 then
     echo "Error: A directory name must be given"
+    echo "Try '$0 --help' for more information."
     exit
 fi
 
 if [ ! -d $1 ]
 then
     echo "Error: $1 is not a directory"
+    echo "Try '$0 --help' for more information."
     exit
 fi
 
