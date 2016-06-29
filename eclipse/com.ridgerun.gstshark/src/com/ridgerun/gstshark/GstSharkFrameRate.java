@@ -64,7 +64,6 @@ public class GstSharkFrameRate extends TmfCommonXLineChartViewer {
 		List <ITmfEvent> eventsListFilterdByName;
 		double x_values[];
 		double refx_values[] = new double[2];
-		double refy_values[] = new double[2];
 		double y_values[];
 		String fieldValueName;
 		ITmfTimestamp startTimestamp = _trace.createTimestamp(start);

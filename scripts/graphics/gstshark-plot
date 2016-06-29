@@ -1,15 +1,39 @@
 #! /bin/bash
 
+# Ridgerun GstShark
+
+# Display help message
+if [ $1 == "--help" ]
+then
+    echo "Ridgerun Gstshark"
+    echo
+    echo "usage : $0 DIR [options]"
+    echo
+    echo "  DIR                            Input trace directory"
+    echo "  --help                         This help message"
+    echo "  -s, --savefig [pdf|png]         Save the graphics generated"
+    echo "                                 FORMAT: Output file format, png or pdf"
+    echo "                                 (default: pdf)"
+    echo "  -p, --persist                  keep octave console open"
+    echo "  -l, --legend <inside|outside>  Indicate the position of the legend"
+    echo "                                 over each graphic generated"
+    echo "                                 (default: inside)"
+    echo
+    exit
+fi
+
 # Verify if there is at least a parameter
 if [ $# -lt 1 ]
 then
     echo "Error: A directory name must be given"
+    echo "Try '$0 --help' for more information."
     exit
 fi
 
 if [ ! -d $1 ]
 then
     echo "Error: $1 is not a directory"
+    echo "Try '$0 --help' for more information."
     exit
 fi
 
@@ -51,6 +75,34 @@ do
         -s|--savefig)
         SAVEFIG="--savefig"
         shift # past argument
+
+        key="$1"
+        case $key in
+            png)
+            FORMAT="png"
+            shift
+            ;;
+            pdf)
+            FORMAT="pdf"
+            shift
+            ;;
+        esac
+        ;;
+        -l|--legend)
+        #~ SAVEFIG="--savefig"
+        shift # past argument
+
+        key="$1"
+        case $key in
+            outside)
+            LEGEND="northeastoutside"
+            shift
+            ;;
+            inside)
+            LEGEND="northeast"
+            shift
+            ;;
+        esac
         ;;
         -p|--persist)
         PERSIST="--persist"
@@ -63,14 +115,13 @@ do
     esac
 done
 
-
 # Create plots
-octave -qf ${PERSIST} ./gstshark-plot.m "${tracer_list[@]}" "${SAVEFIG}"
+octave -qf ${PERSIST} ./gstshark-plot.m "${tracer_list[@]}" "${SAVEFIG}" "${FORMAT}" "${LEGEND}"
 
 # Remove files
 for tracer in "${tracer_list[@]}"
 do
     rm ${tracer}.log ${tracer}.mat -f
 done
-
+rm -f datastream.log
 
