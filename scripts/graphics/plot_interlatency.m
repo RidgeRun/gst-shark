@@ -30,6 +30,7 @@ end
 src_pad = from_pad;
 pad_name_list = {to_pad};
 pad_freq_list = 1;
+pad_found = FALSE;
 
 while (count == 1)
     [timestamp count] = fscanf(fileID,'[%s]');
