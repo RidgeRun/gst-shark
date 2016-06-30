@@ -524,6 +524,8 @@ ctf_file_init (void)
   gchar *metadata_file;
   gchar *datastream_file;
 
+  g_mutex_init (&ctf_descriptor->mutex);
+
   if (TRUE != ctf_descriptor->file_output_disable) {
     /* Creating the output folder for the CTF output files. */
     create_ctf_path (ctf_descriptor->dir_name);
@@ -545,7 +547,6 @@ ctf_file_init (void)
       GST_ERROR ("Could not open metadata file, path does not exist.");
     }
 
-    g_mutex_init (&ctf_descriptor->mutex);
     ctf_descriptor->start_time = gst_util_get_timestamp ();
     ctf_descriptor->file_output_disable = FALSE;
 
