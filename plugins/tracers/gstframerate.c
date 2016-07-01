@@ -104,12 +104,14 @@ do_print_framerate (gpointer * data)
   guint size;
   guint64 *pad_counts;
   guint32 pad_idx;
+  gboolean ret;
 
   self = GST_FRAMERATE_TRACER (data);
 
   size = g_hash_table_size (self->frame_counters);
   pad_counts = g_malloc (size * sizeof (guint64));
   pad_idx = 0;
+  ret = TRUE;
 
   if (!self->metadata_written) {
     create_metadata_event (self->frame_counters);
@@ -136,13 +138,16 @@ do_print_framerate (gpointer * data)
 
     pad_table->counter = 0;
     if (!self->start_timer) {
-      return FALSE;
+      ret = FALSE;
+      goto out;
     }
   }
   do_print_framerate_event (FPS_EVENT_ID, size, pad_counts);
+
+out:
   g_free (pad_counts);
 
-  return TRUE;
+  return ret;
 }
 
 static void
