@@ -6,11 +6,10 @@ dnl when going to/from release please set the nano (fourth number) right !
 dnl releases only do Wall, git and prerelease does Werror too
 dnl
 AC_INIT([GstShark],
-        [0.1.0.1],
+        [0.2.0.1],
 	[https://github.com/RidgeRun/gst-shark],
 	[gst-shark],
 	[https://github.com/RidgeRun/gst-shark])
-AG_GSTD_INIT
 AG_GST_SHARK_INIT
 
 dnl initialize automake (we require GNU make)
@@ -224,12 +223,12 @@ PKG_CHECK_MODULES(GSTREAMER, [
 ], [
   AC_DEFINE(GST_STABLE_RELEASE, 1, [Define this to use the tracers API of GStreamer version >= $GST_REQ_STABLE])
   AC_MSG_NOTICE([
-    Version of GStreamer used is >= ($GST_REQ_STABLE)
+    Version of GStreamer used is >= ($GST_REQ_STABLE)dnl
   ])
 ],[
   AC_MSG_WARN([
     Version of GStreamer is not the latest stable revision avialable ($GST_REQ_STABLE),
-    Gst-Shark will work with the minimal required version ($GST_REQ_MINVER)
+    Gst-Shark will work with the minimal required version ($GST_REQ_MINVER)dnl
   ])
 ])
 
@@ -238,7 +237,7 @@ GVC_REQ=2.38
 AC_ARG_ENABLE(graphviz,
     AS_HELP_STRING([--disable-graphviz],[Disable graphviz capabilities (Enabled by default)]))
 
-AS_IF([test "x$enable_graphviz" != "xno"],
+if test "x$enable_graphviz" != "xno" ; then
     	PKG_CHECK_MODULES(GVC, [
             libgvc >= $GVC_REQ
 	], [
@@ -251,7 +250,7 @@ AS_IF([test "x$enable_graphviz" != "xno"],
             ])
 	])
         AC_DEFINE(ENABLE_GRAPHVIZ, 1, [Define this to enable Graphviz capabilities])
-)
+fi
 
 dnl Gio
 GIO_REQ=2.0
@@ -288,11 +287,11 @@ case $host_os in
   linux*)
     AC_DEFINE(GST_CPUUSAGE_ENABLE, 1, [Define this to enable the tracer for reading of the CPU usage])
     AC_MSG_NOTICE([
-      The reading of the CPU usage is enabled
+      Your platform supports CPU Usage tracing dnl
     ]) ;;
   *)
     AC_MSG_WARN([
-      CPU Usage is not currently supported on your platform
+      CPU Usage tracer currently not supported on your platform dnl
     ]) ;;
 esac
 
