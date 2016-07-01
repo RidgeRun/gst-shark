@@ -39,7 +39,7 @@ typedef struct _GstDotRenderThread GstDotRenderThread;
 struct _GstDotRenderThread
 {
   GstDotRender render;
-  const gchar *dot_string;
+  gchar *dot_string;
   gpointer args;
 };
 
@@ -93,7 +93,7 @@ gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags)
   g_free (full_trace_dir);
 }
 
-const gchar *
+gchar *
 gst_dot_pipeline_to_string (const GstPipeline * pipe)
 {
   GstBin *bin;
@@ -113,7 +113,7 @@ gst_dot_render_thread (gpointer data)
 {
   GstDotRenderThread *thread_args;
   GstDotRender render;
-  const gchar *dot_string;
+  gchar *dot_string;
   gpointer args;
 
   g_return_val_if_fail (data, NULL);
@@ -128,6 +128,7 @@ gst_dot_render_thread (gpointer data)
   render (dot_string, args);
 
   /* Freeing the memory allocated and killing the graphic thread */
+  g_free (dot_string);
   g_free (thread_args);
   g_thread_exit (0);
 
@@ -148,7 +149,7 @@ gst_dot_do_render (const gchar * dot_string, GstDotRender render, gpointer args)
   /* Filling the structure that is going to be used to get a new thread
      for displaying the pipeline graphic */
   thread_args->render = render;
-  thread_args->dot_string = dot_string;
+  thread_args->dot_string = g_strdup (dot_string);
   thread_args->args = args;
 
   g_thread_new ("GstDotRender", gst_dot_render_thread, thread_args);

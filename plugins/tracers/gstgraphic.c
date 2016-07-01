@@ -59,7 +59,7 @@ do_element_change_state_post (GstGraphicTracer * self, guint64 ts,
     GstElement * element, GstStateChange transition,
     GstStateChangeReturn result)
 {
-  const gchar *dot_string;
+  gchar *dot_string;
   GstDotRender render;
 
   if (GST_IS_PIPELINE (element)
@@ -75,9 +75,8 @@ do_element_change_state_post (GstGraphicTracer * self, guint64 ts,
 
     /* Getting the DOT string information */
     dot_string = gst_dot_pipeline_to_string (GST_PIPELINE (element));
-
     gst_dot_do_render (dot_string, render, NULL);
-
+    g_free (dot_string);
   }
 }
 

@@ -51,6 +51,7 @@ struct _GstCPUUsageTracer
 {
   GstTracer parent;
   GstCPUUsage cpu_usage;
+  guint source_id;
 };
 
 struct _GstCPUUsageTracerClass
