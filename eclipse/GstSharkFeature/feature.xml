@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="GstSharkFeature"
+      label="GstSharkFeature"
+      version="1.0.0.qualifier"
+      provider-name="RidgeRun">
+
+   <description url="www.ridgerun.com">
+      GstShark leverages GStreamers newest instrumentation subsystem by installing a set of custom hooks to the trace points. A variety of data analytics are extracted and presented to the user in a graphical, friendly way.
+   </description>
+
+   <copyright>
+      Copyright (C) 2014 Ridgerun (http://www.ridgerun.com).
+   </copyright>
+
+   <license url="">
+      RidgeRun Software License Agreement
+
+ 
+
+Version 3.1
+
+ 
+
+1. Notice
+
+Read this agreement carefully. In consideration for the license fees paid herewith, RidgeRun, LLC (&quot;RidgeRun&quot;) is willing to license to you (hereafter &quot;you&quot; or &quot;Customer&quot;) the number of copies authorized in writing by RidgeRun of the &quot;RidgeRun Software&quot; (defined in section 2) for the term of this end-user license agreement (the &quot;Agreement&quot;) only on the condition that you accept all of the terms of this Agreement. The RidgeRun Software will be delivered to you with third party software distributed under certain open source public licenses, such as the GNU general public license (&quot;Open Source Software&quot;). The RidgeRun Software and the Open Source Software are collectively referred to herein as the &quot;Software&quot;. You irrevocably accept and agree to be bound by this end-user license Agreement and applicable licenses for the Open Source Software by installing, downloading or otherwise using the RidgeRun Software. If you are agreeing to these terms on behalf of a company, you represent and warrant to RidgeRun that you have full authority to bind such entity. If you do not agree to the terms of this end-user license Agreement and/or applicable licenses for the Open Source Software, uninstall, delete or otherwise remove the RidgeRun Software from your premises and you will have no right to use the Software.
+
+ 
+
+2. RidgeRun Software
+
+All software, not specifically noted as being the property of other corporations or part of other license agreements are RidgeRun Software.
+
+ 
+
+2.1 All content in the Software Development Kit &quot;SDK&quot; including source code, object code, executables, build system, and applicable user documentation, corrections, releases, and refinements related thereto is part of RidgeRun Software.
+
+ 
+
+3. Development and Distribution License
+
+ 
+
+3.1 Development License - Subject to the terms and conditions of this Agreement, RidgeRun hereby grants to customer a product - based, non - exclusive, non - transferable, non - sublicensable, limited, worldwide license to install and use, for internal purposes only, and an unlimited number of copies of the source and object code versions(when purchased in accordance with purchase agreements, purchase orders or invoices between RidgeRun and Customer) of the RidgeRun Software for a product application as defined by:
+
+ 
+
+A unique customer stock keeping unit(SKU) , unique product model number, or unique UPC code. For projects or products not for resale, a unique product is defined by a unique hardware design which the licensed SDK or software will run on(&quot;Product Application&quot;)
+
+as authorized in writing by RidgeRun. Customer agrees that the RidgeRun Software shall be used only by customer employees and consultants(covered under a non - disclosure agreement that provides at least as much protection of RidgeRun Software as specified in this license), (&quot;Authorized Users&quot;), using the RidgeRun Software for one Product Application, unless otherwise authorized by RidgeRun in writing for a greater number of Product Applications, in accordance with the terms hereof, only for customer&apos;s benefit, and that no other party shall have such use or access to the RidgeRun Software, whether or not such party is affiliated with customer.
+
+ 
+
+3.2 Distribution License - Subject to the terms and conditions of this Agreement, RidgeRun hereby grants to customer a non-exclusive, non-transferable, non-sublicensable, limited, worldwide license to distribute RidgeRun Software (when purchased in accordance with purchase agreements, purchase orders or invoices between RidgeRun and Customer) in object code format only (no source code) in one or more products sold by the customer. This does not include the right to distribute, in any form, the SDK Configuration Utility described in section 2.1.
+
+ 
+
+3.3 The RidgeRun Software is proprietary software developed by RidgeRun or third party licensors, and is distributed with the Open Source Software. Customer hereby irrevocably accepts and agrees to be bound by the terms of this license as it pertains to the RidgeRun Software and the applicable licenses for the Open Source Software. Customer agrees to review each of the open source license agreements that accompany the Open Source Software in order to understand its rights of use for the Open Source Software and the related restrictions. Customer may consult the online documentation that accompanies the Open Source Software for the applicable open source license agreement.
+
+ 
+
+3.4 Customer may not cause or permit any of its Authorized Users to: decompile, disassemble, reverse assemble, &quot;unlock&quot; or reverse engineer the RidgeRun Software; or sublicense, lease, sell, rent, lend or transfer the RidgeRun Software, except as expressly authorized in this Agreement.
+
+ 
+
+3.5 All copies of the Software shall contain any and all title, copyright, trademark, and proprietary rights notices in favor of RidgeRun or third party licensors placed on the Software by RidgeRun or such third parties, or as requested by RidgeRun. Customer agrees to maintain and not alter, erase, deface or otherwise overprint any such notices without prior written approval of RidgeRun or third party licensor. &quot;RidgeRun&quot; is a trademark of RidgeRun, LLC. &quot;Linux(r)&quot; is a registered Trademark of Linus Torvalds in many countries, and is used by RidgeRun under license. All third party trademarks, service marks and registered trademarks within or otherwise related to the Software are the sole property of their respective owners.
+
+ 
+
+3.6 The human readable source code (&quot;Source Code&quot;) for the RidgeRun Software may be included in the Software to allow the user to modify, enhance, or fix the RidgeRun Software. Customer agrees to provide RidgeRun all changes made by the Customer to the RidgeRun Software Source Code. Further Customer agrees to relinquish any rights to the RidgeRun Software Source Code given to RidgeRun. This agreement gives RidgeRun the right to incorporate Customer changes to the RidgeRun Software Source Code and treat the resultant Source Code as exclusively owned by RidgeRun.
+
+ 
+
+4. Confidentiality
+
+ 
+
+4.1 Except for the licenses granted herein or in the licenses for Open Source Software, all rights, title and interest in and to the Software shall be solely and exclusively owned by and are the proprietary products of RidgeRun or the third party licensors and are protected by copyright and other laws. Any use of the RidgeRun Software not expressly provided for in this Agreement is expressly prohibited. The RidgeRun Software and all intellectual property rights related thereto that may exist from time to time in this or any other jurisdiction, whether foreign or domestic, under patent law, copyright law, publicity rights law, moral rights law, trade secret law, trademark law or other proprietary rights, whether or not registered or perfected (&quot;RidgeRun Proprietary Information&quot;), constitute trade secrets and proprietary data of RidgeRun, and nothing in this Agreement shall be construed to convey any title or ownership rights to Customer. Customer agrees to use its best efforts to safeguard the confidentiality of the RidgeRun Proprietary Information. Each component of the Open Source Software has its own applicable end-user license agreement. Third party licensors under such agreements continue to own all rights, title and interest in and to the Open Source Software. Customer&apos;s rights to use the Open Source Software are specified in open source license agreements for each component of the Open Source Software.
+
+ 
+
+4.2 The term &quot;confidential information&quot; shall mean any information obtained by either party(&quot;Receiving Party&quot;) from the other party(the &quot;Disclosing Party&quot;) in connection with this Agreement which is obtained in writing, orally, by inspection or otherwise and which is confidential or proprietary to the Disclosing Party. The Receiving Party shall treat as confidential all confidential information received from the Disclosing Party, shall not use such confidential information except as expressly permitted under this Agreement, and shall not disclose such confidential information to any third party without the Disclosing Party&apos;s prior written consent. The Receiving Party shall use the same measures to protect the confidential information that it takes with its own confidential information of like kind, but in no event less than reasonable measures, to prevent the disclosure and unauthorized use of the confidential information. Notwithstanding the above, the restrictions of this section shall not apply to information that: (a) was independently developed by the Receiving Party without any use of the confidential information of the Disclosing Party; (b) becomes known to the Receiving Party, without restriction, from a third party without the breach of this Agreement and who had a right to disclose it; (c) was in the public domain through no act or omission of the Receiving Party; (d) was rightfully known to the Receiving Party, without restriction, at the time of the Disclosing Party&apos;s disclosure; or (e) is disclosed pursuant to an order or requirement of a court, administrative agency, or other governmental body; provided, however, that the Receiving Party shall provide prompt written notice thereof to the Disclosing Party and shall use its reasonable best efforts to obtain such protective order or otherwise prevent public disclosure of such information.
+
+ 
+
+4.3 Customer agrees to notify all Authorized Users of their obligations hereunder and to bind any such Authorized Users in writing to obligations no less restrictive than the provisions of this section 4. The parties acknowledge that confidential information is unique and valuable, and that disclosure in breach of this Agreement will result in irreparable injury to Disclosing Party for which monetary damages alone would not be an adequate remedy.Therefore, the parties agree that in the event of a breach or threatened breach of confidentiality, Disclosing Party shall be entitled to specific performance and injunctive or other equitable relief as a remedy for any such breach or anticipated breach without the necessity of posting a bond. Any such relief shall be in addition to and not in lieu of any appropriate relief in the way of monetary damages.
+
+ 
+
+5. Termination
+
+The term of this Agreement shall commence on the effective date and continue in full force for five(5) years unless terminated earlier upon the occurrence of any of the following:if customer fails to make any payment due within 15 days after receiving written notice from RidgeRun that such payment is delinquent, RidgeRun may terminate this Agreement on written notice to customer at any time following the end of such 15 day period; if either party materially breaches any term or condition of this Agreement and fails to cure that breach within 30 days after receiving written notice of the breach, the non - breaching party may terminate this Agreement on written notice at any time following the end of such 30 day period; at any time by RidgeRun if the Software is being provided to customer hereunder for its evaluation and / or testing; or if customer becomes insolvent(i.e., becomes unable to pay its debts in the ordinary course of business as they come due) or makes an assignment of this Agreement for the benefit of creditors. Upon expiration or termination of this Agreement: all license rights granted hereunder shall terminate; customer shall return to RidgeRun, or destroy and certify in writing the destruction of all copies of the RidgeRun Proprietary Information(including without limitation the Software) and RidgeRun confidential information; and the provisions of sections 4, 5, 7, 8, 9, and 13 of this Agreement shall survive termination.
+
+ 
+
+6. Software Support
+
+Software support provided by RidgeRun during the term of this Agreement will include technical support for period specified in either the contract or invoice associated with the purchase of the software. If the support period is not specified in either the contract or invoice, the support period will be 90 days from when the customer receives the software. Support is available only during RidgeRun&apos;s normal business hours (Monday through Friday, 8:00 a.m. - 5:00 p.m., Mountain Standard Time). Support is available only if the problem can be duplicated on hardware at a RidgeRun premise, RidgeRun has received source code capable of causing the defect to occur, RidgeRun is able to reproduce the defect, and RidgeRun receives technical information on customer software and hardware as required to provide the requested support.
+
+ 
+
+7. Limited Warranty
+
+If the Software is provided on media, RidgeRun warrants that the media on which the Software is provided to customer will be free from defects in materials and manufacture under normal use for a period of 30 days from the date of delivery to customer. If a defect occurs within this 30 day period, customer may return the defective media to RidgeRun for a replacement at no charge. This remedy is customer&apos;s sole and exclusive remedy for breach of this warranty. Customer acknowledges that the Software is provided &quot;as is&quot; without any warranty. RidgeRun does not warrant that the Software will meet Customer&apos;s requirements or that its operation will be uninterrupted or error-free. To the extent allowed by law, RidgeRun expressly disclaims all express warranties not stated herein and all implied warranties, including the implied warranties as to quality, performance, or merchantability and fitness for a particular purpose or any warranty of non-infringement. Some states do not allow limitations on how long an implied warranty lasts, so the above limitations may not apply. No RidgeRun agent or employee is authorized to make any expansion, modification, or addition to this limitation and exclusion of warranties or to any other restriction detailed in this Agreement. The Open Source Software is provided &quot;as is&quot;, as further described in the GNU public license and other applicable open source license agreements.
+
+ 
+
+8. Limitation of Liability
+
+RidgeRun makes no representation or warranty, and expressly disclaims any liability with respect to the content of any RidgeRun Software, including but not limited to errors or omissions contained therein, libel, infringement of rights of publicity, privacy, trademark rights, moral rights, or the disclosure of confidential information.
+
+Customer hereby waives any right to indirect, incidental, consequential, special, exemplary or punitive damages of any nature whatsoever, (including lost profits, data, goodwill or use thereof), whether such damages are alleged as a result of tort (including strict liability), contract, warranty or otherwise. Some states do not allow the exclusion or limitation of incidental or consequential damages, so the above limitation may not apply to you. RidgeRun&apos;s liability for direct damages arising under this Agreement shall not exceed the aggregate of the fees paid to RidgeRun pursuant to this Agreement.
+
+ 
+
+9. Indemnification
+
+Customer shall indemnify, defend, and hold harmless RidgeRun and its affiliates, and its and their respective officers, directors, employees, agents, representatives, successors and assigns, from and against any and all losses, liabilities, damages, actions, claims, fines, penalties, costs, and expenses(including without limitation, attorneys &apos; fees and costs) (&quot;losses&quot;) or threatened losses arising out of or resulting from a breach of this Agreement. RidgeRun shall give customer prompt written notice of such claim and customer shall have sole control of the defense, settlement or compromise thereof. RidgeRun may elect to participate in the defense of any such claim with an attorney of its own choice and at its own expense.
+
+ 
+
+10. Notice
+
+Customer shall promptly provide written notice to RidgeRun of any conduct of any individual or entity (including without limitation, customer, its employees or consultants) of which customer is aware that may, in any manner: constitute a breach of the confidential information, proprietary information or related obligations set forth herein; or constitute use or misuse of the Software in conflict with the terms of this Agreement.
+
+ 
+
+11. Restricted Rights
+
+This section applies to all acquisitions of Software by or for the United States government. The Software is a &quot;commercial item&quot; as that term is defined in far 2.101 (Oct. 1999), consisting of &quot;commercial computer software&quot; and &quot;commercial computer software documentation&quot; as such terms are used in far 12.212 (Oct. 1999) and that the government&apos;s use and disclosure of the Software is controlled by the terms and conditions of this Agreement to the maximum extent possible.Consistent with far 12.212 and dfars 227.7202 (Oct.1999), any Government users acquire the Software with only those rights set forth herein.This Agreement supersedes any contrary terms and conditions in any statement of work, contract, or other document relating to the government &apos;s use of the Software. If any provision of this Agreement is unacceptable to the government, it should contact RidgeRun at:
+
+ 
+
+RidgeRun, LLC
+3287 Lake Shore Ct.
+Chaska, MN 55318
+
+ 
+
+12. Export Control
+
+Customer acknowledges that the Software and related technology are subject to United States export control laws and may be subject to export or import regulations in other countries. Customer agrees to strictly comply with all such laws and regulations and acknowledges the responsibility to obtain such Licenses to export, re-export, or import as may be required.
+
+ 
+
+13. Miscellaneous Provisions
+
+ 
+
+13.1. Royalties. When specified as part of a purchase agreement, purchase order or invoice for sale of RidgeRun Software, RidgeRun shall receive royalties on the use of the intellectual property from the Customer according to the following terms:
+
+(a) Per Unit Payment. Customer will owe RidgeRun a &quot;Per Unit&quot; payment as defined by a sub-license that has been granted (but not necessarily paid for yet to Customer), by Customer for distribution purposes, or a copy of RidgeRun Software that has been made, but not necessarily sold, shipped or distributed or placed into use. Per Unit Payment amounts are specified on RidgeRun purchase agreements, purchase orders or invoices.
+
+(b) Within 15 days following the end of each calendar quarter, Customer will submit a written statement or report to the RidgeRun showing the copies created from the use of the RidgeRun Software during the period reported, and simultaneously remit to RidgeRun, the amount due to the RidgeRun for such period. RidgeRun and/or its authorized representative shall have the right to audit the records of Customer relating to the use of the RidgeRun Software. RidgeRun or its authorized representative, reserves the right to invoice for Royalties due in the event that Customer fails to remit written statement, report or amount due to RidgeRun for the prior periods where payment is due. Invoice amounts will be based on RidgeRun&quot;s best estimate of copies made of RidgeRun Software for the periods in question based on prior sales and sales forecasts.
+
+ 
+
+13.2 This Agreement is governed and interpreted in accordance with the laws of the state of Minnesota without giving effect to its conflict of laws provisions. The United Nations convention on contracts for the international sale of goods shall not apply to this Agreement and is expressly disclaimed. The federal and state courts located in Minneapolis, Minnesota shall have sole jurisdiction over any disputes arising hereunder and the parties hereby irrevocably submit to the personal jurisdiction of such courts. If any provision of this Agreement is held to be unenforceable, that provision will be removed and the remaining provisions will remain in full force. In the event any proceeding or lawsuit is brought by RidgeRun or you in connection with this Agreement, the prevailing party in such proceeding or lawsuit shall be entitled to receive its costs, expert witness fees and reasonable attorneys&apos; fees, including costs and fees on appeal.The failure of either party to require performance by the other party of any provision hereof shall not affect the full right to require such performance at any time thereafter; nor shall the waiver by either party of a breach of any provision hereof be taken or held to be a waiver of the provision itself. Neither this Agreement nor any of your rights or obligations hereunder may be assigned by you in whole or in part without the prior written approval of RidgeRun.This Agreement, together with the applicable license agreements for the Open Source Software, represents the entire agreement between RidgeRun and you with respect to the license of the Software and supersedes all prior or contemporaneous agreements(whether written or oral) and other communications between RidgeRun and you with respect to the license of the RidgeRun Software. No change or modification of this Agreement will be valid unless it is in writing and is signed by RidgeRun and your company. Nothing contained in this Agreement shall be construed as creating a joint venture, partnership, agency or employment relationship between RidgeRun and you.
+
+The RidgeRun Software and accompanying user documentation are protected by United States copyright law and international treaty and other United States federal and state laws. Unauthorized reproduction or distribution is subject to civil and criminal penalties.
+
+ 
+
+RidgeRun, LLC
+3287 Lake Shore Ct.
+Chaska, MN 55318
+
+ 
+
+Copyright 2016 by RidgeRun, LLC.All rights reserved.
+   </license>
+
+   <includes
+         id="org.eclipse.pde"
+         version="0.0.0"/>
+
+   <plugin
+         id="com.ridgerun.gstshark"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.tracecompass.ctf.core"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.tracecompass.ctf.parser"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.tracecompass.tmf.core"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.tracecompass.tmf.ctf.core"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.tracecompass.lttng2.control.core"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.tracecompass.lttng2.control.ui"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.tracecompass.lttng2.kernel.core"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.tracecompass.lttng2.kernel.ui"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.tracecompass.lttng2.ust.core"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.tracecompass.lttng2.ust.ui"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>

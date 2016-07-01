@@ -1,0 +1,163 @@
+#! /bin/bash
+
+# Ridgerun GstShark
+
+# Display help message
+if [ $1 == "--help" ]
+then
+    echo "Ridgerun Gstshark"
+    echo
+    echo "usage : $0 DIR [options]"
+    echo
+    echo "  DIR                            Input trace directory"
+    echo "  --help                         This help message"
+    echo "  -s, --savefig [pdf|png]         Save the graphics generated"
+    echo "                                 FORMAT: Output file format, png or pdf"
+    echo "                                 (default: pdf)"
+    echo "  -p, --persist                  keep octave console open"
+    echo "  -l, --legend <inside|outside>  Indicate the position of the legend"
+    echo "                                 over each graphic generated"
+    echo "                                 (default: inside)"
+    echo
+    exit
+fi
+
+# Verify if there is at least a parameter
+if [ $# -lt 1 ]
+then
+    echo "Error: A directory name must be given"
+    echo "Try '$0 --help' for more information."
+    exit
+fi
+
+if [ ! -d $1 ]
+then
+    echo "Error: $1 is not a directory"
+    echo "Try '$0 --help' for more information."
+    exit
+fi
+
+processing_tracer_list=("proctime" "interlatency" "framerate" "scheduling" "cpuusage")
+parser_group_list1=("proctime" "interlatency" "scheduling")
+parser_group_list2=("cpuusage" "framerate")
+
+#
+rm -f tracer.pdf
+
+# Create readable file
+babeltrace $1 > datastream.log
+
+# Loop through the tracer list 1
+for tracer in "${parser_group_list1[@]}"
+do
+    echo "Loading ${tracer} events..."
+    # Split the events in files
+    grep -w ${tracer} datastream.log > ${tracer}.log
+    # Get data columns
+    awk '{print $1,$10,$13,$16}' ${tracer}.log > ${tracer}.mat
+    # Create plots
+done
+
+
+# Loop through the tracer list 2
+for tracer in "${parser_group_list2[@]}"
+do
+    echo "Loading ${tracer} events..."
+    grep -w ${tracer} datastream.log > ${tracer}.log
+    head -n 1 ${tracer}.log  > ${tracer}_fields.log
+    # Count columns
+    COL_RAW=$(awk '{ print NF }' ${tracer}_fields.log)
+    COL_END=$(( COL_RAW - 3 ))
+    # Create the awk parameter dinamicaly based in the amount of columns
+    COUNTER=11
+    AWK_PARAM_FILED_NAME='{print $8'
+    AWK_PARAM_FIELD_VALUE='{print $1,$10'
+    while [  $COUNTER -le $COL_END ]; do
+        AWK_PARAM_FILED_NAME=${AWK_PARAM_FILED_NAME},'$'${COUNTER}
+        AWK_PARAM_FIELD_VALUE=${AWK_PARAM_FIELD_VALUE},'$'$(( COUNTER + 2 ))
+        let COUNTER=COUNTER+3
+    done
+    AWK_PARAM_FILED_NAME=${AWK_PARAM_FILED_NAME}'}'
+    AWK_PARAM_FIELD_VALUE=${AWK_PARAM_FIELD_VALUE}'}'
+
+    # Create a file with a list of field names
+    awk "$AWK_PARAM_FILED_NAME" ${tracer}_fields.log > ${tracer}_fields.mat
+    # Create a file with the timestamp and the list of field values for each event
+    awk "$AWK_PARAM_FIELD_VALUE" ${tracer}.log > ${tracer}_values.mat
+done
+
+#~ echo "Loading cpuusage events..."
+#~ # Split the events in files
+#~ grep -w cpuusage datastream.log > cpuusage.log
+#~ # Get data columns
+#~ awk '{print $1,$10,$13,$16,$19,$22,$25,$28,$31}' cpuusage.log > cpuusage.mat
+
+# Skip directory name
+shift
+
+# Parse options
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+    case $key in
+        -s|--savefig)
+        SAVEFIG="--savefig"
+        shift # past argument
+
+        key="$1"
+        case $key in
+            png)
+            FORMAT="png"
+            shift
+            ;;
+            pdf)
+            FORMAT="pdf"
+            shift
+            ;;
+        esac
+        ;;
+        -l|--legend)
+        shift # past argument
+
+        key="$1"
+        case $key in
+            outside)
+            LEGEND="northeastoutside"
+            shift
+            ;;
+            inside)
+            LEGEND="northeast"
+            shift
+            ;;
+        esac
+        ;;
+        -p|--persist)
+        PERSIST="--persist"
+        shift # past argument
+        ;;
+        *)
+        echo "WARN: unkown \"$key\" option"
+        shift
+        ;;
+    esac
+done
+
+# Create plots
+octave -qf ${PERSIST} ./gstshark-plot.m "${processing_tracer_list[@]}" "${SAVEFIG}" "${FORMAT}" "${LEGEND}"
+
+# Remove files
+rm -f datastream.log
+
+for tracer in "${parser_group_list1[@]}"
+do
+    rm ${tracer}.log ${tracer}.mat -f
+done
+
+for tracer in "${parser_group_list2[@]}"
+do
+    rm ${tracer}.log
+    rm ${tracer}_fields.log ${tracer}_fields.mat -f
+    rm ${tracer}_values.log ${tracer}_values.mat -f
+done
+
+
