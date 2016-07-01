@@ -57,7 +57,7 @@ function plot_tracer(tracer,savefig,format,legend_location)
         timestamp_max = max(max(tracer.framerate.timestamp_mat));
 
         figure('Name','Frame rate')
-        plot(tracer.framerate.timestamp_mat',tracer.framerate.fps_mat','linewidth',LINEWIDTH)
+        plot(tracer.framerate.timestamp_mat,tracer.framerate.fps_mat,'linewidth',LINEWIDTH)
         title('Frame rate','fontsize',FONTSIZE)
         xlabel('time (seconds)','fontsize',FONTSIZE)
         ylabel('Frame per second','fontsize',FONTSIZE)
@@ -163,7 +163,7 @@ function plot_tracer(tracer,savefig,format,legend_location)
         timestamp_max = max(max(max(tracer.framerate.timestamp_mat)),max(tracer.cpuusage.timestamp_mat(1,:)));
 
         figure('Name','Frame rate and CPU usage')
-        [hAx,hLine1,hLine2] = plotyy(tracer.framerate.timestamp_mat',tracer.framerate.fps_mat',tracer.cpuusage.timestamp_mat(1,:),tracer.cpuusage.cpu_mat(1,:));
+        [hAx,hLine1,hLine2] = plotyy(tracer.framerate.timestamp_mat,tracer.framerate.fps_mat,tracer.cpuusage.timestamp_mat(1,:),tracer.cpuusage.cpu_mat(1,:));
         legend(str2latex(legend_list),'Location',legend_location)
 
         title('Frame rate and CPU usage','fontsize',FONTSIZE)

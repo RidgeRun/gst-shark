@@ -17,7 +17,7 @@ for i = 1:nargin
             plot_cpuusage
         case 'framerate'
             disp('Processing framerate...')
-            plot_framerate
+            framerate_process
         case 'proctime'
             disp('Processing proctime...')
             plot_proctime
