@@ -24,7 +24,7 @@
 #include <gst/gst.h>
 G_BEGIN_DECLS
     typedef gboolean (*GstDotRender) (const gchar * dot_string, gpointer args);
-const gchar *gst_dot_pipeline_to_string (const GstPipeline * pipe);
+gchar *gst_dot_pipeline_to_string (const GstPipeline * pipe);
 gboolean
 gst_dot_do_render (const gchar * dot_string, GstDotRender render,
     gpointer args);
