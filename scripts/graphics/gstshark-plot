@@ -39,6 +39,7 @@ fi
 
 processing_tracer_list=("proctime" "interlatency" "framerate" "scheduling" "cpuusage")
 parser_group_list1=("proctime" "interlatency" "scheduling")
+parser_group_list2=("cpuusage" "framerate")
 
 #
 rm -f tracer.pdf
@@ -46,7 +47,7 @@ rm -f tracer.pdf
 # Create readable file
 babeltrace $1 > datastream.log
 
-# Loop through the tracer list
+# Loop through the tracer list 1
 for tracer in "${parser_group_list1[@]}"
 do
     echo "Loading ${tracer} events..."
@@ -57,35 +58,39 @@ do
     # Create plots
 done
 
-echo "Loading cpuusage events..."
-# Split the events in files
-grep -w cpuusage datastream.log > cpuusage.log
-# Get data columns
-awk '{print $1,$10,$13,$16,$19,$22,$25,$28,$31}' cpuusage.log > cpuusage.mat
 
+# Loop through the tracer list 2
+for tracer in "${parser_group_list2[@]}"
+do
+    echo "Loading ${tracer} events..."
+    grep -w ${tracer} datastream.log > ${tracer}.log
+    head -n 1 ${tracer}.log  > ${tracer}_fields.log
+    # Count columns
+    COL_RAW=$(awk '{ print NF }' ${tracer}_fields.log)
+    COL_END=$(( COL_RAW - 3 ))
+    # Create the awk parameter dinamicaly based in the amount of columns
+    COUNTER=11
+    AWK_PARAM_FILED_NAME='{print $8'
+    AWK_PARAM_FIELD_VALUE='{print $1,$10'
+    while [  $COUNTER -le $COL_END ]; do
+        AWK_PARAM_FILED_NAME=${AWK_PARAM_FILED_NAME},'$'${COUNTER}
+        AWK_PARAM_FIELD_VALUE=${AWK_PARAM_FIELD_VALUE},'$'$(( COUNTER + 2 ))
+        let COUNTER=COUNTER+3
+    done
+    AWK_PARAM_FILED_NAME=${AWK_PARAM_FILED_NAME}'}'
+    AWK_PARAM_FIELD_VALUE=${AWK_PARAM_FIELD_VALUE}'}'
 
-echo "Loading framerate events..."
-grep -w framerate datastream.log > framerate.log
-head -n 1 framerate.log  > framerate_fields.log
-# Count columns
-COL_RAW=$(awk '{ print NF }' framerate_fields.log)
-COL_END=$(( COL_RAW - 3 ))
-# Create the awk parameter dinamicaly based in the amount of columns
-COUNTER=11
-AWK_PARAM_FILED_NAME='{print $8'
-AWK_PARAM_FIELD_VALUE='{print $1,$10'
-while [  $COUNTER -le $COL_END ]; do
-    AWK_PARAM_FILED_NAME=${AWK_PARAM_FILED_NAME},'$'${COUNTER}
-    AWK_PARAM_FIELD_VALUE=${AWK_PARAM_FIELD_VALUE},'$'$(( COUNTER + 2 ))
-    let COUNTER=COUNTER+3
+    # Create a file with a list of field names
+    awk "$AWK_PARAM_FILED_NAME" ${tracer}_fields.log > ${tracer}_fields.mat
+    # Create a file with the timestamp and the list of field values for each event
+    awk "$AWK_PARAM_FIELD_VALUE" ${tracer}.log > ${tracer}_values.mat
 done
-AWK_PARAM_FILED_NAME=${AWK_PARAM_FILED_NAME}'}'
-AWK_PARAM_FIELD_VALUE=${AWK_PARAM_FIELD_VALUE}'}'
 
-# Create a file with a list of field names
-awk "$AWK_PARAM_FILED_NAME" framerate_fields.log > framerate_fields.mat
-# Create a file with the timestamp and the list of field values for each event
-awk "$AWK_PARAM_FIELD_VALUE" framerate.log > framerate_values.mat
+#~ echo "Loading cpuusage events..."
+#~ # Split the events in files
+#~ grep -w cpuusage datastream.log > cpuusage.log
+#~ # Get data columns
+#~ awk '{print $1,$10,$13,$16,$19,$22,$25,$28,$31}' cpuusage.log > cpuusage.mat
 
 # Skip directory name
 shift

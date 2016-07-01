@@ -17,16 +17,16 @@ function plot_tracer(tracer,savefig,format,legend_location)
         # Show plot legend
         switch CPU_USAGE_AVERAGE
             case 0
-                plot(tracer.cpuusage.timestamp_mat(2:end,:)',tracer.cpuusage.cpu_mat(2:end,:)','linewidth',LINEWIDTH)
+                plot(tracer.cpuusage.timestamp_mat(:,2:end),tracer.cpuusage.cpu_mat(:,2:end),'linewidth',LINEWIDTH)
                 legend(str2latex(tracer.cpuusage.cpu_name_list{2:end}),'Location',legend_location)
             case 1
-                plot(tracer.cpuusage.timestamp_mat',tracer.cpuusage.cpu_mat','linewidth',LINEWIDTH)
+                plot(tracer.cpuusage.timestamp_mat,tracer.cpuusage.cpu_mat,'linewidth',LINEWIDTH)
                 legend(str2latex(tracer.cpuusage.cpu_name_list),'Location',legend_location)
             case 2
-                plot(tracer.cpuusage.timestamp_mat(1,:)',tracer.cpuusage.cpu_mat(1,:)','linewidth',LINEWIDTH)
+                plot(tracer.cpuusage.timestamp_mat(1,:),tracer.cpuusage.cpu_mat(1,:),'linewidth',LINEWIDTH)
                 legend(str2latex(tracer.cpuusage.cpu_name_list{1}),'Location',legend_location)
            otherwise
-              plot(tracer.cpuusage.timestamp_mat',tracer.cpuusage.cpu_mat','linewidth',LINEWIDTH)
+              plot(tracer.cpuusage.timestamp_mat,tracer.cpuusage.cpu_mat,'linewidth',LINEWIDTH)
               legend(str2latex(tracer.cpuusage.cpu_name_list),'Location',legend_location)
         end
 
@@ -160,10 +160,10 @@ function plot_tracer(tracer,savefig,format,legend_location)
         legend_list = tracer.framerate.element_name_list;
         legend_list{end+1} = tracer.cpuusage.cpu_name_list{1};
 
-        timestamp_max = max(max(max(tracer.framerate.timestamp_mat)),max(tracer.cpuusage.timestamp_mat(1,:)));
+        timestamp_max = max(max(max(tracer.framerate.timestamp_mat)),max(tracer.cpuusage.timestamp_mat(:,1)));
 
         figure('Name','Frame rate and CPU usage')
-        [hAx,hLine1,hLine2] = plotyy(tracer.framerate.timestamp_mat,tracer.framerate.fps_mat,tracer.cpuusage.timestamp_mat(1,:),tracer.cpuusage.cpu_mat(1,:));
+        [hAx,hLine1,hLine2] = plotyy(tracer.framerate.timestamp_mat,tracer.framerate.fps_mat,tracer.cpuusage.timestamp_mat(:,1),tracer.cpuusage.cpu_mat(:,1));
         legend(str2latex(legend_list),'Location',legend_location)
 
         title('Frame rate and CPU usage','fontsize',FONTSIZE)

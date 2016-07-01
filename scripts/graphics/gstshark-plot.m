@@ -1,4 +1,4 @@
-
+#
 
 GSTSHARK_SAVEFIG = 0;
 GSTSHARK_SAVEFIG_FORMAT = 'pdf';
@@ -14,7 +14,12 @@ for i = 1:nargin
     switch option
         case 'cpuusage'
             disp('Processing cpusage...')
-            plot_cpuusage
+            [cpu_name_list timestamp_mat cpu_mat] = plot_cpuusage();
+            tracer = setfield(tracer, 'cpuusage', []);
+            
+            tracer.cpuusage.cpu_name_list = cpu_name_list;
+            tracer.cpuusage.timestamp_mat = timestamp_mat;
+            tracer.cpuusage.cpu_mat = cpu_mat;
         case 'framerate'
             disp('Processing framerate...')
             framerate_process

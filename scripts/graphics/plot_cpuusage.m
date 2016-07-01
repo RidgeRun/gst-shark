@@ -1,82 +1,87 @@
 
+function [serie_name_list timestamp_mat value_mat] = plot_cpuusage()
 
-# Configuration
-RESULT = 0;
+    # Configuration
+    RESULT = 0;
 
-# Constants
-TRUE = 1;
-FALSE = 0;
+    # Constants
+    TRUE = 1;
+    FALSE = 0;
 
-# Open tracer data
-fileID = fopen('cpuusage.mat');
-
-
-[timestamp count] = fscanf(fileID,'[%s]');
-
-# Compute how many CPUs has each event
-cpu_num = 0;
-while (1 == count)
-    [cpu_val, count] = fscanf(fileID,'%f,"');
-    cpu_num = cpu_num + 1;
-end
-cpu_num = cpu_num - 1;
-
-# Move to the beginning of a file
-frewind(fileID)
-# Compute how many evens has the log
-event_count = 0;
-count = 1;
-while (1 == count)
-    [char_val, count] = fread(fileID,1,'char');
-    if (char_val == '[')
-        event_count = event_count + 1;
+    # Open tracer data
+    fileID = fopen('cpuusage_fields.mat');
+    if -1 == fileID
+        printf('Octave: ERROR: fopen cannot open the file %s\n',file_name);
+        serie_name_list{1} = "";
+        timestamp_mat = 0;
+        value_mat = 0;
+        return
     end
-end
 
-if (0 == event_count)
-    return
-end
-
-# Creata matrix to store the data
-# Use cpu_num + 1 to add the average value
-value_mat = nan(cpu_num + 1,event_count);
-timestamp_mat = nan(cpu_num + 1,event_count);
-
-
-frewind(fileID)
-
-cpu_idx = 1;
-count = 1;
-for event_idx = 1 : event_count
-
-    [timestamp count] = fscanf(fileID,'[%s]');
-    if (count == 0)
-        break
+    # Compute how many fields has each event
+    serie_name_list{1} = 'CPU average';
+    serie_name_list_len = 1;
+    count = 1;
+    while (count == 1)
+            [serie_name count] = fscanf(fileID,'%s',1);
+            if (count == 0)
+                break
+            end
+            # Load the field name in a list
+            serie_name_list{serie_name_list_len + 1} = serie_name;
+            serie_name_list_len = serie_name_list_len + 1; 
     end
-    [timestamp_array] = sscanf(timestamp,'%d:%d:%f]');
-    timestamp_val = timestamp_array(3) + (timestamp_array(2) * 60) + timestamp_array(1);
-    timestamp_mat(1:end,event_idx) = timestamp_val;
-    
-    for cpu_idx = 2 : (cpu_num)
-        [cpu_val, count] = fscanf(fileID,'%f,"');
-        value_mat(cpu_idx,event_idx) = cpu_val;
+    serie_name_list_len = serie_name_list_len - 1;
+    fclose(fileID);
+
+    fileID = fopen('cpuusage_values.mat');
+
+    # Compute how many evens has the log
+    event_count = 0;
+    count = 1;
+    while (1 == count)
+        [char_val, count] = fread(fileID,1,'char');
+        if (char_val == '[')
+            event_count = event_count + 1;
+        end
     end
-    # Store the last cpu value
-    [cpu_val, count] = fscanf(fileID,'%f\n"');
-    value_mat(cpu_num + 1,event_idx) = cpu_val;
+
+    if (0 == event_count)
+        return
+    end
+
+    # Creata matrix to store the data
+    # Use cpu_num + 1 to add the average value
+    value_mat = nan(event_count,serie_name_list_len + 1);
+    timestamp_mat = nan(event_count,serie_name_list_len + 1);
+
+
+    frewind(fileID)
+
+    cpu_idx = 1;
+    count = 1;
+    for event_idx = 1 : event_count
+
+        [timestamp count] = fscanf(fileID,'[%s]');
+        if (count == 0)
+            break
+        end
+        [timestamp_array] = sscanf(timestamp,'%d:%d:%f]');
+        timestamp_val = timestamp_array(3) + (timestamp_array(2) * 60) + timestamp_array(1);
+        timestamp_mat(event_idx,1:end) = timestamp_val;
+        
+        for serie_idx = 2 : (serie_name_list_len)
+            [val, count] = fscanf(fileID,'%f,"');
+            value_mat(event_idx,serie_idx) = val;
+        end
+        # Store the last field value value
+        [val, count] = fscanf(fileID,'%f\n"');
+        value_mat(event_idx,serie_name_list_len + 1) = val;
+        
+    end
+
+    fclose(fileID);
     
+    # Compute the average CPU usage
+    value_mat(:,1) = mean(value_mat(:,2:end)')';
 end
-    
-fclose(fileID);
-
-
-cpu_name_list{1} = 'CPU average';
-# Compute the average CPU usage
-value_mat(1,:) = mean(value_mat(2:end,:));
-for cpu_idx = 1 : (cpu_num)
-    cpu_name_list{cpu_idx + 1} = sprintf('CPU %d',cpu_idx);
-end
-
-tracer.cpuusage.timestamp_mat = timestamp_mat;
-tracer.cpuusage.cpu_mat = value_mat;
-tracer.cpuusage.cpu_name_list = cpu_name_list;
