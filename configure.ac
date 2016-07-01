@@ -287,11 +287,11 @@ case $host_os in
   linux*)
     AC_DEFINE(GST_CPUUSAGE_ENABLE, 1, [Define this to enable the tracer for reading of the CPU usage])
     AC_MSG_NOTICE([
-      The reading of the CPU usage is enabled
+      Your platform supports CPU Usage tracing dnl
     ]) ;;
   *)
     AC_MSG_WARN([
-      CPU Usage is not currently supported on your platform
+      CPU Usage tracer currently not supported on your platform dnl
     ]) ;;
 esac
 
