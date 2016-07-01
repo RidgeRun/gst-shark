@@ -146,9 +146,18 @@ done
 octave -qf ${PERSIST} ./gstshark-plot.m "${processing_tracer_list[@]}" "${SAVEFIG}" "${FORMAT}" "${LEGEND}"
 
 # Remove files
-for tracer in "${tracer_list[@]}"
+rm -f datastream.log
+
+for tracer in "${parser_group_list1[@]}"
 do
     rm ${tracer}.log ${tracer}.mat -f
 done
-rm -f datastream.log
+
+for tracer in "${parser_group_list2[@]}"
+do
+    rm ${tracer}.log
+    rm ${tracer}_fields.log ${tracer}_fields.mat -f
+    rm ${tracer}_values.log ${tracer}_values.mat -f
+done
+
 
