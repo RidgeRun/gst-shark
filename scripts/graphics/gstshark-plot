@@ -37,24 +37,25 @@ then
     exit
 fi
 
-tracer_list=("proctime" "interlatency" "framerate" "scheduling" "cpuusage")
+processing_tracer_list=("proctime" "interlatency" "framerate" "scheduling" "cpuusage")
+parser_group_list1=("proctime" "interlatency" "framerate" "scheduling")
 
 #
 rm -f tracer.pdf
 
+# Create readable file
+babeltrace $1 > datastream.log
+
 # Loop through the tracer list
-for tracer in "${tracer_list[@]}"
+for tracer in "${parser_group_list1[@]}"
 do
     echo "Loading ${tracer} events..."
-   # Create readable file
-    babeltrace $1 > datastream.log
     # Split the events in files
     grep -w ${tracer} datastream.log > ${tracer}.log
     # Get data columns
     awk '{print $1,$10,$13,$16}' ${tracer}.log > ${tracer}.mat
     # Create plots
 done
-
 
 echo "Loading cpuusage events..."
 # Create readable file
@@ -116,7 +117,7 @@ do
 done
 
 # Create plots
-octave -qf ${PERSIST} ./gstshark-plot.m "${tracer_list[@]}" "${SAVEFIG}" "${FORMAT}" "${LEGEND}"
+octave -qf ${PERSIST} ./gstshark-plot.m "${processing_tracer_list[@]}" "${SAVEFIG}" "${FORMAT}" "${LEGEND}"
 
 # Remove files
 for tracer in "${tracer_list[@]}"
