@@ -30,14 +30,19 @@
 #include <unistd.h>
 #include <string.h>
 
+#define CPU_NAME_MAX_SIZE 8
+#define S(arg) XS(arg)
+#define XS(arg) #arg
+
 void
 gst_cpu_usage_init (GstCPUUsage * cpu_usage)
 {
-  gint32 cpu_num;
+  gint cpu_num = 0;
 
   g_return_if_fail (cpu_usage);
 
   memset (cpu_usage, 0, sizeof (GstCPUUsage));
+  cpu_usage->cpu_array_sel = FALSE;
 
   if ((cpu_num = sysconf (_SC_NPROCESSORS_CONF)) == -1) {
     GST_WARNING ("failed to get number of cpus");
@@ -51,7 +56,7 @@ void
 gst_cpu_usage_compute (GstCPUUsage * cpu_usage)
 {
   gfloat *cpu_load;
-  gint32 cpu_num;
+  gint cpu_num;
   gint cpu_id;
   FILE *fd;
 
@@ -64,6 +69,7 @@ gst_cpu_usage_compute (GstCPUUsage * cpu_usage)
   gint *idle;
   gint *idle_aux;
 
+  gchar cpu_name[CPU_NAME_MAX_SIZE];
   gint iowait;                  /* Time waiting for I/O to complete */
   gint irq;                     /* Time servicing interrupts        */
   gint softirq;                 /* Time servicing softirqs          */
@@ -96,14 +102,15 @@ gst_cpu_usage_compute (GstCPUUsage * cpu_usage)
   fd = g_fopen ("/proc/stat", "r");
   if (cpu_array_sel == 0) {
     ret =
-        fscanf (fd, "%*s %d %d %d %d %d %d %d %d %d %d", &user[0], &nice[0],
-        &system[0], &idle[0], &iowait, &irq, &softirq, &steal, &quest,
-        &quest_nice);
+        fscanf (fd, "%" S (CPU_NAME_MAX_SIZE) "s %d %d %d %d %d %d %d %d %d %d",
+        cpu_name, &user[0], &nice[0], &system[0], &idle[0], &iowait, &irq,
+        &softirq, &steal, &quest, &quest_nice);
     for (cpu_id = 0; cpu_id < cpu_num; ++cpu_id) {
       ret =
-          fscanf (fd, "%*s %d %d %d %d %d %d %d %d %d %d", &user[cpu_id],
-          &nice[cpu_id], &system[cpu_id], &idle[cpu_id], &iowait, &irq,
-          &softirq, &steal, &quest, &quest_nice);
+          fscanf (fd,
+          "%" S (CPU_NAME_MAX_SIZE) "s %d %d %d %d %d %d %d %d %d %d", cpu_name,
+          &user[cpu_id], &nice[cpu_id], &system[cpu_id], &idle[cpu_id], &iowait,
+          &irq, &softirq, &steal, &quest, &quest_nice);
     }
     /* Compute the utilization for each core */
     for (cpu_id = 0; cpu_id < cpu_num; ++cpu_id) {
@@ -119,14 +126,16 @@ gst_cpu_usage_compute (GstCPUUsage * cpu_usage)
     cpu_array_sel = 1;
   } else {
     ret =
-        fscanf (fd, "%*s %d %d %d %d %d %d %d %d %d %d", &user_aux[0],
-        &nice_aux[0], &system_aux[0], &idle_aux[0], &iowait, &irq, &softirq,
-        &steal, &quest, &quest_nice);
+        fscanf (fd, "%" S (CPU_NAME_MAX_SIZE) "s %d %d %d %d %d %d %d %d %d %d",
+        cpu_name, &user_aux[0], &nice_aux[0], &system_aux[0], &idle_aux[0],
+        &iowait, &irq, &softirq, &steal, &quest, &quest_nice);
     for (cpu_id = 0; cpu_id < cpu_num; ++cpu_id) {
       ret =
-          fscanf (fd, "%*s %d %d %d %d %d %d %d %d %d %d", &user_aux[cpu_id],
-          &nice_aux[cpu_id], &system_aux[cpu_id], &idle_aux[cpu_id], &iowait,
-          &irq, &softirq, &steal, &quest, &quest_nice);
+          fscanf (fd,
+          "%" S (CPU_NAME_MAX_SIZE) "s %d %d %d %d %d %d %d %d %d %d", cpu_name,
+          &user_aux[cpu_id], &nice_aux[cpu_id], &system_aux[cpu_id],
+          &idle_aux[cpu_id], &iowait, &irq, &softirq, &steal, &quest,
+          &quest_nice);
     }
     /* Compute the utilization for each core */
     for (cpu_id = 0; cpu_id < cpu_num; ++cpu_id) {
