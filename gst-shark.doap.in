@@ -8,25 +8,25 @@
   <name>@PACKAGE_NAME@</name>
   <shortname>@PACKAGE_TARNAME@</shortname>
   <homepage rdf:resource=@PACKAGE_URL@ />
-  <created>@GSTD_PACKAGE_CREATED@</created>
+  <created>@GST_SHARK_PACKAGE_CREATED@</created>
   <shortdesc xml:lang="en">
-    @GSTD_README_SHORT@
+    @GST_SHARK_README_SHORT@
   </shortdesc>
   <description xml:lang="en">
-    @GSTD_README_LONG@
+    @GST_SHARK_README_LONG@
   </description>
   <category></category>
   <bug-database rdf:resource="@PACKAGE_BUGREPORT@" />
   <screenshots></screenshots>
-  <mailing-list rdf:resource="@GSTD_PACKAGE_MAILINGLIST@" />
+  <mailing-list rdf:resource="@GST_SHARK_PACKAGE_MAILINGLIST@" />
   <programming-language>C</programming-language>
   <license rdf:resource="https://github.com/edumbill/doap/blob/master/licenses/lgpl" />
-  <download-page rdf:resource="@GSTD_REPO_DOWNLOAD@" />
+  <download-page rdf:resource="@GST_SHARK_REPO_DOWNLOAD@" />
 
   <repository>
     <GitRepository>
-      <location rdf:resource="@GSTD_REPO_LOCATION@"/>
-      <browse rdf:resource="@GSTD_REPO_BROWSE@"/>
+      <location rdf:resource="@GST_SHARK_REPO_LOCATION@"/>
+      <browse rdf:resource="@GST_SHARK_REPO_BROWSE@"/>
     </GitRepository>
   </repository> 
 

@@ -17,8 +17,8 @@ AC_DEFUN([AG_GST_SHARK_INIT],
   GST_SHARK_PACKAGE_MAILINGLIST=
 
   GST_SHARK_REPO_DOWNLOAD=
-  GST_SHARK_REPO_LOCATION=git@github.com:RidgeRun/gstd-1.x.git
-  GST_SHARK_REPO_BROWSE=https://github.com/RidgeRun/gstd-1.x
+  GST_SHARK_REPO_LOCATION=git@github.com:RidgeRun/gst-shark.git
+  GST_SHARK_REPO_BROWSE=https://github.com/RidgeRun/gst-shark
 
   dnl Make everything public
   AC_SUBST([GST_SHARK_README_LONG])

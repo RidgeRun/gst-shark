@@ -10,7 +10,6 @@ AC_INIT([GstShark],
 	[https://github.com/RidgeRun/gst-shark],
 	[gst-shark],
 	[https://github.com/RidgeRun/gst-shark])
-AG_GSTD_INIT
 AG_GST_SHARK_INIT
 
 dnl initialize automake (we require GNU make)
