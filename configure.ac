@@ -237,7 +237,7 @@ GVC_REQ=2.38
 AC_ARG_ENABLE(graphviz,
     AS_HELP_STRING([--disable-graphviz],[Disable graphviz capabilities (Enabled by default)]))
 
-AS_IF([test "x$enable_graphviz" != "xno"],
+if test "x$enable_graphviz" != "xno" ; then
     	PKG_CHECK_MODULES(GVC, [
             libgvc >= $GVC_REQ
 	], [
@@ -250,7 +250,7 @@ AS_IF([test "x$enable_graphviz" != "xno"],
             ])
 	])
         AC_DEFINE(ENABLE_GRAPHVIZ, 1, [Define this to enable Graphviz capabilities])
-)
+fi
 
 dnl Gio
 GIO_REQ=2.0
