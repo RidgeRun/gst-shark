@@ -223,12 +223,12 @@ PKG_CHECK_MODULES(GSTREAMER, [
 ], [
   AC_DEFINE(GST_STABLE_RELEASE, 1, [Define this to use the tracers API of GStreamer version >= $GST_REQ_STABLE])
   AC_MSG_NOTICE([
-    Version of GStreamer used is >= ($GST_REQ_STABLE)
+    Version of GStreamer used is >= ($GST_REQ_STABLE)dnl
   ])
 ],[
   AC_MSG_WARN([
     Version of GStreamer is not the latest stable revision avialable ($GST_REQ_STABLE),
-    Gst-Shark will work with the minimal required version ($GST_REQ_MINVER)
+    Gst-Shark will work with the minimal required version ($GST_REQ_MINVER)dnl
   ])
 ])
 
