@@ -14,7 +14,7 @@ for i = 1:nargin
     switch option
         case 'cpuusage'
             disp('Processing cpusage...')
-            [cpu_name_list timestamp_mat cpu_mat] = plot_cpuusage();
+            [cpu_name_list timestamp_mat cpu_mat] = cpuusage_process();
             tracer = setfield(tracer, 'cpuusage', []);
             
             tracer.cpuusage.cpu_name_list = cpu_name_list;

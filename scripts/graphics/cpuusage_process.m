@@ -1,5 +1,5 @@
 
-function [serie_name_list timestamp_mat value_mat] = plot_cpuusage()
+function [serie_name_list timestamp_mat value_mat] = cpuusage_process()
 
     # Configuration
     RESULT = 0;
