@@ -224,7 +224,7 @@ gst_cpuusage_tracer_init (GstCPUUsageTracer * self)
       gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_DOUBLE,
           "description", G_TYPE_STRING, "Core load percentage [%]", "flags",
           GST_TYPE_TRACER_VALUE_FLAGS, GST_TRACER_VALUE_FLAGS_AGGREGATED, "min",
-          G_TYPE_DOUBLE, 0, "max", G_TYPE_DOUBLE, 100, NULL), NULL);
+          G_TYPE_DOUBLE, 0.0f, "max", G_TYPE_DOUBLE, 100.0f, NULL), NULL);
 #else
   gst_tracer_log_trace (gst_structure_new ("cpuusage.class",
           "number", GST_TYPE_STRUCTURE, gst_structure_new ("value",
