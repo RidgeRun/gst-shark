@@ -74,7 +74,9 @@ static const gchar cpuusage_metadata_event_footer[] = "\
 static const gchar floating_point_event_field[] =
     "        floating_point { exp_dig = %lu; mant_dig = %d; byte_order = le; align = 8; } _cpu%d;\n";
 
-gboolean cpu_usage_thread_func (gpointer data);
+static gboolean cpu_usage_thread_func (gpointer data);
+static void cpuusage_dummy_bin_add_post (GObject * obj, GstClockTime ts,
+    GstBin * bin, GstElement * element, gboolean result);
 
 /* tracer class */
 
@@ -99,7 +101,14 @@ gst_cpuusage_tracer_class_init (GstCPUUsageTracerClass * klass)
   gobject_class->finalize = gst_cpuusage_tracer_finalize;
 }
 
-gboolean
+static void
+cpuusage_dummy_bin_add_post (GObject * obj, GstClockTime ts,
+    GstBin * bin, GstElement * element, gboolean result)
+{
+  return;
+}
+
+static gboolean
 cpu_usage_thread_func (gpointer data)
 {
   GstCPUUsageTracer *self;
@@ -233,6 +242,10 @@ gst_cpuusage_tracer_init (GstCPUUsageTracer * self)
 #endif
 
   create_metadata_event (CPU_USAGE_ARRAY_LENGTH (cpu_usage));
+
+  /* Register a dummy hook so that the tracer remains alive */
+  gst_tracing_register_hook (GST_TRACER (self), "bin-add-post",
+      G_CALLBACK (cpuusage_dummy_bin_add_post));
 
   /* Create new thread to compute the cpu usage periodically */
   self->source_id =
