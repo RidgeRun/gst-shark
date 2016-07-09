@@ -188,7 +188,8 @@ create_metadata_event (gint cpu_num)
     number_of_bytes = g_snprintf (mem,
         mem_size,
         floating_point_event_field,
-        (sizeof (gfloat) * CHAR_BIT - FLT_MANT_DIG), FLT_MANT_DIG, msg_id);
+        (unsigned long) (sizeof (gfloat) * CHAR_BIT - FLT_MANT_DIG),
+        FLT_MANT_DIG, msg_id);
 
     mem += number_of_bytes;
     mem_size -= number_of_bytes;
