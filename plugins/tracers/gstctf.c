@@ -73,9 +73,15 @@ typedef guint32 ctf_header_timestamp;
   *(guint32*)mem = int32; \
   mem += sizeof(guint32);
 
-#define CTF_EVENT_WRITE_INT64(int64,mem) \
-  *(guint64*)mem = int64; \
+#ifdef WORDS_BIGENDIAN
+#  define CTF_EVENT_WRITE_INT64(int64,mem) \
+  GST_WRITE_UINT64_BE(mem, int64); \
   mem += sizeof(guint64);
+#else
+#  define CTF_EVENT_WRITE_INT64(int64,mem) \
+  GST_WRITE_UINT64_LE(mem, int64);	   \
+  mem += sizeof(guint64);
+#endif
 
 #define CTF_EVENT_WRITE_FLOAT(float_val,mem) \
   *(gfloat*)mem = float_val; \
