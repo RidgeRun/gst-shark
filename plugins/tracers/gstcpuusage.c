@@ -87,8 +87,10 @@ gst_cpuusage_tracer_finalize (GObject * obj)
 
   self = GST_CPUUSAGE_TRACER (obj);
 
-  g_source_remove (self->source_id);
-  self->source_id = 0;
+  if (self->source_id) {
+    g_source_remove (self->source_id);
+    self->source_id = 0;
+  }
 
   G_OBJECT_CLASS (parent_class)->finalize (obj);
 }
@@ -144,6 +146,7 @@ cpu_usage_thread_func (gpointer data)
 #ifdef EVAL
   sec_counter++;
   if (sec_counter > EVAL_TIME) {
+    self->source_id = 0;
     return FALSE;
   }
 #endif
