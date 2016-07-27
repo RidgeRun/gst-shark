@@ -34,6 +34,13 @@ function [serie_name_list timestamp_mat value_mat] = cpuusage_process()
     serie_name_list_len = serie_name_list_len - 1;
     fclose(fileID);
 
+    if (serie_name_list_len == 0)
+        serie_name_list{1} = "";
+        timestamp_mat = -1;
+        value_mat = -1;
+        return
+    end
+
     fileID = fopen('cpuusage_values.mat');
 
     # Compute how many evens has the log
