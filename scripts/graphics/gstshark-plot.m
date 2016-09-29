@@ -7,6 +7,8 @@ TRUE = 1;
 
 arg_list = argv ();
 
+tracer.arg_list = char(arg_list);
+
 for i = 1:nargin
   
     option = char(arg_list{i});
