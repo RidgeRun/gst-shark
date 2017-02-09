@@ -105,13 +105,13 @@ typedef enum
 
 struct _GstCtfDescriptor
 {
+  guint8 mem[CTF_MEM_SIZE];
   GstClockTime start_time;
   GMutex mutex;
   guint8 uuid[CTF_UUID_SIZE];
   /* This memory space would be used as auxiliar memory to build the stream
    * that will be written in the FILE or in the socket.
    */
-  guint8 mem[CTF_MEM_SIZE];
   /* File variables */
   FILE *metadata;
   FILE *datastream;
