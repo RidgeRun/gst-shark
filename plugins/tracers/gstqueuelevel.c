@@ -44,6 +44,11 @@ G_DEFINE_TYPE_WITH_CODE (GstQueueLevelTracer, gst_queue_level_tracer,
 #define EVAL_TIME (10)
 #endif
 
+static void do_queue_level (GstTracer * self, guint64 ts, GstPad * pad);
+static gboolean is_queue (GstElement * element);
+
+
+
 #ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_qlevel;
 #endif
@@ -64,10 +69,47 @@ static const gchar scheduling_metadata_event[] = "event {\n\
 static void
 do_queue_level (GstTracer * self, guint64 ts, GstPad * pad)
 {
+  GstElement *element;
+
 #ifdef EVAL
-  if (ts > EVAL_TIME * GST_SECOND)
-    return;
+  if (ts > EVAL_TIME * GST_SECOND) {
+    goto out;
+  }
 #endif
+
+  element = gst_pad_get_parent_element (pad);
+
+  if (!is_queue (element)) {
+    goto noqueue;
+  }
+
+noqueue:
+  {
+    gst_object_unref (element);
+  }
+out:
+  {
+    return;
+  }
+}
+
+static gboolean
+is_queue (GstElement * element)
+{
+  static GstElementFactory *qfactory = NULL;
+  GstElementFactory *efactory;
+
+  g_return_val_if_fail (element, FALSE);
+
+  /* Find the queue factory that is going to be compared against
+     the element under inspection to see if it is a queue */
+  if (NULL == qfactory) {
+    qfactory = gst_element_factory_find ("queue");
+  }
+
+  efactory = gst_element_get_factory (element);
+
+  return efactory == qfactory;
 }
 
 /* tracer class */
