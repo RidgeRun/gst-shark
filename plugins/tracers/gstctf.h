@@ -32,6 +32,7 @@ typedef enum
   INTERLATENCY_EVENT_ID,
   FPS_EVENT_ID,
   SCHED_TIME_EVENT_ID,
+  QUEUE_LEVEL_EVENT_ID,
 } event_id;
 
 gchar *get_ctf_path_name (void);
@@ -44,6 +45,8 @@ void do_print_framerate_event (event_id id, guint32 padnum, guint64 * fps);
 void do_print_interlatency_event (event_id id,
     char *originpad, gchar * destinationpad, guint64 time);
 void do_print_scheduling_event (event_id id, gchar * elementname, guint64 time);
+void do_print_queue_level_event (event_id id, const gchar * elementname, guint32 bytes,
+    guint32 buffers, guint64 time);
 void do_print_ctf_init (event_id id);
 G_END_DECLS
 #endif /*__GST_CTF_H__*/

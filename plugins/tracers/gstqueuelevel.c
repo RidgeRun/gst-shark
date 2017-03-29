@@ -54,7 +54,7 @@ static gboolean is_queue (GstElement * element);
 static GstTracerRecord *tr_qlevel;
 #endif
 
-static const gchar scheduling_metadata_event[] = "event {\n\
+static const gchar queue_level_metadata_event[] = "event {\n\
     name = queuelevel;\n\
     id = %d;\n\
     stream_id = %d;\n\
@@ -128,8 +128,10 @@ do_queue_level (GstTracer * self, guint64 ts, GstPad * pad)
           "size_buffers", G_TYPE_UINT, size_buffers,
           "size_time", G_TYPE_STRING, size_time_string, NULL));
 #endif
-
   g_free (size_time_string);
+
+  do_print_queue_level_event (QUEUE_LEVEL_EVENT_ID, element_name, size_bytes,
+      size_buffers, size_time);
 
 out:
   {
@@ -206,7 +208,7 @@ gst_queue_level_tracer_init (GstQueueLevelTracer * self)
 #endif
 
   metadata_event =
-      g_strdup_printf (scheduling_metadata_event, SCHED_TIME_EVENT_ID, 0);
+      g_strdup_printf (queue_level_metadata_event, QUEUE_LEVEL_EVENT_ID, 0);
   add_metadata_event_struct (metadata_event);
   g_free (metadata_event);
 }
