@@ -70,26 +70,49 @@ static void
 do_queue_level (GstTracer * self, guint64 ts, GstPad * pad)
 {
   GstElement *element;
+  guint32 size_bytes;
+  guint32 size_buffers;
+  guint64 size_time;
+  gchar *size_time_string;
+  const gchar *element_name;
 
 #ifdef EVAL
   if (ts > EVAL_TIME * GST_SECOND) {
-    goto out;
+    return;
   }
 #endif
 
   element = gst_pad_get_parent_element (pad);
 
   if (!is_queue (element)) {
-    goto noqueue;
+    goto out;
   }
 
-noqueue:
-  {
-    gst_object_unref (element);
-  }
+  element_name = GST_OBJECT_NAME (element);
+
+  g_object_get (element, "current-level-bytes", &size_bytes,
+      "current-level-buffers", &size_buffers,
+      "current-level-time", &size_time, NULL);
+
+  size_time_string =
+      g_strdup_printf ("%" GST_TIME_FORMAT, GST_TIME_ARGS (size_time));
+
+#ifdef GST_STABLE_RELEASE
+  gst_tracer_record_log (tr_qlevel, element_name, size_bytes, size_buffers,
+      size_time_string);
+#else
+  gst_tracer_log_trace (gst_structure_new ("queuelevel",
+          "queue", G_TYPE_STRING, element_name,
+          "size_bytes", G_TYPE_UINT, size_bytes,
+          "size_buffers", G_TYPE_UINT, size_buffers,
+          "size_time", G_TYPE_STRING, size_time_string, NULL));
+#endif
+
+  g_free (size_time_string);
+
 out:
   {
-    return;
+    gst_object_unref (element);
   }
 }
 
