@@ -248,7 +248,7 @@ do_element_change_state_post (GstFramerateTracer * self, guint64 ts,
         "%" GST_TIME_FORMAT ", element=%" GST_PTR_FORMAT ", change=%s, res=%s",
         GST_TIME_ARGS (ts), element, statename, retname);
 
-    if (transition == GST_STATE_CHANGE_PAUSED_TO_PLAYING) {
+    if (transition == GST_STATE_CHANGE_PAUSED_TO_PLAYING && !self->start_timer) {
       /* Creating a calback function to display the updated counter of frames every second */
       self->start_timer = TRUE;
       g_timeout_add_seconds (1, (GSourceFunc) do_print_framerate,
