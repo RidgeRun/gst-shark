@@ -66,6 +66,9 @@ plugin_init (GstPlugin * plugin)
           gst_queue_level_tracer_get_type ())) {
     return FALSE;
   }
+  if (!gst_tracer_register (plugin, "bitrate", gst_bitrate_tracer_get_type ())) {
+    return FALSE;
+  }
   if (!gst_ctf_init ()) {
     return FALSE;
   }
