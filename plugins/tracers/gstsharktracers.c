@@ -32,6 +32,7 @@
 #include "gstscheduletime.h"
 #include "gstframerate.h"
 #include "gstqueuelevel.h"
+#include "gstbitrate.h"
 #include "gstctf.h"
 
 static gboolean

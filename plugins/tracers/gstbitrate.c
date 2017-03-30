@@ -54,13 +54,15 @@ static GstTracerRecord *tr_bitrate;
 
 static gchar *make_char_array_valid (gchar * src);
 static void create_metadata_event (GHashTable * table);
+static void add_bytes (GstBitrateTracer * self, GstClockTime ts, GstPad * pad,
+    guint64 bytes);
 
 typedef struct _GstBitrateHash GstBitrateHash;
 
 struct _GstBitrateHash
 {
   const gchar *fullname;
-  guint bitrate;
+  guint64 bitrate;
 };
 
 static const gchar bitrate_metadata_event_header[] = "event {\n\
@@ -152,8 +154,8 @@ do_destroy_hashtable_key (gpointer data)
 }
 
 static void
-do_pad_push_buffer_pre (GstBitrateTracer * self, guint64 ts, GstPad * pad,
-    GstBuffer * buffer)
+add_bytes (GstBitrateTracer * self, GstClockTime ts, GstPad * pad,
+    guint64 bytes)
 {
   gchar *fullname;
   gint value = 1;
@@ -176,7 +178,7 @@ do_pad_push_buffer_pre (GstBitrateTracer * self, guint64 ts, GstPad * pad,
        only the value should be updated */
     pad_frames =
         (GstBitrateHash *) g_hash_table_lookup (self->bitrate_counters, pad);
-    pad_frames->bitrate++;
+    pad_frames->bitrate += bytes * 8;
   } else {
     GST_INFO_OBJECT (self, "The %s key was added to the Hash Table", fullname);
 
@@ -194,19 +196,33 @@ do_pad_push_buffer_pre (GstBitrateTracer * self, guint64 ts, GstPad * pad,
 }
 
 static void
+do_pad_push_buffer_pre (GstBitrateTracer * self, guint64 ts, GstPad * pad,
+    GstBuffer * buffer)
+{
+  gsize bytes;
+
+  bytes = gst_buffer_get_size (buffer);
+  add_bytes (self, ts, pad, bytes);
+}
+
+static void
 do_pad_push_list_pre (GstBitrateTracer * self, GstClockTime ts, GstPad * pad,
     GstBufferList * list)
 {
-  // We aren't doing anything with the buffer, we can reuse push_buffer using NULL
-  do_pad_push_buffer_pre (self, ts, pad, NULL);
+  guint idx;
+  GstBuffer *buffer;
+
+  for (idx = 0; idx < gst_buffer_list_length (list); ++idx) {
+    buffer = gst_buffer_list_get (list, idx);
+    do_pad_push_buffer_pre (self, ts, pad, buffer);
+  }
 }
 
 static void
 do_pad_pull_range_pre (GstBitrateTracer * self, GstClockTime ts, GstPad * pad,
     guint64 offset, guint size)
 {
-  // We aren't doing anything with the buffer, we can reuse push_buffer using NULL
-  do_pad_push_buffer_pre (self, ts, pad, NULL);
+  add_bytes (self, ts, pad, size);
 }
 
 static void
@@ -274,7 +290,7 @@ gst_bitrate_tracer_init (GstBitrateTracer * self)
           "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PAD,
           NULL),
       "bitrate", GST_TYPE_STRUCTURE, gst_structure_new ("value",
-          "type", G_TYPE_GTYPE, G_TYPE_UINT,
+          "type", G_TYPE_GTYPE, G_TYPE_UINT64,
           "description", G_TYPE_STRING, "Bitrate",
           "flags", GST_TYPE_TRACER_VALUE_FLAGS,
           GST_TRACER_VALUE_FLAGS_AGGREGATED, "min", G_TYPE_UINT64, 0, "max",
