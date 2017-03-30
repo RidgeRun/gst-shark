@@ -126,7 +126,7 @@ do_print_bitrate (gpointer * data)
       goto out;
     }
   }
-  //  do_print_bitrate_event (FPS_EVENT_ID, size, pad_counts);
+  do_print_bitrate_event (FPS_EVENT_ID, size, pad_counts);
 
 out:
   g_free (pad_counts);
