@@ -70,6 +70,16 @@
    </Version>
   </release>
 
+  <release>
+   <Version>
+    <revision>0.4.0</revision>
+    <branch>hotfix/v0.4.0</branch>
+    <name></name>
+    <created>2017-05-22</created>
+    <file-release rdf:resource="" />
+   </Version>
+  </release>
+
   <maintainer>
     <foaf:Person>
       <foaf:name>Michael Gruner</foaf:name>
