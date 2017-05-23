@@ -52,6 +52,24 @@ static void gst_identity_range_post (GObject * self, GstClockTime ts,
 static GstTracerRecord *tr_identity;
 #endif
 
+static const gchar identity_metadata_event[] = "event {\n\
+    name = identity;\n\
+    id = %d;\n\
+    stream_id = %d;\n\
+    fields := struct {\n\
+        string pad;\n\
+        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } pts;\n\
+        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } dts;\n\
+        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } duration;\n\
+        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } offset;\n\
+        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } offset_end;\n\
+        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } size;\n\
+        integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } flags;\n\
+        integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } refcount;\n\
+    };\n\
+};\n\
+\n";
+
 static void
 gst_identity_buffer_pre (GObject * self, GstClockTime ts, GstPad * pad,
     GstBuffer * buffer)
@@ -110,6 +128,9 @@ gst_identity_buffer_pre (GObject * self, GstClockTime ts, GstPad * pad,
           "refcount", G_TYPE_UINT, refcount, NULL));
 #endif
 
+  do_print_identity_event (IDENTITY_EVENT_ID, pad_name, pts, dts, duration,
+      offset, offset_end, size, flags, refcount);
+
   g_value_unset (&vflags);
   g_free (spts);
   g_free (sdts);
@@ -149,6 +170,7 @@ static void
 gst_identity_tracer_init (GstIdentityTracer * self)
 {
   GstTracer *tracer = GST_TRACER (self);
+  gchar *metadata_event;
 
   gst_tracing_register_hook (tracer, "pad-push-pre",
       G_CALLBACK (gst_identity_buffer_pre));
@@ -210,4 +232,9 @@ gst_identity_tracer_init (GstIdentityTracer * self)
           "refcount", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
               "related-to", G_TYPE_STRING, "pad", NULL), NULL));
 #endif
+
+  metadata_event =
+      g_strdup_printf (identity_metadata_event, IDENTITY_EVENT_ID, 0);
+  add_metadata_event_struct (metadata_event);
+  g_free (metadata_event);
 }
