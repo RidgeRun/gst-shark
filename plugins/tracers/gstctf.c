@@ -861,6 +861,142 @@ do_print_scheduling_event (event_id id, gchar * elementname, guint64 time)
 }
 
 void
+do_print_queue_level_event (event_id id, const gchar * elementname,
+    guint32 bytes, guint32 buffers, guint64 time)
+{
+  GError *error;
+  guint8 *mem;
+  guint8 *event_mem;
+  gsize event_size;
+
+  mem = ctf_descriptor->mem;
+  event_mem = mem + TCP_HEADER_SIZE;
+
+  /* Lock mem and datastream and output_stream resources */
+  g_mutex_lock (&ctf_descriptor->mutex);
+  /* Add CTF header */
+  CTF_EVENT_WRITE_HEADER (id, event_mem);
+  /* Add event payload */
+  /* Write element name */
+  CTF_EVENT_WRITE_STRING (elementname, event_mem);
+
+  /* Write bytes */
+  CTF_EVENT_WRITE_INT32 (bytes, event_mem);
+
+  /* Write buffers */
+  CTF_EVENT_WRITE_INT32 (buffers, event_mem);
+
+  /* Write time */
+  CTF_EVENT_WRITE_INT64 (time, event_mem);
+  /* Computer event size */
+  event_size = event_mem - (mem + TCP_HEADER_SIZE);
+
+  if (FALSE == ctf_descriptor->file_output_disable) {
+    event_mem = mem + TCP_HEADER_SIZE;
+    fwrite (event_mem, sizeof (gchar), event_size, ctf_descriptor->datastream);
+  }
+
+  if (FALSE == ctf_descriptor->tcp_output_disable) {
+    /* Write the TCP header */
+    TCP_EVENT_HEADER_WRITE (TCP_DATASTREAM_ID, event_size, mem);
+
+    g_output_stream_write (ctf_descriptor->output_stream,
+        ctf_descriptor->mem, event_size + TCP_HEADER_SIZE, NULL, &error);
+  }
+
+  g_mutex_unlock (&ctf_descriptor->mutex);
+}
+
+void
+do_print_bitrate_event (event_id id, guint32 pad_num, guint64 * fps)
+{
+  GError *error;
+  guint8 *mem;
+  guint8 *event_mem;
+  gsize event_size;
+  guint32 pad_idx;
+
+  mem = ctf_descriptor->mem;
+  event_mem = mem + TCP_HEADER_SIZE;
+
+  /* Lock mem and datastream and output_stream resources */
+  g_mutex_lock (&ctf_descriptor->mutex);
+  /* Add CTF header */
+  CTF_EVENT_WRITE_HEADER (id, event_mem);
+
+  for (pad_idx = 0; pad_idx < pad_num; ++pad_idx) {
+    /* Write bitrate */
+    CTF_EVENT_WRITE_INT64 (fps[pad_idx], event_mem);
+  }
+
+  /* Computer event size */
+  event_size = event_mem - (mem + TCP_HEADER_SIZE);
+
+  if (FALSE == ctf_descriptor->file_output_disable) {
+    event_mem = mem + TCP_HEADER_SIZE;
+    fwrite (event_mem, sizeof (gchar), event_size, ctf_descriptor->datastream);
+  }
+
+  if (FALSE == ctf_descriptor->tcp_output_disable) {
+    /* Write the TCP header */
+    TCP_EVENT_HEADER_WRITE (TCP_DATASTREAM_ID, event_size, mem);
+
+    g_output_stream_write (ctf_descriptor->output_stream,
+        ctf_descriptor->mem, event_size + TCP_HEADER_SIZE, NULL, &error);
+  }
+
+  g_mutex_unlock (&ctf_descriptor->mutex);
+}
+
+void
+do_print_identity_event (event_id id, const gchar * pad, GstClockTime pts,
+    GstClockTime dts, GstClockTime duration, guint64 offset,
+    guint64 offset_end, guint64 size, GstBufferFlags flags, guint32 refcount)
+{
+  GError *error;
+  guint8 *mem;
+  guint8 *event_mem;
+  gsize event_size;
+
+  mem = ctf_descriptor->mem;
+  event_mem = mem + TCP_HEADER_SIZE;
+
+  /* Lock mem and datastream and output_stream resources */
+  g_mutex_lock (&ctf_descriptor->mutex);
+  /* Add CTF header */
+  CTF_EVENT_WRITE_HEADER (id, event_mem);
+
+  /* Write event specific fields */
+  CTF_EVENT_WRITE_STRING (pad, event_mem);
+  CTF_EVENT_WRITE_INT64 (pts, event_mem);
+  CTF_EVENT_WRITE_INT64 (dts, event_mem);
+  CTF_EVENT_WRITE_INT64 (duration, event_mem);
+  CTF_EVENT_WRITE_INT64 (offset, event_mem);
+  CTF_EVENT_WRITE_INT64 (offset_end, event_mem);
+  CTF_EVENT_WRITE_INT64 (size, event_mem);
+  CTF_EVENT_WRITE_INT32 (flags, event_mem);
+  CTF_EVENT_WRITE_INT32 (refcount, event_mem);
+
+  /* Computer event size */
+  event_size = event_mem - (mem + TCP_HEADER_SIZE);
+
+  if (FALSE == ctf_descriptor->file_output_disable) {
+    event_mem -= event_size;
+    fwrite (event_mem, sizeof (gchar), event_size, ctf_descriptor->datastream);
+  }
+
+  if (FALSE == ctf_descriptor->tcp_output_disable) {
+    /* Write the TCP header */
+    TCP_EVENT_HEADER_WRITE (TCP_DATASTREAM_ID, event_size, mem);
+
+    g_output_stream_write (ctf_descriptor->output_stream,
+        ctf_descriptor->mem, event_size + TCP_HEADER_SIZE, NULL, &error);
+  }
+
+  g_mutex_unlock (&ctf_descriptor->mutex);
+}
+
+void
 do_print_ctf_init (event_id id)
 {
   GError *error;

@@ -31,6 +31,9 @@
 #include "gstinterlatency.h"
 #include "gstscheduletime.h"
 #include "gstframerate.h"
+#include "gstqueuelevel.h"
+#include "gstbitrate.h"
+#include "gstidentity.h"
 #include "gstctf.h"
 
 static gboolean
@@ -59,6 +62,17 @@ plugin_init (GstPlugin * plugin)
   }
   if (!gst_tracer_register (plugin, "framerate",
           gst_framerate_tracer_get_type ())) {
+    return FALSE;
+  }
+  if (!gst_tracer_register (plugin, "queuelevel",
+          gst_queue_level_tracer_get_type ())) {
+    return FALSE;
+  }
+  if (!gst_tracer_register (plugin, "bitrate", gst_bitrate_tracer_get_type ())) {
+    return FALSE;
+  }
+  if (!gst_tracer_register (plugin, "identity",
+          gst_identity_tracer_get_type ())) {
     return FALSE;
   }
   if (!gst_ctf_init ()) {
