@@ -32,5 +32,6 @@
   - Identity
   - Queue Level
 
+= Release v0.4.1 =
 
-	
+* Renamed identity plugin to buffer, to avoid plugin conflict
