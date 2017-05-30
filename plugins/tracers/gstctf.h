@@ -34,7 +34,7 @@ typedef enum
   SCHED_TIME_EVENT_ID,
   QUEUE_LEVEL_EVENT_ID,
   BITRATE_EVENT_ID,
-  IDENTITY_EVENT_ID,
+  BUFFER_EVENT_ID,
 } event_id;
 
 gchar *get_ctf_path_name (void);
@@ -50,7 +50,7 @@ void do_print_scheduling_event (event_id id, gchar * elementname, guint64 time);
 void do_print_queue_level_event (event_id id, const gchar * elementname, guint32 bytes,
     guint32 buffers, guint64 time);
 void do_print_bitrate_event (event_id id, guint32 pad_num, guint64 * fps);
-void do_print_identity_event (event_id id, const gchar * pad, GstClockTime pts,
+void do_print_buffer_event (event_id id, const gchar * pad, GstClockTime pts,
     GstClockTime dts, GstClockTime duration, guint64 offset,
     guint64 offset_end, guint64 size, GstBufferFlags flags,
     guint32 refcount);

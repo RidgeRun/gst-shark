@@ -949,7 +949,7 @@ do_print_bitrate_event (event_id id, guint32 pad_num, guint64 * fps)
 }
 
 void
-do_print_identity_event (event_id id, const gchar * pad, GstClockTime pts,
+do_print_buffer_event (event_id id, const gchar * pad, GstClockTime pts,
     GstClockTime dts, GstClockTime duration, guint64 offset,
     guint64 offset_end, guint64 size, GstBufferFlags flags, guint32 refcount)
 {
