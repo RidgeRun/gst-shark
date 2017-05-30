@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 /**
- * SECTION:gstidentity
+ * SECTION:gstbuffer
  * @short_description: log current idendity
  *
  * A tracing module that prints buffer info at every sink pad
@@ -28,32 +28,32 @@
 #  include "config.h"
 #endif
 
-#include "gstidentity.h"
+#include "gstbuffer.h"
 #include "gstctf.h"
 
-GST_DEBUG_CATEGORY_STATIC (gst_identity_debug);
-#define GST_CAT_DEFAULT gst_identity_debug
+GST_DEBUG_CATEGORY_STATIC (gst_buffer_debug);
+#define GST_CAT_DEFAULT gst_buffer_debug
 
 #define _do_init \
-    GST_DEBUG_CATEGORY_INIT (gst_identity_debug, "identity", 0, "identity tracer");
-#define gst_identity_tracer_parent_class parent_class
-G_DEFINE_TYPE_WITH_CODE (GstIdentityTracer, gst_identity_tracer,
+    GST_DEBUG_CATEGORY_INIT (gst_buffer_debug, "buffer", 0, "buffer tracer");
+#define gst_buffer_tracer_parent_class parent_class
+G_DEFINE_TYPE_WITH_CODE (GstBufferTracer, gst_buffer_tracer,
     GST_TYPE_TRACER, _do_init);
 
-static void gst_identity_buffer_pre (GObject * self, GstClockTime ts,
+static void gst_buffer_buffer_pre (GObject * self, GstClockTime ts,
     GstPad * pad, GstBuffer * buffer);
-static void gst_identity_buffer_list_pre (GObject * self, GstClockTime ts,
+static void gst_buffer_buffer_list_pre (GObject * self, GstClockTime ts,
     GstPad * pad, GstBufferList * list);
-static void gst_identity_range_post (GObject * self, GstClockTime ts,
+static void gst_buffer_range_post (GObject * self, GstClockTime ts,
     GstPad * pad, GstBuffer * buffer, GstFlowReturn res);
 
 
 #ifdef GST_STABLE_RELEASE
-static GstTracerRecord *tr_identity;
+static GstTracerRecord *tr_buffer;
 #endif
 
-static const gchar identity_metadata_event[] = "event {\n\
-    name = identity;\n\
+static const gchar buffer_metadata_event[] = "event {\n\
+    name = buffer;\n\
     id = %d;\n\
     stream_id = %d;\n\
     fields := struct {\n\
@@ -71,7 +71,7 @@ static const gchar identity_metadata_event[] = "event {\n\
 \n";
 
 static void
-gst_identity_buffer_pre (GObject * self, GstClockTime ts, GstPad * pad,
+gst_buffer_buffer_pre (GObject * self, GstClockTime ts, GstPad * pad,
     GstBuffer * buffer)
 {
   gchar *pad_name;
@@ -113,10 +113,10 @@ gst_identity_buffer_pre (GObject * self, GstClockTime ts, GstPad * pad,
   refcount = GST_MINI_OBJECT_REFCOUNT_VALUE (buffer);
 
 #ifdef GST_STABLE_RELEASE
-  gst_tracer_record_log (tr_identity, pad_name, spts, sdts, sduration, offset,
+  gst_tracer_record_log (tr_buffer, pad_name, spts, sdts, sduration, offset,
       offset_end, size, sflags, refcount);
 #else
-  gst_tracer_log_trace (gst_structure_new ("identity",
+  gst_tracer_log_trace (gst_structure_new ("buffer",
           "pad", G_TYPE_STRING, pad_name,
           "pts", G_TYPE_STRING, spts,
           "dts", G_TYPE_STRING, sdts,
@@ -128,7 +128,7 @@ gst_identity_buffer_pre (GObject * self, GstClockTime ts, GstPad * pad,
           "refcount", G_TYPE_UINT, refcount, NULL));
 #endif
 
-  do_print_identity_event (IDENTITY_EVENT_ID, pad_name, pts, dts, duration,
+  do_print_buffer_event (BUFFER_EVENT_ID, pad_name, pts, dts, duration,
       offset, offset_end, size, flags, refcount);
 
   g_value_unset (&vflags);
@@ -140,14 +140,14 @@ gst_identity_buffer_pre (GObject * self, GstClockTime ts, GstPad * pad,
 }
 
 static void
-gst_identity_range_post (GObject * self, GstClockTime ts, GstPad * pad,
+gst_buffer_range_post (GObject * self, GstClockTime ts, GstPad * pad,
     GstBuffer * buffer, GstFlowReturn res)
 {
-  gst_identity_buffer_pre (self, ts, pad, buffer);
+  gst_buffer_buffer_pre (self, ts, pad, buffer);
 }
 
 static void
-gst_identity_buffer_list_pre (GObject * self, GstClockTime ts, GstPad * pad,
+gst_buffer_buffer_list_pre (GObject * self, GstClockTime ts, GstPad * pad,
     GstBufferList * list)
 {
   guint idx;
@@ -155,34 +155,34 @@ gst_identity_buffer_list_pre (GObject * self, GstClockTime ts, GstPad * pad,
 
   for (idx = 0; idx < gst_buffer_list_length (list); ++idx) {
     buffer = gst_buffer_list_get (list, idx);
-    gst_identity_buffer_pre (self, ts, pad, buffer);
+    gst_buffer_buffer_pre (self, ts, pad, buffer);
   }
 }
 
 /* tracer class */
 static void
-gst_identity_tracer_class_init (GstIdentityTracerClass * klass)
+gst_buffer_tracer_class_init (GstBufferTracerClass * klass)
 {
 }
 
 
 static void
-gst_identity_tracer_init (GstIdentityTracer * self)
+gst_buffer_tracer_init (GstBufferTracer * self)
 {
   GstTracer *tracer = GST_TRACER (self);
   gchar *metadata_event;
 
   gst_tracing_register_hook (tracer, "pad-push-pre",
-      G_CALLBACK (gst_identity_buffer_pre));
+      G_CALLBACK (gst_buffer_buffer_pre));
 
   gst_tracing_register_hook (tracer, "pad-push-list-pre",
-      G_CALLBACK (gst_identity_buffer_list_pre));
+      G_CALLBACK (gst_buffer_buffer_list_pre));
 
   gst_tracing_register_hook (tracer, "pad-pull-range-post",
-      G_CALLBACK (gst_identity_range_post));
+      G_CALLBACK (gst_buffer_range_post));
 
 #ifdef GST_STABLE_RELEASE
-  tr_identity = gst_tracer_record_new ("identity.class",
+  tr_buffer = gst_tracer_record_new ("buffer.class",
       "pad", GST_TYPE_STRUCTURE, gst_structure_new ("value",
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
           "description", G_TYPE_STRING,
@@ -210,8 +210,8 @@ gst_identity_tracer_init (GstIdentityTracer * self)
           G_TYPE_UINT, "description", G_TYPE_STRING, "Ref Count", "min",
           G_TYPE_UINT, 0, "max", G_TYPE_UINT, G_MAXUINT32, NULL), NULL);
 #else
-  gst_tracer_log_trace (gst_structure_new ("identity.class",
-          "identity", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+  gst_tracer_log_trace (gst_structure_new ("buffer.class",
+          "buffer", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
               "related-to", G_TYPE_STRING, "pad", NULL),
           "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
               "related-to", G_TYPE_STRING, "pad", NULL),
@@ -233,8 +233,7 @@ gst_identity_tracer_init (GstIdentityTracer * self)
               "related-to", G_TYPE_STRING, "pad", NULL), NULL));
 #endif
 
-  metadata_event =
-      g_strdup_printf (identity_metadata_event, IDENTITY_EVENT_ID, 0);
+  metadata_event = g_strdup_printf (buffer_metadata_event, BUFFER_EVENT_ID, 0);
   add_metadata_event_struct (metadata_event);
   g_free (metadata_event);
 }
