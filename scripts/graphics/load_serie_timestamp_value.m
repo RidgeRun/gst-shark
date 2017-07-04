@@ -25,7 +25,7 @@ function [serie_name_list,timestamp_mat,value_mat] = load_serie_timestamp_value(
         return
     end
     [serie_val count] = fscanf(fileID,'%s\"');
-    [time count] = fscanf(fileID,'%d');
+    [time count] = fscanf(fileID,'%ld');
 
     serie_name_list = {serie_val};
     serie_freq_list = 1;
@@ -37,7 +37,7 @@ function [serie_name_list,timestamp_mat,value_mat] = load_serie_timestamp_value(
             break
         end
         [serie_val count] = fscanf(fileID,'%s\"');
-        [time count] = fscanf(fileID,'%d');
+        [time count] = fscanf(fileID,'%ld');
 
         serie_name_list_len = length(serie_name_list);
         for list_idx = 1:serie_name_list_len
@@ -75,7 +75,7 @@ function [serie_name_list,timestamp_mat,value_mat] = load_serie_timestamp_value(
             break
         end
         [serie_val count] = fscanf(fileID,'%s\"');
-        [time count] = fscanf(fileID,'%d');
+        [time count] = fscanf(fileID,'%ld');
         # Match the event with a pad name
         for list_idx = 1:serie_name_list_len
             if (1 == strcmp(char(serie_name_list{list_idx}),serie_val))
