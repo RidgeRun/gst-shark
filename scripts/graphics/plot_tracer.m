@@ -134,14 +134,16 @@ function plot_tracer(tracer,savefig,format,legend_location)
         # Calculate the greatest time value
         timestamp_max = max(max(tracer.scheduling.timestamp_mat));
 
-        figure('Name','Scheduling')
+        figure('Name','Schedule')
         plot(tracer.scheduling.timestamp_mat',tracer.scheduling.time_mat','linewidth',LINEWIDTH)
-        title('Scheduling','fontsize',FONTSIZE)
+        title('Schedule','fontsize',FONTSIZE)
         xlabel('time (seconds)','fontsize',FONTSIZE)
         ylabel('time (nanoseconds)','fontsize',FONTSIZE)
-        legend(str2latex(tracer.scheduling.pad_name_list),'Location',legend_location)
         xlim([0,timestamp_max])
-        
+        if (0 == strcmp(legend_location,'extern'))
+            legend(str2latex(tracer.scheduling.pad_name_list),'Location',legend_location)
+        end
+        # Save figure
         if (TRUE == savefig)
             disp('Save scheduling figure...')
             switch format
@@ -152,6 +154,10 @@ function plot_tracer(tracer,savefig,format,legend_location)
                 otherwise
                     printf('octave: WARN: %s is not supported',format)
             end
+        end
+        # Create a new figure if the legend location is extern
+        if (1 == strcmp(legend_location,'extern'))
+            plot_legend(tracer.scheduling.pad_name_list,'Schedule plot legend',savefig,'schedule_legend',format)
         end
     end
     
@@ -183,23 +189,5 @@ function plot_tracer(tracer,savefig,format,legend_location)
                     printf('octave: WARN: %s is not supported',format)
             end
         end
-    end
-end
-
-# Convert normal string to latex format
-function string_list = str2latex(string_list)
-    for string_list_idx = 1 : length(string_list)
-        string_field = char(string_list{string_list_idx});
-        string_field_new = 'x';
-        string_field_idx = 1;
-        for idx = 1 : length(string_field)
-            if (string_field(idx) == '_')
-                string_field_new(string_field_idx) = '\';
-                string_field_idx = string_field_idx + 1;
-            end
-            string_field_new(string_field_idx) = string_field(idx);
-            string_field_idx = string_field_idx + 1;
-        end
-        string_list{string_list_idx} = string_field_new;
     end
 end

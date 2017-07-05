@@ -46,10 +46,12 @@ for i = 1:nargin
             GSTSHARK_LEGEND = 'northeastoutside';
         case 'northeast'
             GSTSHARK_LEGEND = 'northeast';
+        case 'extern'
+            GSTSHARK_LEGEND = 'extern';
         otherwise
             if (0 != length(option))
             length(option)
-                printf('octave: WARN: \"%s\" tracer does not exit',option)
+                printf('octave: WARN: \"%s\" tracer does not exist',option)
             end
     end
 end
