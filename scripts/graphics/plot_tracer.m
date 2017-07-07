@@ -18,16 +18,12 @@ function plot_tracer(tracer,savefig,format,legend_location)
         switch CPU_USAGE_AVERAGE
             case 0
                 plot(tracer.cpuusage.timestamp_mat(:,2:end),tracer.cpuusage.cpu_mat(:,2:end),'linewidth',LINEWIDTH)
-                legend(str2latex(tracer.cpuusage.cpu_name_list{2:end}),'Location',legend_location)
             case 1
                 plot(tracer.cpuusage.timestamp_mat,tracer.cpuusage.cpu_mat,'linewidth',LINEWIDTH)
-                legend(str2latex(tracer.cpuusage.cpu_name_list),'Location',legend_location)
             case 2
                 plot(tracer.cpuusage.timestamp_mat(1,:),tracer.cpuusage.cpu_mat(1,:),'linewidth',LINEWIDTH)
-                legend(str2latex(tracer.cpuusage.cpu_name_list{1}),'Location',legend_location)
            otherwise
               plot(tracer.cpuusage.timestamp_mat,tracer.cpuusage.cpu_mat,'linewidth',LINEWIDTH)
-              legend(str2latex(tracer.cpuusage.cpu_name_list),'Location',legend_location)
         end
 
         # Calculate the greatest time value
@@ -37,6 +33,18 @@ function plot_tracer(tracer,savefig,format,legend_location)
         xlabel('time (seconds)','fontsize',FONTSIZE)
         ylabel('Usage (%)','fontsize',FONTSIZE)
         xlim([0,timestamp_max])
+        if (0 == strcmp(legend_location,'extern'))
+            switch CPU_USAGE_AVERAGE
+                case 0
+                    legend(str2latex(tracer.cpuusage.cpu_name_list{2:end}),'Location',legend_location)
+                case 1
+                    legend(str2latex(tracer.cpuusage.cpu_name_list),'Location',legend_location)
+                case 2
+                    legend(str2latex(tracer.cpuusage.cpu_name_list{1}),'Location',legend_location)
+                otherwise
+                    legend(str2latex(tracer.cpuusage.cpu_name_list),'Location',legend_location)
+            end
+        end
         
         if (TRUE == savefig)
             disp('Save cpuusage figure...')
@@ -48,6 +56,20 @@ function plot_tracer(tracer,savefig,format,legend_location)
                 otherwise
                     printf('octave: WARN: %s is not supported',format)
             end
+        end
+        # Create a new figure if the legend location is extern
+        if (1 == strcmp(legend_location,'extern'))
+            switch CPU_USAGE_AVERAGE
+                case 0
+                    plot_legend(tracer.cpuusage.cpu_name_list{2:end},'Cpuusage plot legend',savefig,'cpuusage_legend',format)
+                case 1
+                    plot_legend(tracer.cpuusage.cpu_name_list,'Cpuusage plot legend',savefig,'cpuusage_legend',format)
+                case 2
+                    plot_legend(tracer.cpuusage.cpu_name_list{1},'Cpuusage plot legend',savefig,'cpuusage_legend',format)
+                otherwise
+                    plot_legend(tracer.cpuusage.cpu_name_list,'Cpuusage plot legend',savefig,'cpuusage_legend',format)
+            end
+            
         end
     end
     
@@ -61,8 +83,10 @@ function plot_tracer(tracer,savefig,format,legend_location)
         title('Frame rate','fontsize',FONTSIZE)
         xlabel('time (seconds)','fontsize',FONTSIZE)
         ylabel('Frame per second','fontsize',FONTSIZE)
-        legend(str2latex(tracer.framerate.element_name_list),'Location',legend_location)
         xlim([0,timestamp_max])
+        if (0 == strcmp(legend_location,'extern'))
+            legend(str2latex(tracer.framerate.element_name_list),'Location',legend_location)
+        end
         
         if (TRUE == savefig)
             disp('Save framerate figure...')
@@ -74,6 +98,10 @@ function plot_tracer(tracer,savefig,format,legend_location)
                 otherwise
                     printf('octave: WARN: %s is not supported',format)
             end
+        end
+        # Create a new figure if the legend location is extern
+        if (1 == strcmp(legend_location,'extern'))
+            plot_legend(tracer.framerate.element_name_list,'Framerate plot legend',savefig,'framerate_legend',format)
         end
     end
     
@@ -87,8 +115,10 @@ function plot_tracer(tracer,savefig,format,legend_location)
         title('Interlatency','fontsize',FONTSIZE)
         xlabel('time (seconds)','fontsize',FONTSIZE)
         ylabel('time (nanoseconds)','fontsize',FONTSIZE)
-        legend(str2latex(tracer.interlatency.pad_name_list),'Location',legend_location)
         xlim([0,timestamp_max])
+        if (0 == strcmp(legend_location,'extern'))
+            legend(str2latex(tracer.interlatency.pad_name_list),'Location',legend_location)
+        end
         
         if (TRUE == savefig)
             disp('Save interlatency figure...')
@@ -100,6 +130,10 @@ function plot_tracer(tracer,savefig,format,legend_location)
                 otherwise
                     printf('octave: WARN: %s is not supported',format)
             end
+        end
+        # Create a new figure if the legend location is extern
+        if (1 == strcmp(legend_location,'extern'))
+            plot_legend(tracer.interlatency.pad_name_list,'Interlatency plot legend',savefig,'interlatency_legend',format)
         end
     end
     
@@ -113,8 +147,10 @@ function plot_tracer(tracer,savefig,format,legend_location)
         title('Processing time','fontsize',FONTSIZE)
         xlabel('time (seconds)','fontsize',FONTSIZE)
         ylabel('time (nanoseconds)','fontsize',FONTSIZE)
-        legend(str2latex(tracer.proctime.element_name_list),'Location',legend_location)
         xlim([0,timestamp_max])
+        if (0 == strcmp(legend_location,'extern'))
+            legend(str2latex(tracer.proctime.element_name_list),'Location',legend_location)
+        end
         
         if (TRUE == savefig)
             disp('Save proctime figure...')
@@ -126,6 +162,10 @@ function plot_tracer(tracer,savefig,format,legend_location)
                 otherwise
                     printf('octave: WARN: %s is not supported',format)
             end
+        end
+        # Create a new figure if the legend location is extern
+        if (1 == strcmp(legend_location,'extern'))
+            plot_legend(tracer.proctime.element_name_list,'Proctime plot legend',savefig,'proctime_legend',format)
         end
     end
     
@@ -170,7 +210,9 @@ function plot_tracer(tracer,savefig,format,legend_location)
 
         figure('Name','Frame rate and CPU usage')
         [hAx,hLine1,hLine2] = plotyy(tracer.framerate.timestamp_mat,tracer.framerate.fps_mat,tracer.cpuusage.timestamp_mat(:,1),tracer.cpuusage.cpu_mat(:,1));
-        legend(str2latex(legend_list),'Location',legend_location)
+         if (0 == strcmp(legend_location,'extern'))
+            legend(str2latex(legend_list),'Location',legend_location)
+        end
 
         title('Frame rate and CPU usage','fontsize',FONTSIZE)
         xlabel('time (seconds)','fontsize',FONTSIZE)
@@ -188,6 +230,10 @@ function plot_tracer(tracer,savefig,format,legend_location)
                 otherwise
                     printf('octave: WARN: %s is not supported',format)
             end
+        end
+        # Create a new figure if the legend location is extern
+        if (1 == strcmp(legend_location,'extern'))
+            plot_legend(legend_list,'Frame rate and CPU usage legend',savefig,'cpuusage_framerate_legend',format)
         end
     end
 end
