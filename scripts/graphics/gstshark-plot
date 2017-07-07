@@ -11,12 +11,14 @@ then
     echo
     echo "  DIR                            Input trace directory"
     echo "  --help                         This help message"
-    echo "  -s, --savefig [pdf|png]         Save the graphics generated"
+    echo "  -s, --savefig [pdf|png]        Save the graphics generated"
     echo "                                 FORMAT: Output file format, png or pdf"
     echo "                                 (default: pdf)"
     echo "  -p, --persist                  keep octave console open"
-    echo "  -l, --legend <inside|outside>  Indicate the position of the legend"
+    echo "  -l, --legend <inside|outside|extern>"
+    echo "                                 Indicate the position of the legend"
     echo "                                 over each graphic generated"
+    echo "                                 extern: display the legend over an external window"
     echo "                                 (default: inside)"
     echo
     exit
@@ -121,6 +123,10 @@ do
             ;;
             inside)
             LEGEND="northeast"
+            shift
+            ;;
+            extern)
+            LEGEND="extern"
             shift
             ;;
         esac
