@@ -74,7 +74,7 @@ function [serie_name_list timestamp_mat value_mat] = cpuusage_process()
             break
         end
         [timestamp_array] = sscanf(timestamp,'%d:%d:%f]');
-        timestamp_val = timestamp_array(3) + (timestamp_array(2) * 60) + timestamp_array(1);
+        timestamp_val = timestamp_array(3) + (timestamp_array(2) * 60) + (timestamp_array(1) * 3600);
         timestamp_mat(event_idx,1:end) = timestamp_val;
         
         for serie_idx = 2 : (serie_name_list_len)
