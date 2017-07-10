@@ -80,7 +80,7 @@ function [serie_name_list,timestamp_mat,value_mat] = load_serie_timestamp_value(
         for list_idx = 1:serie_name_list_len
             if (1 == strcmp(char(serie_name_list{list_idx}),serie_val))
                 [timestamp_array] = sscanf(timestamp,'%d:%d:%f]');
-                timestamp_val = timestamp_array(3) + (timestamp_array(2) * 60) + timestamp_array(1);
+                timestamp_val = timestamp_array(3) + (timestamp_array(2) * 60) + (timestamp_array(1) * 3600);
                 timestamp_mat(list_idx,data_mat_idx_list(list_idx)) = timestamp_val;
                 value_mat(list_idx,data_mat_idx_list(list_idx)) = time;
                 data_mat_idx_list(list_idx) = data_mat_idx_list(list_idx) + 1;

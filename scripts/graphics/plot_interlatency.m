@@ -84,7 +84,7 @@ while (count == 1)
     for list_idx = 1:pad_name_list_len
         if (1 == strcmp(char(pad_name_list{list_idx}),to_pad))
             [timestamp_array] = sscanf(timestamp,'%d:%d:%f]');
-            timestamp_val = timestamp_array(3) + (timestamp_array(2) * 60) + timestamp_array(1);
+            timestamp_val = timestamp_array(3) + (timestamp_array(2) * 60) + (timestamp_array(1) * 3600);
             timestamp_mat(list_idx,data_mat_idx_list(list_idx)) = timestamp_val;
             time_mat(list_idx,data_mat_idx_list(list_idx)) = time;
             data_mat_idx_list(list_idx) = data_mat_idx_list(list_idx) + 1;
