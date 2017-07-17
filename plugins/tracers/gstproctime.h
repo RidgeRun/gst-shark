@@ -49,7 +49,6 @@ struct _GstProcTimeTracer
 {
   GstTracer parent;
   GstProcTime proc_time;
-  GString *time_string;
 };
 
 struct _GstProcTimeTracerClass

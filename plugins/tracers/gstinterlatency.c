@@ -99,7 +99,7 @@ static void gst_interlatency_tracer_dispose (GObject * object);
 static GstElement *
 get_real_pad_parent (GstPad * pad)
 {
-  GstObject *parent;
+  GstObject *parent = NULL;
 
   if (!pad)
     return NULL;
@@ -111,6 +111,7 @@ get_real_pad_parent (GstPad * pad)
     pad = GST_PAD_CAST (parent);
     parent = GST_OBJECT_PARENT (pad);
   }
+
   return GST_ELEMENT_CAST (parent);
 }
 
@@ -120,11 +121,11 @@ static void
 log_latency (GstInterLatencyTracer * interlatency_tracer,
     const GstStructure * data, GstPad * sink_pad, guint64 sink_ts)
 {
-  GstPad *src_pad;
+  GstPad *src_pad = NULL;
   guint64 src_ts;
-  gchar *src, *sink;
+  gchar *src = NULL, *sink = NULL;
   guint64 time;
-  GString *time_string;
+  GString *time_string = NULL;
 
   gst_structure_id_get (data,
       latency_probe_pad, GST_TYPE_PAD, &src_pad,
@@ -135,7 +136,7 @@ log_latency (GstInterLatencyTracer * interlatency_tracer,
 
   time = GST_CLOCK_DIFF (src_ts, sink_ts);
 
-  time_string = interlatency_tracer->time_string;
+  time_string = g_string_new ("");
   g_string_printf (time_string, "%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
 #ifdef GST_STABLE_RELEASE
@@ -149,6 +150,7 @@ log_latency (GstInterLatencyTracer * interlatency_tracer,
 #endif
   do_print_interlatency_event (INTERLATENCY_EVENT_ID, src, sink, time);
 
+  g_string_free (time_string, TRUE);
   g_free (src);
   g_free (sink);
 }
@@ -331,8 +333,6 @@ gst_interlatency_tracer_init (GstInterLatencyTracer * self)
   gst_tracing_register_hook (tracer, "pad-push-event-pre",
       G_CALLBACK (do_push_event_pre));
 
-  self->time_string = g_string_new ("0:00:00.000000000 ");
-
   metadata_event =
       g_strdup_printf (interlatency_metadata_event, INTERLATENCY_EVENT_ID, 0);
   add_metadata_event_struct (metadata_event);
@@ -345,6 +345,4 @@ gst_interlatency_tracer_dispose (GObject * object)
   GstInterLatencyTracer *self;
 
   self = GST_INTERLATENCY_TRACER (object);
-
-  g_string_free (self->time_string, TRUE);
 }

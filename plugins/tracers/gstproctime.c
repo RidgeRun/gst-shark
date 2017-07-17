@@ -76,7 +76,7 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   GstPad *pad_peer;
   gchar *name;
   GstClockTime time;
-  GString *time_string;
+  GString *time_string = NULL;
 
 #ifdef EVAL
   if (ts > EVAL_TIME * GST_SECOND)
@@ -85,7 +85,7 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
 
   proc_time_tracer = GST_PROCTIME_TRACER_CAST (self);
   proc_time = &proc_time_tracer->proc_time;
-  time_string = proc_time_tracer->time_string;
+  time_string = g_string_new ("");
 
   pad_peer = gst_pad_get_peer (pad);
 
@@ -104,6 +104,7 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
     do_print_proctime_event (PROCTIME_EVENT_ID, name, time);
   }
 
+  g_string_free (time_string, TRUE);
   gst_object_unref (pad_peer);
 }
 
@@ -130,8 +131,6 @@ gst_proctime_tracer_finalize (GObject * obj)
   proc_time_tracer = GST_PROCTIME_TRACER (obj);
   proc_time = &proc_time_tracer->proc_time;
 
-  g_string_free (proc_time_tracer->time_string, TRUE);
-
   gst_proctime_finalize (proc_time);
 
   G_OBJECT_CLASS (parent_class)->finalize (obj);
@@ -151,8 +150,6 @@ gst_proctime_tracer_init (GstProcTimeTracer * self)
 {
   GstTracer *tracer = GST_TRACER (self);
   gchar *metadata_event;
-
-  self->time_string = g_string_new ("0:00:00.000000000 ");
 
   gst_tracing_register_hook (tracer, "pad-push-pre",
       G_CALLBACK (do_push_buffer_pre));
