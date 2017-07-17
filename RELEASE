@@ -35,3 +35,8 @@
 = Release v0.4.1 =
 
 * Renamed identity plugin to buffer, to avoid plugin conflict
+
+= Release v0.4.4 =
+
+* Fix bug where interlatency, scheduletime and proctime tracers were having
+  problems due to a race condition.
