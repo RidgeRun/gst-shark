@@ -40,3 +40,7 @@
 
 * Fix bug where interlatency, scheduletime and proctime tracers were having
   problems due to a race condition.
+
+= Release v0.4.5 =
+
+* Avoid assertions with invalid GstEvents
