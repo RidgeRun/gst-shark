@@ -51,10 +51,6 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_STATES);
 G_DEFINE_TYPE_WITH_CODE (GstFramerateTracer, gst_framerate_tracer,
     GST_TYPE_TRACER, _do_init);
 
-#ifdef EVAL
-#define EVAL_TIME (10)
-#endif
-
 #ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_framerate;
 #endif
@@ -176,13 +172,6 @@ do_pad_push_buffer_pre (GstFramerateTracer * self, guint64 ts, GstPad * pad,
   gchar *fullname;
   gint value = 1;
   GstFramerateHash *pad_frames;
-
-#ifdef EVAL
-  if (ts > EVAL_TIME * GST_SECOND) {
-    self->start_timer = FALSE;
-    return;
-  }
-#endif
 
   g_return_if_fail (pad);
 

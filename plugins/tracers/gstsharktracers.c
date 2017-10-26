@@ -77,30 +77,6 @@ plugin_init (GstPlugin * plugin)
   if (!gst_ctf_init ()) {
     return FALSE;
   }
-#ifdef EVAL
-  g_print ("\n"
-      "*************************************\n"
-      "*** THIS IS AN EVALUATION VERSION ***\n"
-      "*************************************\n"
-      "                                     \n"
-      "  Thanks for evaluating Gst-Shark!   \n"
-      "                                     \n"
-      "  The application will run fully for \n"
-      "  around 10 seconds, after that every\n"
-      "  output will be disabled and you    \n"
-      "  will not be able to check any other\n"
-      "  message from any tracer. Please    \n"
-      "  contact <support@ridgerun.com> to  \n"
-      "  purchase the professional version  \n"
-      "  of the application.                \n"
-      "                                     \n"
-      "*************************************\n"
-      "*** THIS IS AN EVALUATION VERSION ***\n"
-      "*************************************\n"
-      "                                     \n");
-
-  sleep (3);
-#endif
 
   return TRUE;
 }
