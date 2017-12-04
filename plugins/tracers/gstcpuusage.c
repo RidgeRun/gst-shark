@@ -51,10 +51,6 @@ GST_DEBUG_CATEGORY_STATIC (gst_cpuusage_debug);
 G_DEFINE_TYPE_WITH_CODE (GstCPUUsageTracer, gst_cpuusage_tracer,
     GST_TYPE_TRACER, _do_init);
 
-#ifdef EVAL
-#define EVAL_TIME (10)
-#endif
-
 #ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_cpuusage;
 #endif
@@ -119,10 +115,6 @@ cpu_usage_thread_func (gpointer data)
   gint cpu_id;
   gint cpu_load_len;
 
-#ifdef EVAL
-  static gint sec_counter = 0;
-#endif
-
   self = GST_CPUUSAGE_TRACER (data);
 
   cpu_usage = &self->cpu_usage;
@@ -142,14 +134,6 @@ cpu_usage_thread_func (gpointer data)
 #endif
   }
   do_print_cpuusage_event (CPUUSAGE_EVENT_ID, cpu_load_len, cpu_load);
-
-#ifdef EVAL
-  sec_counter++;
-  if (sec_counter > EVAL_TIME) {
-    self->source_id = 0;
-    return FALSE;
-  }
-#endif
 
   return TRUE;
 }

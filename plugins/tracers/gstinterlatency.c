@@ -53,10 +53,6 @@ GST_DEBUG_CATEGORY_STATIC (gst_interlatency_debug);
 G_DEFINE_TYPE_WITH_CODE (GstInterLatencyTracer, gst_interlatency_tracer,
     GST_TYPE_TRACER, _do_init);
 
-#ifdef EVAL
-#define EVAL_TIME (10)
-#endif
-
 static GQuark latency_probe_id;
 static GQuark latency_probe_pad;
 static GQuark latency_probe_ts;
@@ -172,12 +168,6 @@ static void
 calculate_latency (GstInterLatencyTracer * interlatency_tracer,
     GstElement * parent, GstPad * pad, guint64 ts)
 {
-
-#ifdef EVAL
-  if (ts > EVAL_TIME * GST_SECOND)
-    return;
-#endif
-
   if (parent && (!GST_IS_BIN (parent))) {
     GstEvent *ev = g_object_get_qdata ((GObject *) pad, latency_probe_id);
 

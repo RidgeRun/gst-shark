@@ -44,10 +44,6 @@ GST_DEBUG_CATEGORY_STATIC (gst_bitrate_debug);
 G_DEFINE_TYPE_WITH_CODE (GstBitrateTracer, gst_bitrate_tracer,
     GST_TYPE_TRACER, _do_init);
 
-#ifdef EVAL
-#define EVAL_TIME (10)
-#endif
-
 #ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_bitrate;
 #endif
@@ -160,13 +156,6 @@ add_bytes (GstBitrateTracer * self, GstClockTime ts, GstPad * pad,
   gchar *fullname;
   gint value = 1;
   GstBitrateHash *pad_frames;
-
-#ifdef EVAL
-  if (ts > EVAL_TIME * GST_SECOND) {
-    self->start_timer = FALSE;
-    return;
-  }
-#endif
 
   /* The full name of every pad has the format elementName.padName and it is going 
      to be used for displaying the bitrate in a friendly user way */

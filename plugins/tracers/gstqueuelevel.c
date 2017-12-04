@@ -40,10 +40,6 @@ GST_DEBUG_CATEGORY_STATIC (gst_queue_level_debug);
 G_DEFINE_TYPE_WITH_CODE (GstQueueLevelTracer, gst_queue_level_tracer,
     GST_TYPE_TRACER, _do_init);
 
-#ifdef EVAL
-#define EVAL_TIME (10)
-#endif
-
 static void do_queue_level (GstTracer * self, guint64 ts, GstPad * pad);
 static void forward_to_peer (GstTracer * self, guint64 ts, GstPad * pad);
 static gboolean is_queue (GstElement * element);
@@ -96,12 +92,6 @@ do_queue_level (GstTracer * self, guint64 ts, GstPad * pad)
   guint64 size_time;
   gchar *size_time_string;
   const gchar *element_name;
-
-#ifdef EVAL
-  if (ts > EVAL_TIME * GST_SECOND) {
-    return;
-  }
-#endif
 
   element = gst_pad_get_parent_element (pad);
 

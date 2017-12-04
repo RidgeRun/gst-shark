@@ -48,10 +48,6 @@ GST_DEBUG_CATEGORY_STATIC (gst_proctime_debug);
 G_DEFINE_TYPE_WITH_CODE (GstProcTimeTracer, gst_proctime_tracer,
     GST_TYPE_TRACER, _do_init);
 
-#ifdef EVAL
-#define EVAL_TIME (10)
-#endif
-
 #ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_proctime;
 #endif
@@ -77,11 +73,6 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   gchar *name;
   GstClockTime time;
   GString *time_string = NULL;
-
-#ifdef EVAL
-  if (ts > EVAL_TIME * GST_SECOND)
-    return;
-#endif
 
   proc_time_tracer = GST_PROCTIME_TRACER_CAST (self);
   proc_time = &proc_time_tracer->proc_time;
