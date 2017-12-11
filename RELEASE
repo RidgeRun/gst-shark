@@ -44,3 +44,8 @@
 = Release v0.4.5 =
 
 * Avoid assertions with invalid GstEvents
+
+= Release v0.4.6 =
+
+* Remove Evaluation Version feature
+* Avoid Overflow reading Interlatency Timestamps
