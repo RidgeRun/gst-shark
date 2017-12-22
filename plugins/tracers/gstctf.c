@@ -507,13 +507,16 @@ ctf_process_env_var (void)
   }
 }
 
-static void
+static int
 create_ctf_path (gchar * dir_name)
 {
-  g_return_if_fail (dir_name);
+  int ret = 0;
+
+  g_return_val_if_fail (dir_name, -1);
 
   if (!g_file_test (dir_name, G_FILE_TEST_EXISTS)) {
-    if (g_mkdir (dir_name, 0775) == 0) {
+    ret = g_mkdir (dir_name, 0755);
+    if (ret == 0) {
       GST_INFO ("Directory %s did not exist and was created sucessfully.",
           dir_name);
     } else {
@@ -522,43 +525,59 @@ create_ctf_path (gchar * dir_name)
   } else {
     GST_INFO ("Directory %s already exists in the current path.", dir_name);
   }
+
+  return ret;
 }
 
 static void
 ctf_file_init (void)
 {
-  gchar *metadata_file;
-  gchar *datastream_file;
+  gchar *metadata_file = NULL;
+  gchar *datastream_file = NULL;
 
   g_mutex_init (&ctf_descriptor->mutex);
 
   if (TRUE != ctf_descriptor->file_output_disable) {
     /* Creating the output folder for the CTF output files. */
-    create_ctf_path (ctf_descriptor->dir_name);
+    if (create_ctf_path (ctf_descriptor->dir_name) == 0) {
+      datastream_file =
+          g_strjoin (G_DIR_SEPARATOR_S, ctf_descriptor->dir_name, "datastream",
+          NULL);
+      metadata_file =
+          g_strjoin (G_DIR_SEPARATOR_S, ctf_descriptor->dir_name, "metadata",
+          NULL);
 
-    datastream_file =
-        g_strjoin (G_DIR_SEPARATOR_S, ctf_descriptor->dir_name, "datastream",
-        NULL);
-    metadata_file =
-        g_strjoin (G_DIR_SEPARATOR_S, ctf_descriptor->dir_name, "metadata",
-        NULL);
+      ctf_descriptor->datastream = g_fopen (datastream_file, "w");
+      if (ctf_descriptor->datastream == NULL) {
+        GST_ERROR ("Could not open datastream file, path does not exist.");
+        goto error;
+      }
 
-    ctf_descriptor->datastream = g_fopen (datastream_file, "w");
-    if (ctf_descriptor->datastream == NULL) {
-      GST_ERROR ("Could not open datastream file, path does not exist.");
+      ctf_descriptor->metadata = g_fopen (metadata_file, "w");
+      if (ctf_descriptor->metadata == NULL) {
+        GST_ERROR ("Could not open metadata file, path does not exist.");
+        goto error;
+      }
+
+      ctf_descriptor->start_time = gst_util_get_timestamp ();
+      ctf_descriptor->file_output_disable = FALSE;
+
+      g_free (datastream_file);
+      g_free (metadata_file);
+      return;
+    } else {
+      GST_ERROR ("Could not create CTF output files, ignoring them");
+      ctf_descriptor->file_output_disable = TRUE;
+      return;
     }
-
-    ctf_descriptor->metadata = g_fopen (metadata_file, "w");
-    if (ctf_descriptor->metadata == NULL) {
-      GST_ERROR ("Could not open metadata file, path does not exist.");
-    }
-
-    ctf_descriptor->start_time = gst_util_get_timestamp ();
-    ctf_descriptor->file_output_disable = FALSE;
-
-    g_free (datastream_file);
-    g_free (metadata_file);
   }
+
+  return;
+
+error:
+  ctf_descriptor->file_output_disable = TRUE;
+  g_free (datastream_file);
+  g_free (metadata_file);
 }
 
 
