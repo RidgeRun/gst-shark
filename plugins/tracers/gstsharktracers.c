@@ -82,5 +82,5 @@ plugin_init (GstPlugin * plugin)
 }
 
 GST_PLUGIN_DEFINE (GST_VERSION_MAJOR, GST_VERSION_MINOR,
-    gstsharktracers, "GstShark tracers", plugin_init, VERSION,
+    sharktracers, "GstShark tracers", plugin_init, VERSION,
     GST_SHARK_LICENSE, PACKAGE_NAME, PACKAGE_URL);
