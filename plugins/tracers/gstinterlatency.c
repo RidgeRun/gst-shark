@@ -180,14 +180,21 @@ static void
 do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
 {
   GstElement *parent = get_real_pad_parent (pad);
+  GstPad *peer_pad = GST_PAD_PEER (pad);
+  GstElement *peer_parent = get_real_pad_parent (peer_pad);
   GstInterLatencyTracer *interlatency_tracer;
 
   interlatency_tracer = GST_INTERLATENCY_TRACER_CAST (self);
 
-  if (GST_OBJECT_FLAG_IS_SET (parent, GST_ELEMENT_FLAG_SOURCE))
+  if (GST_OBJECT_FLAG_IS_SET (parent, GST_ELEMENT_FLAG_SOURCE)) {
     send_latency_probe (parent, pad, ts);
-  else
+    calculate_latency (interlatency_tracer, peer_parent, peer_pad, ts);
+  } else
     calculate_latency (interlatency_tracer, parent, pad, ts);
+
+  if (GST_OBJECT_FLAG_IS_SET (peer_parent, GST_ELEMENT_FLAG_SINK))
+    calculate_latency (interlatency_tracer, peer_parent, peer_pad, ts);
+
 }
 
 static void
@@ -203,19 +210,6 @@ do_pull_range_pre (GstTracer * self, guint64 ts, GstPad * pad)
   if (GST_OBJECT_FLAG_IS_SET (parent_peer, GST_ELEMENT_FLAG_SOURCE))
     send_latency_probe (parent_peer, peer_pad, ts);
   else
-    calculate_latency (interlatency_tracer, parent_peer, peer_pad, ts);
-}
-
-static void
-do_push_buffer_post (GstTracer * self, guint64 ts, GstPad * pad)
-{
-  GstInterLatencyTracer *interlatency_tracer;
-  GstPad *peer_pad = GST_PAD_PEER (pad);
-  GstElement *parent_peer = get_real_pad_parent (peer_pad);
-
-  interlatency_tracer = GST_INTERLATENCY_TRACER_CAST (self);
-
-  if (GST_OBJECT_FLAG_IS_SET (parent_peer, GST_ELEMENT_FLAG_SINK))
     calculate_latency (interlatency_tracer, parent_peer, peer_pad, ts);
 }
 
@@ -309,14 +303,20 @@ gst_interlatency_tracer_init (GstInterLatencyTracer * self)
   GstTracer *tracer = GST_TRACER (self);
   gchar *metadata_event;
 
+  /* In push mode, pre/post will be called before/after the peer chain
+   * function has been called. For this reason, we only use -pre to avoid
+   * accounting for the processing time of the peer element (the sink).
+   */
   gst_tracing_register_hook (tracer, "pad-push-pre",
       G_CALLBACK (do_push_buffer_pre));
   gst_tracing_register_hook (tracer, "pad-push-list-pre",
       G_CALLBACK (do_push_buffer_pre));
-  gst_tracing_register_hook (tracer, "pad-push-post",
-      G_CALLBACK (do_push_buffer_post));
-  gst_tracing_register_hook (tracer, "pad-push-list-post",
-      G_CALLBACK (do_push_buffer_post));
+
+  /* While in pull mode, pre/post will happend before and after the upstream
+   * pull_range call is made, so it already only account for the upstream
+   * processing time. As a side effect, in pull mode, we can measure the
+   * source processing latency, while in push mode, we can't .
+   */
   gst_tracing_register_hook (tracer, "pad-pull-range-pre",
       G_CALLBACK (do_pull_range_pre));
   gst_tracing_register_hook (tracer, "pad-pull-range-post",
