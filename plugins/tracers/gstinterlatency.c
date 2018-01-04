@@ -171,9 +171,10 @@ calculate_latency (GstInterLatencyTracer * interlatency_tracer,
   if (parent && (!GST_IS_BIN (parent))) {
     GstEvent *ev = g_object_get_qdata ((GObject *) pad, latency_probe_id);
 
-    if (GST_IS_EVENT (ev))
+    if (GST_IS_EVENT (ev)) {
       log_latency (interlatency_tracer, gst_event_get_structure (ev), pad, ts);
-    gst_event_unref (ev);
+      gst_event_unref (ev);
+    }
   }
 }
 
