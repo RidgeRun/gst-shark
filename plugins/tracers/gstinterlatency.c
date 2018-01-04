@@ -173,6 +173,7 @@ calculate_latency (GstInterLatencyTracer * interlatency_tracer,
 
     if (GST_IS_EVENT (ev))
       log_latency (interlatency_tracer, gst_event_get_structure (ev), pad, ts);
+       gst_event_unref (ev);
   }
 }
 
