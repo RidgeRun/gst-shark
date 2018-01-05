@@ -116,4 +116,10 @@
     </foaf:Person>
   </maintainer>
 
+  <maintainer>
+    <foaf:Person>
+      <foaf:name>Carlos Rodriguez</foaf:name>
+    </foaf:Person>
+  </maintainer>
+
 </Project>
