@@ -38,7 +38,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_queue_level_debug);
     GST_DEBUG_CATEGORY_INIT (gst_queue_level_debug, "queuelevel", 0, "queuelevel tracer");
 #define gst_queue_level_tracer_parent_class parent_class
 G_DEFINE_TYPE_WITH_CODE (GstQueueLevelTracer, gst_queue_level_tracer,
-    GST_TYPE_TRACER, _do_init);
+    GST_SHARK_TYPE_TRACER, _do_init);
 
 static void do_queue_level (GstTracer * self, guint64 ts, GstPad * pad);
 static void forward_to_peer (GstTracer * self, guint64 ts, GstPad * pad);

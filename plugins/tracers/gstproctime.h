@@ -21,14 +21,12 @@
 #ifndef __GST_PROC_TIME_TRACER_H__
 #define __GST_PROC_TIME_TRACER_H__
 
-#include <gst/gst.h>
-#include <gst/gsttracer.h>
-#include "gstproctimecompute.h"
+#include "gstsharktracer.h"
 
 G_BEGIN_DECLS
 
 #define GST_TYPE_PROC_TIME_TRACER (gst_proc_time_tracer_get_type())
-G_DECLARE_FINAL_TYPE (GstProcTimeTracer, gst_proc_time_tracer, GST, PROC_TIME_TRACER, GstTracer)
+G_DECLARE_FINAL_TYPE (GstProcTimeTracer, gst_proc_time_tracer, GST, PROC_TIME_TRACER, GstSharkTracer)
 
 G_END_DECLS
 

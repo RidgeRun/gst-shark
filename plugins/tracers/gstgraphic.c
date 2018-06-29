@@ -40,8 +40,8 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_STATES);
     GST_DEBUG_CATEGORY_INIT (gst_graphic_debug, "graphic", 0, "graphic tracer"); \
     GST_DEBUG_CATEGORY_GET (GST_CAT_STATES, "GST_STATES");
 #define gst_graphic_tracer_parent_class parent_class
-G_DEFINE_TYPE_WITH_CODE (GstGraphicTracer, gst_graphic_tracer, GST_TYPE_TRACER,
-    _do_init);
+G_DEFINE_TYPE_WITH_CODE (GstGraphicTracer, gst_graphic_tracer,
+    GST_SHARK_TYPE_TRACER, _do_init);
 
 static void
 log_graphic (GstDebugCategory * cat, const gchar * fmt, ...)

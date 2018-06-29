@@ -49,7 +49,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_cpuusage_debug);
     GST_DEBUG_CATEGORY_INIT (gst_cpuusage_debug, "cpuusage", 0, "cpuusage tracer");
 #define gst_cpuusage_tracer_parent_class parent_class
 G_DEFINE_TYPE_WITH_CODE (GstCPUUsageTracer, gst_cpuusage_tracer,
-    GST_TYPE_TRACER, _do_init);
+    GST_SHARK_TYPE_TRACER, _do_init);
 
 #ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_cpuusage;

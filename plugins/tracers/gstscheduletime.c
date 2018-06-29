@@ -46,7 +46,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_scheduletime_debug);
     GST_DEBUG_CATEGORY_INIT (gst_scheduletime_debug, "scheduletime", 0, "scheduletime tracer");
 #define gst_scheduletime_tracer_parent_class parent_class
 G_DEFINE_TYPE_WITH_CODE (GstScheduletimeTracer, gst_scheduletime_tracer,
-    GST_TYPE_TRACER, _do_init);
+    GST_SHARK_TYPE_TRACER, _do_init);
 
 #define PAD_NAME_SIZE  (64)
 
