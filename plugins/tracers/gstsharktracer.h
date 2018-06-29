@@ -26,7 +26,7 @@
 
 G_BEGIN_DECLS
 
-#define GST_TYPE_SHARK_TRACER (gst_shark_tracer_get_type())
+#define GST_SHARK_TYPE_TRACER (gst_shark_tracer_get_type())
 G_DECLARE_DERIVABLE_TYPE (GstSharkTracer, gst_shark_tracer, GST_SHARK, TRACER, GstTracer)
 
 struct _GstSharkTracerClass
