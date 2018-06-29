@@ -42,7 +42,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_bitrate_debug);
 
 #define gst_bitrate_tracer_parent_class parent_class
 G_DEFINE_TYPE_WITH_CODE (GstBitrateTracer, gst_bitrate_tracer,
-    GST_TYPE_TRACER, _do_init);
+    GST_SHARK_TYPE_TRACER, _do_init);
 
 #ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_bitrate;

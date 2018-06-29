@@ -21,10 +21,8 @@
 #ifndef __GST_CPUUSAGE_TRACER_H__
 #define __GST_CPUUSAGE_TRACER_H__
 
-#include <gst/gst.h>
-#include <gst/gsttracer.h>
+#include "gstsharktracer.h"
 #include "gstcpuusagecompute.h"
-
 
 G_BEGIN_DECLS
 #define GST_TYPE_CPUUSAGE_TRACER \
@@ -49,14 +47,14 @@ typedef struct _GstCPUUsageTracerClass GstCPUUsageTracerClass;
  */
 struct _GstCPUUsageTracer
 {
-  GstTracer parent;
+  GstSharkTracer parent;
   GstCPUUsage cpu_usage;
   guint source_id;
 };
 
 struct _GstCPUUsageTracerClass
 {
-  GstTracerClass parent_class;
+  GstSharkTracerClass parent_class;
 
   /* signals */
 };

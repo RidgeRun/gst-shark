@@ -38,7 +38,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_buffer_debug);
     GST_DEBUG_CATEGORY_INIT (gst_buffer_debug, "buffer", 0, "buffer tracer");
 #define gst_buffer_tracer_parent_class parent_class
 G_DEFINE_TYPE_WITH_CODE (GstBufferTracer, gst_buffer_tracer,
-    GST_TYPE_TRACER, _do_init);
+    GST_SHARK_TYPE_TRACER, _do_init);
 
 static void gst_buffer_buffer_pre (GObject * self, GstClockTime ts,
     GstPad * pad, GstBuffer * buffer);

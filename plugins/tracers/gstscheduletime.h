@@ -21,8 +21,7 @@
 #ifndef __GST_SCHEDULETIME_TRACER_H__
 #define __GST_SCHEDULETIME_TRACER_H__
 
-#include <gst/gst.h>
-#include <gst/gsttracer.h>
+#include "gstsharktracer.h"
 
 G_BEGIN_DECLS
 

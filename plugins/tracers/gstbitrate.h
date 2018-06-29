@@ -21,8 +21,7 @@
 #ifndef __GST_BITRATE_TRACER_H__
 #define __GST_BITRATE_TRACER_H__
 
-#include <gst/gst.h>
-#include <gst/gsttracer.h>
+#include "gstsharktracer.h"
 
 G_BEGIN_DECLS
 #define GST_TYPE_BITRATE_TRACER \
@@ -43,7 +42,7 @@ gboolean do_print_bitrate (gpointer * data);
 
 struct _GstBitrateTracer
 {
-  GstTracer parent;
+  GstSharkTracer parent;
 
   /*< private > */
 
@@ -54,7 +53,7 @@ struct _GstBitrateTracer
 
 struct _GstBitrateTracerClass
 {
-  GstTracerClass parent_class;
+  GstSharkTracerClass parent_class;
 
   /* signals */
 };
