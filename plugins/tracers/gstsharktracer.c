@@ -166,3 +166,42 @@ gst_shark_tracer_dump_params (GstSharkTracer * self)
 
   g_list_free (keys);
 }
+
+gboolean
+gst_shark_tracer_element_is_filtered (GstSharkTracer * self,
+    const gchar * element)
+{
+  GstSharkTracerPrivate *priv;
+  GList *filters;
+  GList *filter;
+  const gchar *filter_tag = "filter";
+  gboolean is_filtered = FALSE;
+
+  g_return_val_if_fail (self, FALSE);
+  g_return_val_if_fail (element, FALSE);
+
+  priv = GST_SHARK_TRACER_PRIVATE (self);
+
+  GST_LOG_OBJECT (self, "Looking if user has filtered %s", element);
+
+  filters = g_hash_table_lookup (priv->params, filter_tag);
+  if (NULL == filters) {
+    GST_LOG_OBJECT (self, "There are no filters specified");
+    return FALSE;
+  }
+
+  /* TODO: Cache this results to avoid compiling the regex every evaluation */
+  for (filter = filters; NULL != filter; filter = g_list_next (filters)) {
+    const gchar *pattern = (const gchar *) filter->data;
+
+    is_filtered = g_regex_match_simple (pattern, element, 0, 0);
+    if (is_filtered) {
+      break;
+    }
+  }
+
+  GST_LOG_OBJECT (self, "Element %s was filtered: %s", element,
+      is_filtered ? "true" : "false");
+
+  return is_filtered;
+}
