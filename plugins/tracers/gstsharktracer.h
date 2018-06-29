@@ -34,6 +34,8 @@ struct _GstSharkTracerClass
   GstTracerClass parent_class;
 };
 
+gboolean gst_shark_tracer_element_is_filtered (GstSharkTracer *self, const gchar *regex);
+
 G_END_DECLS
 
 #endif /* __GST_SHARK_TRACER_H__ */
