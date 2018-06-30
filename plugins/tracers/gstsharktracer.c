@@ -30,6 +30,8 @@ typedef struct _GstSharkTracerPrivate GstSharkTracerPrivate;
 struct _GstSharkTracerPrivate
 {
   GHashTable *params;
+  GHashTable *hooks;
+  GHashTable *myhooks;
 };
 
 static void gst_shark_tracer_constructed (GObject * object);
@@ -37,6 +39,82 @@ static void gst_shark_tracer_finalize (GObject * object);
 static void gst_shark_tracer_save_params (GstSharkTracer * self);
 static void gst_shark_tracer_dump_params (GstSharkTracer * self);
 static void gst_shark_tracer_free_params (GstSharkTracerPrivate * priv);
+static void gst_shark_tracer_fill_hooks (GstSharkTracerPrivate * priv);
+
+/* Our hooks */
+static void gst_shark_tracer_hook_pad_push_pre (GObject * self, GstClockTime ts,
+    GstPad * pad, GstBuffer * buffer);
+static void gst_shark_tracer_hook_pad_push_post (GObject * self,
+    GstClockTime ts, GstPad * pad, GstFlowReturn res);
+static void gst_shark_tracer_hook_pad_push_list_pre (GObject * self,
+    GstClockTime ts, GstPad * pad, GstBufferList * list);
+static void gst_shark_tracer_hook_pad_push_list_post (GObject * self,
+    GstClockTime ts, GstPad * pad, GstFlowReturn res);
+static void gst_shark_tracer_hook_pad_pull_range_pre (GObject * self,
+    GstClockTime ts, GstPad * pad, guint64 offset, guint size);
+static void gst_shark_tracer_hook_pad_pull_range_post (GObject * self,
+    GstClockTime ts, GstPad * pad, GstBuffer * buffer, GstFlowReturn res);
+static void gst_shark_tracer_hook_pad_push_event_pre (GObject * self,
+    GstClockTime ts, GstPad * pad, GstEvent * event);
+static void gst_shark_tracer_hook_pad_push_event_post (GObject * self,
+    GstClockTime ts, GstPad * pad, gboolean res);
+static void gst_shark_tracer_hook_pad_query_pre (GObject * self,
+    GstClockTime ts, GstPad * pad, GstQuery * query);
+static void gst_shark_tracer_hook_pad_query_post (GObject * self,
+    GstClockTime ts, GstPad * pad, GstQuery * query, gboolean res);
+static void gst_shark_tracer_hook_element_post_message_pre (GObject * self,
+    GstClockTime ts, GstElement * element, GstMessage * message);
+static void gst_shark_tracer_hook_element_post_message_post (GObject * self,
+    GstClockTime ts, GstElement * element, gboolean res);
+static void gst_shark_tracer_hook_element_query_pre (GObject * self,
+    GstClockTime ts, GstElement * element, GstQuery * query);
+static void gst_shark_tracer_hook_element_query_post (GObject * self,
+    GstClockTime ts, GstElement * element, GstQuery * query, gboolean res);
+static void gst_shark_tracer_hook_element_new (GObject * self, GstClockTime ts,
+    GstElement * element);
+static void gst_shark_tracer_hook_element_add_pad (GObject * self,
+    GstClockTime ts, GstElement * element, GstPad * pad);
+static void gst_shark_tracer_hook_element_remove_pad (GObject * self,
+    GstClockTime ts, GstElement * element, GstPad * pad);
+static void gst_shark_tracer_hook_element_change_state_pre (GObject * self,
+    GstClockTime ts, GstElement * element, GstStateChange transition);
+static void gst_shark_tracer_hook_element_change_state_post (GObject * self,
+    GstClockTime ts, GstElement * element, GstStateChange transition,
+    GstStateChangeReturn result);
+static void gst_shark_tracer_hook_bin_add_pre (GObject * self, GstClockTime ts,
+    GstBin * bin, GstElement * element);
+static void gst_shark_tracer_hook_bin_add_post (GObject * self, GstClockTime ts,
+    GstBin * bin, GstElement * element, gboolean result);
+static void gst_shark_tracer_hook_bin_remove_pre (GObject * self,
+    GstClockTime ts, GstBin * bin, GstElement * element);
+static void gst_shark_tracer_hook_bin_remove_post (GObject * self,
+    GstClockTime ts, GstBin * bin, gboolean result);
+static void gst_shark_tracer_hook_pad_link_pre (GObject * self, GstClockTime ts,
+    GstPad * srcpad, GstPad * sinkpad);
+static void gst_shark_tracer_hook_pad_link_post (GObject * self,
+    GstClockTime ts, GstPad * srcpad, GstPad * sinkpad,
+    GstPadLinkReturn result);
+static void gst_shark_tracer_hook_pad_unlink_pre (GObject * self,
+    GstClockTime ts, GstPad * srcpad, GstPad * sinkpad);
+static void gst_shark_tracer_hook_pad_unlink_post (GObject * self,
+    GstClockTime ts, GstPad * srcpad, GstPad * sinkpad, gboolean result);
+static void gst_shark_tracer_hook_mini_object_created (GObject * self,
+    GstClockTime ts, GstMiniObject * object);
+static void gst_shark_tracer_hook_mini_object_destroyed (GObject * self,
+    GstClockTime ts, GstMiniObject * object);
+static void gst_shark_tracer_hook_object_unreffed (GObject * self,
+    GstClockTime ts, GstObject * object, gint new_refcount);
+static void gst_shark_tracer_hook_object_reffed (GObject * self,
+    GstClockTime ts, GstObject * object, gint new_refcount);
+static void gst_shark_tracer_hook_mini_object_unreffed (GObject * self,
+    GstClockTime ts, GstMiniObject * object, gint new_refcount);
+static void gst_shark_tracer_hook_mini_object_reffed (GObject * self,
+    GstClockTime ts, GstMiniObject * object, gint new_refcount);
+static void gst_shark_tracer_hook_object_created (GObject * self,
+    GstClockTime ts, GstObject * object);
+static void gst_shark_tracer_hook_object_destroyed (GObject * self,
+    GstClockTime ts, GstObject * object);
+
 
 G_DEFINE_TYPE_WITH_PRIVATE (GstSharkTracer, gst_shark_tracer, GST_TYPE_TRACER);
 
@@ -58,6 +136,85 @@ gst_shark_tracer_init (GstSharkTracer * self)
   GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
 
   priv->params = g_hash_table_new (g_str_hash, g_str_equal);
+  priv->hooks = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+  priv->myhooks = g_hash_table_new (g_str_hash, g_str_equal);
+
+  gst_shark_tracer_fill_hooks (priv);
+}
+
+static void
+gst_shark_tracer_fill_hooks (GstSharkTracerPrivate * priv)
+{
+  g_hash_table_insert (priv->myhooks, (gpointer) "pad-push-pre",
+      gst_shark_tracer_hook_pad_push_pre);
+  g_hash_table_insert (priv->myhooks, (gpointer) "pad-push-post",
+      gst_shark_tracer_hook_pad_push_post);
+  g_hash_table_insert (priv->myhooks, (gpointer) "pad-push-list-pre",
+      gst_shark_tracer_hook_pad_push_list_pre);
+  g_hash_table_insert (priv->myhooks, (gpointer) "pad-push-list-post",
+      gst_shark_tracer_hook_pad_push_list_post);
+  g_hash_table_insert (priv->myhooks, (gpointer) "pad-pull-range-pre",
+      gst_shark_tracer_hook_pad_pull_range_pre);
+  g_hash_table_insert (priv->myhooks, (gpointer) "pad-pull-range-post",
+      gst_shark_tracer_hook_pad_pull_range_post);
+  g_hash_table_insert (priv->myhooks, (gpointer) "pad-push-event-pre",
+      gst_shark_tracer_hook_pad_push_event_pre);
+  g_hash_table_insert (priv->myhooks, (gpointer) "pad-push-event-post",
+      gst_shark_tracer_hook_pad_push_event_post);
+  g_hash_table_insert (priv->myhooks, (gpointer) "pad-query-pre",
+      gst_shark_tracer_hook_pad_query_pre);
+  g_hash_table_insert (priv->myhooks, (gpointer) "pad-query-post",
+      gst_shark_tracer_hook_pad_query_post);
+  g_hash_table_insert (priv->myhooks, (gpointer) "element-post-message-pre",
+      gst_shark_tracer_hook_element_post_message_pre);
+  g_hash_table_insert (priv->myhooks, (gpointer) "element-post-message-post",
+      gst_shark_tracer_hook_element_post_message_post);
+  g_hash_table_insert (priv->myhooks, (gpointer) "element-query-pre",
+      gst_shark_tracer_hook_element_query_pre);
+  g_hash_table_insert (priv->myhooks, (gpointer) "element-query-post",
+      gst_shark_tracer_hook_element_query_post);
+  g_hash_table_insert (priv->myhooks, (gpointer) "element-new",
+      gst_shark_tracer_hook_element_new);
+  g_hash_table_insert (priv->myhooks, (gpointer) "element-add-pad",
+      gst_shark_tracer_hook_element_add_pad);
+  g_hash_table_insert (priv->myhooks, (gpointer) "element-remove-pad",
+      gst_shark_tracer_hook_element_remove_pad);
+  g_hash_table_insert (priv->myhooks, (gpointer) "bin-add-pre",
+      gst_shark_tracer_hook_bin_add_pre);
+  g_hash_table_insert (priv->myhooks, (gpointer) "bin-add-post",
+      gst_shark_tracer_hook_bin_add_post);
+  g_hash_table_insert (priv->myhooks, (gpointer) "bin-remove-pre",
+      gst_shark_tracer_hook_bin_remove_pre);
+  g_hash_table_insert (priv->myhooks, (gpointer) "bin-remove-post",
+      gst_shark_tracer_hook_bin_remove_post);
+  g_hash_table_insert (priv->myhooks, (gpointer) "pad-link-pre",
+      gst_shark_tracer_hook_pad_link_pre);
+  g_hash_table_insert (priv->myhooks, (gpointer) "pad-link-post",
+      gst_shark_tracer_hook_pad_link_post);
+  g_hash_table_insert (priv->myhooks, (gpointer) "pad-unlink-pre",
+      gst_shark_tracer_hook_pad_unlink_pre);
+  g_hash_table_insert (priv->myhooks, (gpointer) "pad-unlink-post",
+      gst_shark_tracer_hook_pad_unlink_post);
+  g_hash_table_insert (priv->myhooks, (gpointer) "element-change-state-pre",
+      gst_shark_tracer_hook_element_change_state_pre);
+  g_hash_table_insert (priv->myhooks, (gpointer) "element-change-state-post",
+      gst_shark_tracer_hook_element_change_state_post);
+  g_hash_table_insert (priv->myhooks, (gpointer) "mini-object-created",
+      gst_shark_tracer_hook_mini_object_created);
+  g_hash_table_insert (priv->myhooks, (gpointer) "mini-object-destroyed",
+      gst_shark_tracer_hook_mini_object_destroyed);
+  g_hash_table_insert (priv->myhooks, (gpointer) "object-created",
+      gst_shark_tracer_hook_object_created);
+  g_hash_table_insert (priv->myhooks, (gpointer) "object-destroyed",
+      gst_shark_tracer_hook_object_destroyed);
+  g_hash_table_insert (priv->myhooks, (gpointer) "mini-object-reffed",
+      gst_shark_tracer_hook_mini_object_reffed);
+  g_hash_table_insert (priv->myhooks, (gpointer) "mini-object-unreffed",
+      gst_shark_tracer_hook_mini_object_unreffed);
+  g_hash_table_insert (priv->myhooks, (gpointer) "object-reffed",
+      gst_shark_tracer_hook_object_reffed);
+  g_hash_table_insert (priv->myhooks, (gpointer) "object-unreffed",
+      gst_shark_tracer_hook_object_unreffed);
 }
 
 static void
@@ -88,6 +245,8 @@ gst_shark_tracer_finalize (GObject * object)
 
   gst_shark_tracer_free_params (priv);
   g_hash_table_unref (priv->params);
+  g_hash_table_unref (priv->hooks);
+  g_hash_table_unref (priv->myhooks);
 
   G_OBJECT_CLASS (gst_shark_tracer_parent_class)->finalize (object);
 }
@@ -187,7 +346,7 @@ gst_shark_tracer_element_is_filtered (GstSharkTracer * self,
   filters = g_hash_table_lookup (priv->params, filter_tag);
   if (NULL == filters) {
     GST_LOG_OBJECT (self, "There are no filters specified");
-    return FALSE;
+    return TRUE;
   }
 
   /* TODO: Cache this results to avoid compiling the regex every evaluation */
@@ -204,4 +363,719 @@ gst_shark_tracer_element_is_filtered (GstSharkTracer * self,
       is_filtered ? "true" : "false");
 
   return is_filtered;
+}
+
+void
+gst_shark_tracer_register_hook (GstSharkTracer * self, const gchar * detail,
+    GCallback func)
+{
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+
+  if (!g_hash_table_contains (priv->hooks, detail)) {
+    GCallback myhook = g_hash_table_lookup (priv->myhooks, detail);
+
+    GST_INFO_OBJECT (self, "Registering new shark hook for %s", detail);
+
+    /* Save child's hook */
+    g_hash_table_insert (priv->hooks, strdup (detail), func);
+
+    /* Register our hook */
+    gst_tracing_register_hook (GST_TRACER (self), detail, myhook);
+  }
+}
+
+/* My hooks */
+static void
+gst_shark_tracer_hook_pad_push_pre (GObject * object, GstClockTime ts,
+    GstPad * pad, GstBuffer * buffer)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
+  if (FALSE == gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "pad-push-pre");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime, GstPad *, GstBuffer *)) hook) (object, ts,
+      pad, buffer);
+}
+
+static void
+gst_shark_tracer_hook_pad_push_post (GObject * object, GstClockTime ts,
+    GstPad * pad, GstFlowReturn res)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "pad-push-post");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime, GstPad *, GstFlowReturn)) hook) (object,
+      ts, pad, res);
+}
+
+static void
+gst_shark_tracer_hook_pad_push_list_pre (GObject * object, GstClockTime ts,
+    GstPad * pad, GstBufferList * list)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "pad-push-pre");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime, GstPad *, GstBufferList *)) hook) (object,
+      ts, pad, list);
+}
+
+static void
+gst_shark_tracer_hook_pad_push_list_post (GObject * object, GstClockTime ts,
+    GstPad * pad, GstFlowReturn res)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "pad-push-list-post");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime, GstPad *, GstFlowReturn)) hook) (object,
+      ts, pad, res);
+}
+
+static void
+gst_shark_tracer_hook_pad_pull_range_pre (GObject * object, GstClockTime ts,
+    GstPad * pad, guint64 offset, guint size)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "pad-pull-range-pre");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime, GstPad *, guint64, guint)) hook) (object,
+      ts, pad, offset, size);
+}
+
+static void
+gst_shark_tracer_hook_pad_pull_range_post (GObject * object, GstClockTime ts,
+    GstPad * pad, GstBuffer * buffer, GstFlowReturn res)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "pad-pull-range-post");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime, GstPad *, GstBuffer *,
+              GstFlowReturn)) hook) (object, ts, pad, buffer, res);
+}
+
+static void
+gst_shark_tracer_hook_pad_push_event_pre (GObject * object, GstClockTime ts,
+    GstPad * pad, GstEvent * event)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "pad-push-event-pre");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime, GstPad *, GstEvent *)) hook) (object, ts,
+      pad, event);
+}
+
+static void
+gst_shark_tracer_hook_pad_push_event_post (GObject * object, GstClockTime ts,
+    GstPad * pad, gboolean res)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "pad-push-event-post");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime, GstPad *, gboolean)) hook) (object, ts,
+      pad, res);
+}
+
+static void
+gst_shark_tracer_hook_pad_query_pre (GObject * object, GstClockTime ts,
+    GstPad * pad, GstQuery * query)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "pad-query-pre");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime, GstPad *, GstQuery *)) hook) (object, ts,
+      pad, query);
+}
+
+static void
+gst_shark_tracer_hook_pad_query_post (GObject * object, GstClockTime ts,
+    GstPad * pad, GstQuery * query, gboolean res)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "pad-query-post");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime, GstPad *, GstQuery *,
+              gboolean)) hook) (object, ts, pad, query, res);
+}
+
+static void
+gst_shark_tracer_hook_element_post_message_pre (GObject * object,
+    GstClockTime ts, GstElement * element, GstMessage * message)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (element);
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "element-post-message-pre");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *,
+              GstClockTime, GstElement *, GstMessage *)) hook) (object, ts,
+      element, message);
+}
+
+static void
+gst_shark_tracer_hook_element_post_message_post (GObject * object,
+    GstClockTime ts, GstElement * element, gboolean res)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (element);
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "element-post-message-post");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *,
+              GstClockTime, GstElement *, gboolean)) hook) (object, ts, element,
+      res);
+}
+
+static void
+gst_shark_tracer_hook_element_query_pre (GObject * object, GstClockTime ts,
+    GstElement * element, GstQuery * query)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (element);
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "element-query-pre");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstElement *, GstQuery *)) hook) (object, ts, element, query);
+}
+
+static void
+gst_shark_tracer_hook_element_query_post (GObject * object, GstClockTime ts,
+    GstElement * element, GstQuery * query, gboolean res)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (element);
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "element-query-post");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstElement *, GstQuery *, gboolean)) hook) (object, ts, element,
+      query, res);
+}
+
+static void
+gst_shark_tracer_hook_element_new (GObject * object, GstClockTime ts,
+    GstElement * element)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (element);
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "element-new");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstElement *)) hook) (object, ts, element);
+}
+
+static void
+gst_shark_tracer_hook_element_add_pad (GObject * object, GstClockTime ts,
+    GstElement * element, GstPad * pad)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (element);
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "element-add-pad");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstElement *, GstPad *)) hook) (object, ts, element, pad);
+}
+
+static void
+gst_shark_tracer_hook_element_remove_pad (GObject * object, GstClockTime ts,
+    GstElement * element, GstPad * pad)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (element);
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "element-remove-pad");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstElement *, GstPad *)) hook) (object, ts, element, pad);
+}
+
+static void
+gst_shark_tracer_hook_element_change_state_pre (GObject * object,
+    GstClockTime ts, GstElement * element, GstStateChange transition)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (element);
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "element-change-state-pre");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *,
+              GstClockTime, GstElement *, GstStateChange)) hook) (object, ts,
+      element, transition);
+}
+
+static void
+gst_shark_tracer_hook_element_change_state_post (GObject * object,
+    GstClockTime ts, GstElement * element, GstStateChange transition,
+    GstStateChangeReturn result)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (element);
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "element-change-state-post");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *,
+              GstClockTime, GstElement *, GstStateChange,
+              GstStateChangeReturn)) hook) (object, ts, element, transition,
+      result);
+}
+
+static void
+gst_shark_tracer_hook_bin_add_pre (GObject * object, GstClockTime ts,
+    GstBin * bin, GstElement * element)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (element);
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "bin-add-pre");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstBin *, GstElement *)) hook) (object, ts, bin, element);
+}
+
+static void
+gst_shark_tracer_hook_bin_add_post (GObject * object, GstClockTime ts,
+    GstBin * bin, GstElement * element, gboolean result)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (element);
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "bin-add-post");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstBin *, GstElement *, gboolean)) hook) (object, ts, bin,
+      element, result);
+}
+
+static void
+gst_shark_tracer_hook_bin_remove_pre (GObject * object, GstClockTime ts,
+    GstBin * bin, GstElement * element)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (element);
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "bin-remove-pre");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstBin *, GstElement *)) hook) (object, ts, bin, element);
+}
+
+static void
+gst_shark_tracer_hook_bin_remove_post (GObject * object, GstClockTime ts,
+    GstBin * bin, gboolean result)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (bin);
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "bin-remove-post");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstBin *, gboolean)) hook) (object, ts, bin, result);
+}
+
+static void
+gst_shark_tracer_hook_pad_link_pre (GObject * object, GstClockTime ts,
+    GstPad * srcpad, GstPad * sinkpad)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (GST_OBJECT_PARENT (srcpad));
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "pad-link-pre");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstPad *, GstPad *)) hook) (object, ts, srcpad, sinkpad);
+}
+
+static void
+gst_shark_tracer_hook_pad_link_post (GObject * object, GstClockTime ts,
+    GstPad * srcpad, GstPad * sinkpad, GstPadLinkReturn result)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (GST_OBJECT_PARENT (srcpad));
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "pad-link-post");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstPad *, GstPad *, GstPadLinkReturn)) hook) (object, ts, srcpad,
+      sinkpad, result);
+}
+
+static void
+gst_shark_tracer_hook_pad_unlink_pre (GObject * object, GstClockTime ts,
+    GstPad * srcpad, GstPad * sinkpad)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (GST_OBJECT_PARENT (srcpad));
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "pad-unlink-pre");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstPad *, GstPad *)) hook) (object, ts, srcpad, sinkpad);
+}
+
+static void
+gst_shark_tracer_hook_pad_unlink_post (GObject * object, GstClockTime ts,
+    GstPad * srcpad, GstPad * sinkpad, gboolean result)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+  const gchar *elname;
+
+  elname = GST_OBJECT_NAME (GST_OBJECT_PARENT (srcpad));
+  if (!gst_shark_tracer_element_is_filtered (self, elname)) {
+    return;
+  }
+
+  hook = g_hash_table_lookup (priv->hooks, "pad-unlink-post");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstPad *, GstPad *, gboolean)) hook) (object, ts, srcpad, sinkpad,
+      result);
+}
+
+static void
+gst_shark_tracer_hook_mini_object_created (GObject * object, GstClockTime ts,
+    GstMiniObject * mobject)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+
+  hook = g_hash_table_lookup (priv->hooks, "mini-object-created");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstMiniObject *)) hook) (object, ts, mobject);
+}
+
+static void
+gst_shark_tracer_hook_mini_object_destroyed (GObject * object, GstClockTime ts,
+    GstMiniObject * mobject)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+
+  hook = g_hash_table_lookup (priv->hooks, "mini-object-destroyed");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstMiniObject *)) hook) (object, ts, mobject);
+}
+
+static void
+gst_shark_tracer_hook_object_unreffed (GObject * object, GstClockTime ts,
+    GstObject * obj, gint new_refcount)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+
+  hook = g_hash_table_lookup (priv->hooks, "object-unreffed");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstObject *, gint)) hook) (object, ts, obj, new_refcount);
+}
+
+static void
+gst_shark_tracer_hook_object_reffed (GObject * object, GstClockTime ts,
+    GstObject * obj, gint new_refcount)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+
+  hook = g_hash_table_lookup (priv->hooks, "object-reffed");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstObject *, gint)) hook) (object, ts, obj, new_refcount);
+}
+
+static void
+gst_shark_tracer_hook_mini_object_unreffed (GObject * object, GstClockTime ts,
+    GstMiniObject * obj, gint new_refcount)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+
+  hook = g_hash_table_lookup (priv->hooks, "mini-object-unreffed");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstMiniObject *, gint)) hook) (object, ts, obj, new_refcount);
+}
+
+static void
+gst_shark_tracer_hook_mini_object_reffed (GObject * object, GstClockTime ts,
+    GstMiniObject * obj, gint new_refcount)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+
+  hook = g_hash_table_lookup (priv->hooks, "mini-object-reffed");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime,
+              GstMiniObject *, gint)) hook) (object, ts, obj, new_refcount);
+}
+
+static void
+gst_shark_tracer_hook_object_created (GObject * object, GstClockTime ts,
+    GstObject * obj)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+
+  hook = g_hash_table_lookup (priv->hooks, "object-created");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime, GstObject *)) hook) (object, ts, obj);
+}
+
+static void
+gst_shark_tracer_hook_object_destroyed (GObject * object, GstClockTime ts,
+    GstObject * obj)
+{
+  GstSharkTracer *self = GST_SHARK_TRACER (object);
+  GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  GCallback hook;
+
+  hook = g_hash_table_lookup (priv->hooks, "object-destroyed");
+  g_return_if_fail (hook);
+
+  ((void (*)(GObject *, GstClockTime, GstObject *)) hook) (object, ts, obj);
 }

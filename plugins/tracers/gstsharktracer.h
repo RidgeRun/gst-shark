@@ -36,6 +36,9 @@ struct _GstSharkTracerClass
 
 gboolean gst_shark_tracer_element_is_filtered (GstSharkTracer *self, const gchar *regex);
 
+void gst_shark_tracer_register_hook (GstSharkTracer *self, const gchar *detail,
+    GCallback func);
+
 G_END_DECLS
 
 #endif /* __GST_SHARK_TRACER_H__ */
