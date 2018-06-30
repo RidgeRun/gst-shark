@@ -27,13 +27,6 @@
 #include "gstscheduletime.h"
 #include "gstctf.h"
 
-#ifdef HAVE_SYS_RESOURCE_H
-#ifndef __USE_GNU
-# define __USE_GNU              /* SCHEDULETIME_THREAD */
-#endif
-#include <sys/resource.h>
-#endif
-
 GST_DEBUG_CATEGORY_STATIC (gst_scheduletime_debug);
 #define GST_CAT_DEFAULT gst_scheduletime_debug
 
@@ -47,7 +40,7 @@ struct _GstSchedulePad
 
 struct _GstScheduletimeTracer
 {
-  GstTracer parent;
+  GstSharkTracer parent;
   GHashTable *schedule_pads;
 };
 
@@ -73,7 +66,6 @@ static const gchar scheduling_metadata_event[] = "event {\n\
 \n";
 
 static void sched_time_compute (GstTracer * tracer, guint64 ts, GstPad * pad);
-static void do_push_buffer_pre (GstTracer * tracer, guint64 ts, GstPad * pad);
 static void do_push_buffer_list_pre (GstTracer * tracer, GstClockTime ts,
     GstPad * pad, GstBufferList * list);
 static void gst_scheduletime_tracer_finalize (GObject * obj);
@@ -137,18 +129,6 @@ sched_time_compute (GstTracer * tracer, guint64 ts, GstPad * pad)
 }
 
 static void
-do_push_buffer_pre (GstTracer * tracer, guint64 ts, GstPad * pad)
-{
-  GstPad *pad_peer;
-
-  pad_peer = gst_pad_get_peer (pad);
-
-  sched_time_compute (tracer, ts, pad_peer);
-
-  gst_object_unref (pad_peer);
-}
-
-static void
 do_push_buffer_list_pre (GstTracer * tracer, GstClockTime ts, GstPad * pad,
     GstBufferList * list)
 {
@@ -192,20 +172,20 @@ gst_scheduletime_tracer_class_init (GstScheduletimeTracerClass * klass)
 static void
 gst_scheduletime_tracer_init (GstScheduletimeTracer * self)
 {
-  GstTracer *tracer = GST_TRACER (self);
+  GstSharkTracer *tracer = GST_SHARK_TRACER (self);
   gchar *metadata_event;
 
   self->schedule_pads =
       g_hash_table_new_full (g_direct_hash, g_direct_equal, key_destroy,
       schedule_pad_destroy);
 
-  gst_tracing_register_hook (tracer, "pad-push-pre",
-      G_CALLBACK (do_push_buffer_pre));
+  gst_shark_tracer_register_hook (tracer, "pad-push-pre",
+      G_CALLBACK (sched_time_compute));
 
-  gst_tracing_register_hook (tracer, "pad-push-list-pre",
+  gst_shark_tracer_register_hook (tracer, "pad-push-list-pre",
       G_CALLBACK (do_push_buffer_list_pre));
 
-  gst_tracing_register_hook (tracer, "pad-pull-range-pre",
+  gst_shark_tracer_register_hook (tracer, "pad-pull-range-pre",
       G_CALLBACK (sched_time_compute));
 
   metadata_event =
