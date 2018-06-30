@@ -128,18 +128,6 @@ sched_time_compute (GstTracer * self, guint64 ts, GstPad * pad)
   schedule_pad->previous_time = ts;
 }
 
-static void
-do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
-{
-  GstPad *pad_peer;
-
-  pad_peer = gst_pad_get_peer (pad);
-
-  sched_time_compute (self, ts, pad_peer);
-
-  gst_object_unref (pad_peer);
-}
-
 /* tracer class */
 
 static void
@@ -165,20 +153,20 @@ gst_scheduletime_tracer_class_init (GstScheduletimeTracerClass * klass)
 static void
 gst_scheduletime_tracer_init (GstScheduletimeTracer * self)
 {
-  GstTracer *tracer = GST_TRACER (self);
+  GstSharkTracer *tracer = GST_SHARK_TRACER (self);
   gchar *metadata_event;
 
   self->schedule_pads =
       g_hash_table_new_full (g_direct_hash, g_direct_equal, key_destroy,
       schedule_pad_destroy);
 
-  gst_tracing_register_hook (tracer, "pad-push-pre",
-      G_CALLBACK (do_push_buffer_pre));
+  gst_shark_tracer_register_hook (tracer, "pad-push-pre",
+      G_CALLBACK (sched_time_compute));
 
-  gst_tracing_register_hook (tracer, "pad-push-list-pre",
-      G_CALLBACK (do_push_buffer_pre));
+  gst_shark_tracer_register_hook (tracer, "pad-push-list-pre",
+      G_CALLBACK (sched_time_compute));
 
-  gst_tracing_register_hook (tracer, "pad-pull-range-pre",
+  gst_shark_tracer_register_hook (tracer, "pad-pull-range-pre",
       G_CALLBACK (sched_time_compute));
 
 #ifdef GST_STABLE_RELEASE
