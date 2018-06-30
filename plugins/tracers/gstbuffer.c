@@ -169,16 +169,16 @@ gst_buffer_tracer_class_init (GstBufferTracerClass * klass)
 static void
 gst_buffer_tracer_init (GstBufferTracer * self)
 {
-  GstTracer *tracer = GST_TRACER (self);
+  GstSharkTracer *tracer = GST_SHARK_TRACER (self);
   gchar *metadata_event;
 
-  gst_tracing_register_hook (tracer, "pad-push-pre",
+  gst_shark_tracer_register_hook (tracer, "pad-push-pre",
       G_CALLBACK (gst_buffer_buffer_pre));
 
-  gst_tracing_register_hook (tracer, "pad-push-list-pre",
+  gst_shark_tracer_register_hook (tracer, "pad-push-list-pre",
       G_CALLBACK (gst_buffer_buffer_list_pre));
 
-  gst_tracing_register_hook (tracer, "pad-pull-range-post",
+  gst_shark_tracer_register_hook (tracer, "pad-pull-range-post",
       G_CALLBACK (gst_buffer_range_post));
 
 #ifdef GST_STABLE_RELEASE
