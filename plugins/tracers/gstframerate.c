@@ -58,6 +58,8 @@ static gboolean do_print_framerate (gpointer * data);
 static void install_callback (GstFramerateTracer * self);
 static void remove_callback (GstFramerateTracer * self);
 static void reset_counters (GstFramerateTracer * self);
+static void consider_frames (GstFramerateTracer * self, GstPad * pad,
+    guint amount);
 
 typedef struct _GstFramerateHash GstFramerateHash;
 
@@ -196,59 +198,58 @@ do_destroy_hashtable_key (gpointer data)
 }
 
 static void
+consider_frames (GstFramerateTracer * self, GstPad * pad, guint amount)
+{
+  GstFramerateHash *pad_frames;
+  gchar *fullname;
+
+  g_return_if_fail (self);
+  g_return_if_fail (pad);
+
+  pad_frames =
+      (GstFramerateHash *) g_hash_table_lookup (self->frame_counters, pad);
+
+  if (NULL != pad_frames) {
+    pad_frames->counter += amount;
+  } else {
+
+    /* The full name of every pad has the format elementName_padName and it is going 
+       to be used for displaying the framerate in a friendly user way */
+    fullname = g_strdup_printf ("%s_%s", GST_DEBUG_PAD_NAME (pad));
+    fullname = make_char_array_valid (fullname);
+
+    pad_frames = g_malloc (sizeof (GstFramerateHash));
+    pad_frames->fullname = fullname;
+    pad_frames->counter = amount;
+
+    GST_OBJECT_LOCK (self);
+    g_hash_table_insert (self->frame_counters, gst_object_ref (pad),
+        pad_frames);
+    GST_OBJECT_UNLOCK (self);
+
+    GST_INFO_OBJECT (self, "The %s key was added to the Hash Table", fullname);
+  }
+}
+
+static void
 do_pad_push_buffer_pre (GstFramerateTracer * self, guint64 ts, GstPad * pad,
     GstBuffer * buffer)
 {
-  gchar *fullname;
-  gint value = 1;
-  GstFramerateHash *pad_frames;
-
-  g_return_if_fail (pad);
-
-  /* The full name of every pad has the format elementName.padName and it is going 
-     to be used for displaying the framerate in a friendly user way */
-  fullname = g_strdup_printf ("%s_%s", GST_DEBUG_PAD_NAME (pad));
-
-  /* Function contains on the Hash table returns TRUE if the key already exists */
-  if (g_hash_table_contains (self->frame_counters, pad)) {
-    /* If the pad that is pushing a buffer has already a space on the Hash table
-       only the value should be updated */
-    pad_frames =
-        (GstFramerateHash *) g_hash_table_lookup (self->frame_counters, pad);
-    pad_frames->counter++;
-  } else {
-    GST_INFO_OBJECT (self, "The %s key was added to the Hash Table", fullname);
-
-    /* Ref pad to be used in the Hash table */
-    gst_object_ref (pad);
-    /* Reserving memory space for every structure that is going to be stored as a 
-       value in the Hash table */
-    pad_frames = g_malloc (sizeof (GstFramerateHash));
-    pad_frames->fullname = make_char_array_valid (g_strdup (fullname));
-    pad_frames->counter = value;
-
-    GST_OBJECT_LOCK (self);
-    g_hash_table_insert (self->frame_counters, pad, (gpointer) pad_frames);
-    GST_OBJECT_UNLOCK (self);
-  }
-
-  g_free (fullname);
+  consider_frames (self, pad, 1);
 }
 
 static void
 do_pad_push_list_pre (GstFramerateTracer * self, GstClockTime ts, GstPad * pad,
     GstBufferList * list)
 {
-  // We aren't doing anything with the buffer, we can reuse push_buffer using NULL
-  do_pad_push_buffer_pre (self, ts, pad, NULL);
+  consider_frames (self, pad, gst_buffer_list_length (list));
 }
 
 static void
 do_pad_pull_range_pre (GstFramerateTracer * self, GstClockTime ts, GstPad * pad,
     guint64 offset, guint size)
 {
-  // We aren't doing anything with the buffer, we can reuse push_buffer using NULL
-  do_pad_push_buffer_pre (self, ts, pad, NULL);
+  consider_frames (self, pad, 1);
 }
 
 static void
