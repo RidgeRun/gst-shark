@@ -33,12 +33,14 @@
 GST_DEBUG_CATEGORY_STATIC (gst_framerate_debug);
 #define GST_CAT_DEFAULT gst_framerate_debug
 
+#define FRAMERATE_INTERVAL 1
+
 struct _GstFramerateTracer
 {
   GstTracer parent;
 
   GHashTable *frame_counters;
-  gboolean start_timer;
+  guint callback_id;
   gboolean metadata_written;
 };
 
@@ -53,6 +55,8 @@ static GstTracerRecord *tr_framerate;
 static gchar *make_char_array_valid (gchar * src);
 static void create_metadata_event (GHashTable * table);
 static gboolean do_print_framerate (gpointer * data);
+static void install_callback (GstFramerateTracer * self);
+static void remove_callback (GstFramerateTracer * self);
 
 typedef struct _GstFramerateHash GstFramerateHash;
 
@@ -76,6 +80,35 @@ static const gchar framerate_metadata_event_footer[] = "\
 static const gchar framerate_metadata_event_field[] =
     "      integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } %s;\n";
 
+static void
+install_callback (GstFramerateTracer * self)
+{
+  g_return_if_fail (self);
+
+  if (0 != self->callback_id) {
+    GST_INFO_OBJECT (self,
+        "A framerate timer callback is already installed, ignoring new request");
+    return;
+  }
+
+  GST_OBJECT_LOCK (self);
+  self->callback_id =
+      g_timeout_add_seconds (FRAMERATE_INTERVAL,
+      (GSourceFunc) do_print_framerate, (gpointer) self);
+  GST_OBJECT_UNLOCK (self);
+}
+
+static void
+remove_callback (GstFramerateTracer * self)
+{
+  g_return_if_fail (self);
+
+  GST_OBJECT_LOCK (self);
+  g_source_remove (self->callback_id);
+  self->callback_id = 0;
+  GST_OBJECT_UNLOCK (self);
+}
+
 static gboolean
 do_print_framerate (gpointer * data)
 {
@@ -86,20 +119,19 @@ do_print_framerate (gpointer * data)
   guint size;
   guint64 *pad_counts;
   guint32 pad_idx;
-  gboolean ret;
 
   self = GST_FRAMERATE_TRACER (data);
 
   size = g_hash_table_size (self->frame_counters);
   pad_counts = g_malloc (size * sizeof (guint64));
   pad_idx = 0;
-  ret = TRUE;
 
   if (!self->metadata_written) {
     create_metadata_event (self->frame_counters);
     self->metadata_written = TRUE;
   }
 
+  /* Lock the tracer to make sure no new pad is added while we are logging */
   GST_OBJECT_LOCK (self);
 
   /* Using the iterator functions to go through the Hash table and print the framerate 
@@ -115,19 +147,13 @@ do_print_framerate (gpointer * data)
     pad_idx++;
 
     pad_table->counter = 0;
-    if (!self->start_timer) {
-      ret = FALSE;
-      goto out;
-    }
   }
 
   GST_OBJECT_UNLOCK (self);
   do_print_framerate_event (FPS_EVENT_ID, size, pad_counts);
-
-out:
   g_free (pad_counts);
 
-  return ret;
+  return TRUE;
 }
 
 static void
@@ -210,15 +236,18 @@ do_element_change_state_post (GstFramerateTracer * self, guint64 ts,
     GstElement * element, GstStateChange transition,
     GstStateChangeReturn result)
 {
-  if (GST_IS_PIPELINE (element)) {
-    if (transition == GST_STATE_CHANGE_PAUSED_TO_PLAYING && !self->start_timer) {
-      /* Creating a calback function to display the updated counter of frames every second */
-      self->start_timer = TRUE;
-      g_timeout_add_seconds (1, (GSourceFunc) do_print_framerate,
-          (gpointer) self);
-    } else if (transition == GST_STATE_CHANGE_PLAYING_TO_PAUSED) {
-      self->start_timer = FALSE;
-    }
+  /* We are only interested in capturing when a pipeline goes to
+     playing, but this hook reports for every element in the
+     pipeline
+   */
+  if (FALSE == GST_IS_PIPELINE (element)) {
+    return;
+  }
+
+  if (transition == GST_STATE_CHANGE_PAUSED_TO_PLAYING) {
+    install_callback (self);
+  } else if (transition == GST_STATE_CHANGE_PLAYING_TO_PAUSED) {
+    remove_callback (self);
   }
 }
 
@@ -262,7 +291,7 @@ gst_framerate_tracer_init (GstFramerateTracer * self)
   self->frame_counters =
       g_hash_table_new_full (g_direct_hash, g_direct_equal,
       do_destroy_hashtable_key, do_destroy_hashtable_value);
-  self->start_timer = FALSE;
+  self->callback_id = 0;
   self->metadata_written = FALSE;
 
   gst_tracing_register_hook (tracer, "pad-push-pre",
