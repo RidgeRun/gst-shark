@@ -48,9 +48,7 @@ struct _GstFramerateTracer
 G_DEFINE_TYPE_WITH_CODE (GstFramerateTracer, gst_framerate_tracer,
     GST_TYPE_TRACER, _do_init);
 
-#ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_framerate;
-#endif
 
 static gchar *make_char_array_valid (gchar * src);
 static void create_metadata_event (GHashTable * table);
@@ -110,14 +108,8 @@ do_print_framerate (gpointer * data)
   while (g_hash_table_iter_next (&iter, &key, &value)) {
     pad_table = (GstFramerateHash *) value;
 
-#ifdef GST_STABLE_RELEASE
     gst_tracer_record_log (tr_framerate, pad_table->fullname,
         pad_table->counter);
-#else
-    gst_tracer_log_trace (gst_structure_new ("framerate",
-            "pad", G_TYPE_STRING, pad_table->fullname,
-            "fps", G_TYPE_UINT, pad_table->counter, NULL));
-#endif
 
     pad_counts[pad_idx] = pad_table->counter;
     pad_idx++;
@@ -271,7 +263,6 @@ gst_framerate_tracer_init (GstFramerateTracer * self)
   gst_tracing_register_hook (tracer, "element-change-state-post",
       G_CALLBACK (do_element_change_state_post));
 
-#ifdef GST_STABLE_RELEASE
   tr_framerate = gst_tracer_record_new ("framerate.class",
       "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
@@ -283,18 +274,6 @@ gst_framerate_tracer_init (GstFramerateTracer * self)
           "flags", GST_TYPE_TRACER_VALUE_FLAGS,
           GST_TRACER_VALUE_FLAGS_AGGREGATED, "min", G_TYPE_UINT, 0, "max",
           G_TYPE_UINT, 5000, NULL), NULL);
-#else
-  gst_tracer_log_trace (gst_structure_new ("framerate.class",
-          "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-              "related-to", G_TYPE_STRING, "pad",
-              NULL),
-          "fps", GST_TYPE_STRUCTURE, gst_structure_new ("value",
-              "type", G_TYPE_GTYPE, G_TYPE_UINT,
-              "description", G_TYPE_STRING, "Frames per second",
-              "flags", G_TYPE_STRING, "aggregated",
-              "min", G_TYPE_UINT, G_GUINT64_CONSTANT (0),
-              "max", G_TYPE_UINT, G_GUINT64_CONSTANT (5000), NULL), NULL));
-#endif
 }
 
 static void
