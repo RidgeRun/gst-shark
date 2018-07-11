@@ -1,5 +1,5 @@
 /* GstShark - A Front End for GstTracer
- * Copyright (C) 2016 RidgeRun Engineering <sebastian.fatjo@ridgerun.com>
+ * Copyright (C) 2016-2018 RidgeRun Engineering <sebastian.fatjo@ridgerun.com>
  *
  * This file is part of GstShark.
  *
@@ -43,6 +43,15 @@ GST_DEBUG_CATEGORY_STATIC (gst_framerate_debug);
 GST_DEBUG_CATEGORY_STATIC (GST_CAT_BUFFER);
 GST_DEBUG_CATEGORY_STATIC (GST_CAT_STATES);
 
+struct _GstFramerateTracer
+{
+  GstTracer parent;
+
+  GHashTable *frame_counters;
+  gboolean start_timer;
+  gboolean metadata_written;
+};
+
 #define _do_init \
     GST_DEBUG_CATEGORY_INIT (gst_framerate_debug, "framerate", 0, "framerate tracer"); \
     GST_DEBUG_CATEGORY_GET (GST_CAT_BUFFER, "GST_BUFFER"); \
@@ -57,6 +66,7 @@ static GstTracerRecord *tr_framerate;
 
 static gchar *make_char_array_valid (gchar * src);
 static void create_metadata_event (GHashTable * table);
+static gboolean do_print_framerate (gpointer * data);
 
 typedef struct _GstFramerateHash GstFramerateHash;
 
@@ -90,7 +100,7 @@ log_framerate (GstDebugCategory * cat, const gchar * fmt, ...)
   va_end (var_args);
 }
 
-gboolean
+static gboolean
 do_print_framerate (gpointer * data)
 {
   GstFramerateTracer *self;
