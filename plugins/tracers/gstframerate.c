@@ -27,21 +27,11 @@
  * the scheduling mode.
  */
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include <gst/gst.h>
-#include <unistd.h>
-#include <glib.h>
-
 #include "gstframerate.h"
 #include "gstctf.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_framerate_debug);
 #define GST_CAT_DEFAULT gst_framerate_debug
-GST_DEBUG_CATEGORY_STATIC (GST_CAT_BUFFER);
-GST_DEBUG_CATEGORY_STATIC (GST_CAT_STATES);
 
 struct _GstFramerateTracer
 {
@@ -53,10 +43,8 @@ struct _GstFramerateTracer
 };
 
 #define _do_init \
-    GST_DEBUG_CATEGORY_INIT (gst_framerate_debug, "framerate", 0, "framerate tracer"); \
-    GST_DEBUG_CATEGORY_GET (GST_CAT_BUFFER, "GST_BUFFER"); \
-    GST_DEBUG_CATEGORY_GET (GST_CAT_STATES, "GST_STATES");
-#define gst_framerate_tracer_parent_class parent_class
+    GST_DEBUG_CATEGORY_INIT (gst_framerate_debug, "framerate", 0, "framerate tracer");
+
 G_DEFINE_TYPE_WITH_CODE (GstFramerateTracer, gst_framerate_tracer,
     GST_TYPE_TRACER, _do_init);
 
@@ -89,16 +77,6 @@ static const gchar framerate_metadata_event_footer[] = "\
 
 static const gchar framerate_metadata_event_field[] =
     "      integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } %s;\n";
-
-static void
-log_framerate (GstDebugCategory * cat, const gchar * fmt, ...)
-{
-  va_list var_args;
-
-  va_start (var_args, fmt);
-  gst_debug_log_valist (cat, GST_LEVEL_TRACE, "", "", 0, NULL, fmt, var_args);
-  va_end (var_args);
-}
 
 static gboolean
 do_print_framerate (gpointer * data)
@@ -189,10 +167,6 @@ do_pad_push_buffer_pre (GstFramerateTracer * self, guint64 ts, GstPad * pad,
 
   g_return_if_fail (pad);
 
-  log_framerate (GST_CAT_BUFFER,
-      "%" GST_TIME_FORMAT ", pad=%" GST_PTR_FORMAT ", buffer=%" GST_PTR_FORMAT,
-      GST_TIME_ARGS (ts), pad, buffer);
-
   /* The full name of every pad has the format elementName.padName and it is going 
      to be used for displaying the framerate in a friendly user way */
   fullname = g_strdup_printf ("%s_%s", GST_DEBUG_PAD_NAME (pad));
@@ -244,16 +218,7 @@ do_element_change_state_post (GstFramerateTracer * self, guint64 ts,
     GstElement * element, GstStateChange transition,
     GstStateChangeReturn result)
 {
-  const gchar *statename =
-      gst_element_state_get_name (GST_STATE_TRANSITION_NEXT (transition));
-  const gchar *retname = gst_element_state_change_return_get_name (result);
-
   if (GST_IS_PIPELINE (element)) {
-    /* Logging the change of state in which the pipeline graphic is being done */
-    log_framerate (GST_CAT_STATES,
-        "%" GST_TIME_FORMAT ", element=%" GST_PTR_FORMAT ", change=%s, res=%s",
-        GST_TIME_ARGS (ts), element, statename, retname);
-
     if (transition == GST_STATE_CHANGE_PAUSED_TO_PLAYING && !self->start_timer) {
       /* Creating a calback function to display the updated counter of frames every second */
       self->start_timer = TRUE;
@@ -274,7 +239,7 @@ gst_framerate_tracer_finalize (GObject * obj)
 
   g_hash_table_destroy (self->frame_counters);
 
-  G_OBJECT_CLASS (parent_class)->finalize (obj);
+  G_OBJECT_CLASS (gst_framerate_tracer_parent_class)->finalize (obj);
 }
 
 static void
