@@ -57,6 +57,7 @@ static void create_metadata_event (GHashTable * table);
 static gboolean do_print_framerate (gpointer * data);
 static void install_callback (GstFramerateTracer * self);
 static void remove_callback (GstFramerateTracer * self);
+static void reset_counters (GstFramerateTracer * self);
 
 typedef struct _GstFramerateHash GstFramerateHash;
 
@@ -106,6 +107,25 @@ remove_callback (GstFramerateTracer * self)
   GST_OBJECT_LOCK (self);
   g_source_remove (self->callback_id);
   self->callback_id = 0;
+  GST_OBJECT_UNLOCK (self);
+}
+
+static void
+reset_counters (GstFramerateTracer * self)
+{
+  GHashTableIter iter;
+  gpointer key, value;
+  GstFramerateHash *pad_table;
+
+  g_return_if_fail (self);
+
+  GST_OBJECT_LOCK (self);
+  g_hash_table_iter_init (&iter, self->frame_counters);
+
+  while (g_hash_table_iter_next (&iter, &key, &value)) {
+    pad_table = (GstFramerateHash *) value;
+    pad_table->counter = 0;
+  }
   GST_OBJECT_UNLOCK (self);
 }
 
@@ -245,6 +265,7 @@ do_element_change_state_post (GstFramerateTracer * self, guint64 ts,
   }
 
   if (transition == GST_STATE_CHANGE_PAUSED_TO_PLAYING) {
+    reset_counters (self);
     install_callback (self);
   } else if (transition == GST_STATE_CHANGE_PLAYING_TO_PAUSED) {
     remove_callback (self);
