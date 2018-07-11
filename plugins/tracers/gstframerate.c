@@ -66,7 +66,7 @@ typedef struct _GstFramerateHash GstFramerateHash;
 
 struct _GstFramerateHash
 {
-  const gchar *fullname;
+  gchar *fullname;
   guint counter;
 };
 
@@ -200,7 +200,7 @@ do_destroy_hashtable_value (gpointer data)
      it is needed to free the memory of the structure in every value */
   value = (GstFramerateHash *) data;
 
-  g_free ((gchar *) value->fullname);
+  g_free (value->fullname);
   g_free (value);
 }
 
