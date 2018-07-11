@@ -251,7 +251,7 @@ gst_framerate_tracer_class_init (GstFramerateTracerClass * klass)
           "description", G_TYPE_STRING, "Frames per second",
           "flags", GST_TYPE_TRACER_VALUE_FLAGS,
           GST_TRACER_VALUE_FLAGS_AGGREGATED, "min", G_TYPE_UINT, 0, "max",
-          G_TYPE_UINT, 5000, NULL), NULL);
+          G_TYPE_UINT, G_MAXUINT, NULL), NULL);
 }
 
 static void
