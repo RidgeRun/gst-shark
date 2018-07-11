@@ -114,6 +114,8 @@ do_print_framerate (gpointer * data)
     self->metadata_written = TRUE;
   }
 
+  GST_OBJECT_LOCK (self);
+
   /* Using the iterator functions to go through the Hash table and print the framerate 
      of every element stored */
   g_hash_table_iter_init (&iter, self->frame_counters);
@@ -138,6 +140,8 @@ do_print_framerate (gpointer * data)
       goto out;
     }
   }
+
+  GST_OBJECT_UNLOCK (self);
   do_print_framerate_event (FPS_EVENT_ID, size, pad_counts);
 
 out:
@@ -200,7 +204,10 @@ do_pad_push_buffer_pre (GstFramerateTracer * self, guint64 ts, GstPad * pad,
     pad_frames = g_malloc (sizeof (GstFramerateHash));
     pad_frames->fullname = make_char_array_valid (g_strdup (fullname));
     pad_frames->counter = value;
+
+    GST_OBJECT_LOCK (self);
     g_hash_table_insert (self->frame_counters, pad, (gpointer) pad_frames);
+    GST_OBJECT_UNLOCK (self);
   }
 
   g_free (fullname);
