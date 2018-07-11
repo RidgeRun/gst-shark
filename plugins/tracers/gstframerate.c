@@ -41,6 +41,7 @@ struct _GstFramerateTracer
 
   GHashTable *frame_counters;
   guint callback_id;
+  guint pipes_running;
   gboolean metadata_written;
 };
 
@@ -88,16 +89,20 @@ install_callback (GstFramerateTracer * self)
 {
   g_return_if_fail (self);
 
-  if (0 != self->callback_id) {
+  GST_OBJECT_LOCK (self);
+
+  if (0 == self->pipes_running) {
     GST_INFO_OBJECT (self,
-        "A framerate timer callback is already installed, ignoring new request");
-    return;
+        "First pipeline started running, starting profiling");
+
+    self->callback_id =
+        g_timeout_add_seconds (FRAMERATE_INTERVAL,
+        (GSourceFunc) do_print_framerate, (gpointer) self);
   }
 
-  GST_OBJECT_LOCK (self);
-  self->callback_id =
-      g_timeout_add_seconds (FRAMERATE_INTERVAL,
-      (GSourceFunc) do_print_framerate, (gpointer) self);
+  self->pipes_running++;
+  GST_DEBUG_OBJECT (self, "Pipes running: %d", self->pipes_running);
+
   GST_OBJECT_UNLOCK (self);
 }
 
@@ -107,8 +112,16 @@ remove_callback (GstFramerateTracer * self)
   g_return_if_fail (self);
 
   GST_OBJECT_LOCK (self);
-  g_source_remove (self->callback_id);
-  self->callback_id = 0;
+
+  if (1 == self->pipes_running) {
+    GST_INFO_OBJECT (self, "Last pipeline stopped running, stopped profiling");
+    g_source_remove (self->callback_id);
+    self->callback_id = 0;
+  }
+
+  self->pipes_running--;
+  GST_DEBUG_OBJECT (self, "Pipes running: %d", self->pipes_running);
+
   GST_OBJECT_UNLOCK (self);
 }
 
@@ -265,10 +278,14 @@ do_element_change_state_post (GstFramerateTracer * self, guint64 ts,
     return;
   }
 
-  if (transition == GST_STATE_CHANGE_PAUSED_TO_PLAYING) {
+  if (transition == GST_STATE_CHANGE_READY_TO_PAUSED) {
+    GST_DEBUG_OBJECT (self, "Pipeline %s changed to paused",
+        GST_OBJECT_NAME (element));
     reset_counters (self);
     install_callback (self);
-  } else if (transition == GST_STATE_CHANGE_PLAYING_TO_PAUSED) {
+  } else if (transition == GST_STATE_CHANGE_PAUSED_TO_READY) {
+    GST_DEBUG_OBJECT (self, "Pipeline %s changed to ready",
+        GST_OBJECT_NAME (element));
     remove_callback (self);
   }
 }
@@ -314,6 +331,7 @@ gst_framerate_tracer_init (GstFramerateTracer * self)
       g_hash_table_new_full (g_direct_hash, g_direct_equal,
       do_destroy_hashtable_key, do_destroy_hashtable_value);
   self->callback_id = 0;
+  self->pipes_running = 0;
   self->metadata_written = FALSE;
 
   gst_tracing_register_hook (tracer, "pad-push-pre",
