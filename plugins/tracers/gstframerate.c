@@ -55,12 +55,23 @@ static GstTracerRecord *tr_framerate;
 
 static gchar *make_char_array_valid (gchar * src);
 static void create_metadata_event (GHashTable * table);
-static gboolean do_print_framerate (gpointer * data);
+static gboolean print_framerate (gpointer * data);
 static void install_callback (GstFramerateTracer * self);
 static void remove_callback (GstFramerateTracer * self);
 static void reset_counters (GstFramerateTracer * self);
 static void consider_frames (GstFramerateTracer * self, GstPad * pad,
     guint amount);
+static void destroy_hashtable_value (gpointer data);
+static void pad_push_buffer_pre (GstFramerateTracer * self, guint64 ts,
+    GstPad * pad, GstBuffer * buffer);
+static void pad_push_list_pre (GstFramerateTracer * self, GstClockTime ts,
+    GstPad * pad, GstBufferList * list);
+static void pad_pull_range_pre (GstFramerateTracer * self, GstClockTime ts,
+    GstPad * pad, guint64 offset, guint size);
+static void element_change_state_post (GstFramerateTracer * self, guint64 ts,
+    GstElement * element, GstStateChange transition,
+    GstStateChangeReturn result);
+static void gst_framerate_tracer_finalize (GObject * obj);
 
 typedef struct _GstFramerateHash GstFramerateHash;
 
@@ -85,6 +96,49 @@ static const gchar framerate_metadata_event_field[] =
     "      integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } %s;\n";
 
 static void
+gst_framerate_tracer_class_init (GstFramerateTracerClass * klass)
+{
+  GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
+
+  gobject_class->finalize = gst_framerate_tracer_finalize;
+
+  tr_framerate = gst_tracer_record_new ("framerate.class",
+      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PAD,
+          NULL),
+      "fps", GST_TYPE_STRUCTURE, gst_structure_new ("value",
+          "type", G_TYPE_GTYPE, G_TYPE_UINT,
+          "description", G_TYPE_STRING, "Frames per second",
+          "flags", GST_TYPE_TRACER_VALUE_FLAGS,
+          GST_TRACER_VALUE_FLAGS_AGGREGATED, "min", G_TYPE_UINT, 0, "max",
+          G_TYPE_UINT, G_MAXUINT, NULL), NULL);
+}
+
+static void
+gst_framerate_tracer_init (GstFramerateTracer * self)
+{
+  GstTracer *tracer = GST_TRACER (self);
+
+  self->frame_counters =
+      g_hash_table_new_full (g_direct_hash, g_direct_equal,
+      gst_object_unref, destroy_hashtable_value);
+  self->callback_id = 0;
+  self->pipes_running = 0;
+  self->metadata_written = FALSE;
+
+  gst_tracing_register_hook (tracer, "pad-push-pre",
+      G_CALLBACK (pad_push_buffer_pre));
+  gst_tracing_register_hook (tracer, "pad-push-list-pre",
+      G_CALLBACK (pad_push_list_pre));
+  gst_tracing_register_hook (tracer, "pad-pull-range-pre",
+      G_CALLBACK (pad_pull_range_pre));
+
+  gst_tracing_register_hook (tracer, "element-change-state-post",
+      G_CALLBACK (element_change_state_post));
+}
+
+static void
 install_callback (GstFramerateTracer * self)
 {
   g_return_if_fail (self);
@@ -97,7 +151,7 @@ install_callback (GstFramerateTracer * self)
 
     self->callback_id =
         g_timeout_add_seconds (FRAMERATE_INTERVAL,
-        (GSourceFunc) do_print_framerate, (gpointer) self);
+        (GSourceFunc) print_framerate, (gpointer) self);
   }
 
   self->pipes_running++;
@@ -144,8 +198,36 @@ reset_counters (GstFramerateTracer * self)
   GST_OBJECT_UNLOCK (self);
 }
 
+static void
+create_metadata_event (GHashTable * frame_counters)
+{
+  GString *builder;
+  GHashTableIter iter;
+  gpointer key, value;
+  gchar *cstring;
+
+  builder = g_string_new (NULL);
+
+  g_string_printf (builder, framerate_metadata_event_header, FPS_EVENT_ID, 0);
+
+  g_hash_table_iter_init (&iter, frame_counters);
+  while (g_hash_table_iter_next (&iter, &key, &value)) {
+    g_string_append_printf (builder, framerate_metadata_event_field,
+        ((GstFramerateHash *) value)->fullname);
+  }
+
+  /* Add event footer */
+  g_string_append (builder, framerate_metadata_event_footer);
+
+  cstring = g_string_free (builder, FALSE);
+
+  /* Add event in metadata file */
+  add_metadata_event_struct (cstring);
+  g_free (cstring);
+}
+
 static gboolean
-do_print_framerate (gpointer * data)
+print_framerate (gpointer * data)
 {
   GstFramerateTracer *self;
   GHashTableIter iter;
@@ -191,23 +273,20 @@ do_print_framerate (gpointer * data)
   return TRUE;
 }
 
-static void
-do_destroy_hashtable_value (gpointer data)
+static gchar *
+make_char_array_valid (gchar * src)
 {
-  GstFramerateHash *value;
+  gchar *c;
 
-  /* In order to properly free the memory of a element of the Hash table
-     it is needed to free the memory of the structure in every value */
-  value = (GstFramerateHash *) data;
+  g_return_val_if_fail (src, NULL);
 
-  g_free (value->fullname);
-  g_free (value);
-}
+  for (c = src; '\0' != *c; c++) {
+    if ('-' == *c) {
+      *c = '_';
+    }
+  }
 
-static void
-do_destroy_hashtable_key (gpointer data)
-{
-  gst_object_unref (data);
+  return src;
 }
 
 static void
@@ -245,28 +324,28 @@ consider_frames (GstFramerateTracer * self, GstPad * pad, guint amount)
 }
 
 static void
-do_pad_push_buffer_pre (GstFramerateTracer * self, guint64 ts, GstPad * pad,
+pad_push_buffer_pre (GstFramerateTracer * self, guint64 ts, GstPad * pad,
     GstBuffer * buffer)
 {
   consider_frames (self, pad, 1);
 }
 
 static void
-do_pad_push_list_pre (GstFramerateTracer * self, GstClockTime ts, GstPad * pad,
+pad_push_list_pre (GstFramerateTracer * self, GstClockTime ts, GstPad * pad,
     GstBufferList * list)
 {
   consider_frames (self, pad, gst_buffer_list_length (list));
 }
 
 static void
-do_pad_pull_range_pre (GstFramerateTracer * self, GstClockTime ts, GstPad * pad,
+pad_pull_range_pre (GstFramerateTracer * self, GstClockTime ts, GstPad * pad,
     guint64 offset, guint size)
 {
   consider_frames (self, pad, 1);
 }
 
 static void
-do_element_change_state_post (GstFramerateTracer * self, guint64 ts,
+element_change_state_post (GstFramerateTracer * self, guint64 ts,
     GstElement * element, GstStateChange transition,
     GstStateChangeReturn result)
 {
@@ -290,7 +369,18 @@ do_element_change_state_post (GstFramerateTracer * self, guint64 ts,
   }
 }
 
-/* tracer class */
+static void
+destroy_hashtable_value (gpointer data)
+{
+  GstFramerateHash *value;
+
+  /* In order to properly free the memory of a element of the Hash table
+     it is needed to free the memory of the structure in every value */
+  value = (GstFramerateHash *) data;
+
+  g_free (value->fullname);
+  g_free (value);
+}
 
 static void
 gst_framerate_tracer_finalize (GObject * obj)
@@ -300,93 +390,4 @@ gst_framerate_tracer_finalize (GObject * obj)
   g_hash_table_destroy (self->frame_counters);
 
   G_OBJECT_CLASS (gst_framerate_tracer_parent_class)->finalize (obj);
-}
-
-static void
-gst_framerate_tracer_class_init (GstFramerateTracerClass * klass)
-{
-  GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
-
-  gobject_class->finalize = gst_framerate_tracer_finalize;
-
-  tr_framerate = gst_tracer_record_new ("framerate.class",
-      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-          "type", G_TYPE_GTYPE, G_TYPE_STRING,
-          "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PAD,
-          NULL),
-      "fps", GST_TYPE_STRUCTURE, gst_structure_new ("value",
-          "type", G_TYPE_GTYPE, G_TYPE_UINT,
-          "description", G_TYPE_STRING, "Frames per second",
-          "flags", GST_TYPE_TRACER_VALUE_FLAGS,
-          GST_TRACER_VALUE_FLAGS_AGGREGATED, "min", G_TYPE_UINT, 0, "max",
-          G_TYPE_UINT, G_MAXUINT, NULL), NULL);
-}
-
-static void
-gst_framerate_tracer_init (GstFramerateTracer * self)
-{
-  GstTracer *tracer = GST_TRACER (self);
-
-  self->frame_counters =
-      g_hash_table_new_full (g_direct_hash, g_direct_equal,
-      do_destroy_hashtable_key, do_destroy_hashtable_value);
-  self->callback_id = 0;
-  self->pipes_running = 0;
-  self->metadata_written = FALSE;
-
-  gst_tracing_register_hook (tracer, "pad-push-pre",
-      G_CALLBACK (do_pad_push_buffer_pre));
-  gst_tracing_register_hook (tracer, "pad-push-list-pre",
-      G_CALLBACK (do_pad_push_list_pre));
-  gst_tracing_register_hook (tracer, "pad-pull-range-pre",
-      G_CALLBACK (do_pad_pull_range_pre));
-
-  gst_tracing_register_hook (tracer, "element-change-state-post",
-      G_CALLBACK (do_element_change_state_post));
-}
-
-static void
-create_metadata_event (GHashTable * frame_counters)
-{
-  GString *builder;
-  GHashTableIter iter;
-  gpointer key, value;
-  gchar *cstring;
-
-  builder = g_string_new (NULL);
-
-  g_string_printf (builder, framerate_metadata_event_header, FPS_EVENT_ID, 0);
-
-  g_hash_table_iter_init (&iter, frame_counters);
-  while (g_hash_table_iter_next (&iter, &key, &value)) {
-    g_string_append_printf (builder, framerate_metadata_event_field,
-        ((GstFramerateHash *) value)->fullname);
-  }
-
-  /* Add event footer */
-  g_string_append (builder, framerate_metadata_event_footer);
-
-  cstring = g_string_free (builder, FALSE);
-
-  /* Add event in metadata file */
-  add_metadata_event_struct (cstring);
-  g_free (cstring);
-
-
-}
-
-static gchar *
-make_char_array_valid (gchar * src)
-{
-  gchar *c;
-
-  g_return_val_if_fail (src, NULL);
-
-  for (c = src; '\0' != *c; c++) {
-    if ('-' == *c) {
-      *c = '_';
-    }
-  }
-
-  return src;
 }
