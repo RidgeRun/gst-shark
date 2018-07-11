@@ -39,7 +39,7 @@
 /* Default port */
 #define SOCKET_PORT     (1000)
 #define SOCKET_PROTOCOL G_SOCKET_PROTOCOL_TCP
-#define CTF_MEM_SIZE      (2024)
+#define CTF_MEM_SIZE      (1048576)     //1M = 1024*1024
 #define CTF_UUID_SIZE     (16)
 
 typedef guint8 tcp_header_id;
