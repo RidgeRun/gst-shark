@@ -39,13 +39,14 @@
 /* Default port */
 #define SOCKET_PORT     (1000)
 #define SOCKET_PROTOCOL G_SOCKET_PROTOCOL_TCP
-#define CTF_MEM_SIZE      (2024)
+#define CTF_MEM_SIZE      (1048576)     //1M = 1024*1024
 #define CTF_UUID_SIZE     (16)
 
 typedef guint8 tcp_header_id;
 typedef guint32 tcp_header_length;
 
 #define TCP_HEADER_SIZE (sizeof(tcp_header_id) + sizeof(tcp_header_length))
+#define CTF_AVAILABLE_MEM_SIZE (CTF_MEM_SIZE - TCP_HEADER_SIZE)
 
 typedef guint16 ctf_header_id;
 typedef guint32 ctf_header_timestamp;
@@ -95,6 +96,7 @@ typedef guint32 ctf_header_timestamp;
 
 static void file_parser_handler (gchar * line);
 static void tcp_parser_handler (gchar * line);
+static inline gboolean event_exceeds_mem_size (gsize size);
 
 typedef enum
 {
@@ -205,6 +207,22 @@ event {\n\
 };\n\
 ";
 
+
+static gboolean
+event_exceeds_mem_size (const gsize size)
+{
+  gboolean ret;
+
+  /* Protect against overflows */
+  if (size > CTF_AVAILABLE_MEM_SIZE) {
+    GST_ERROR ("Metadata event exceeds available memory and will not be added");
+    ret = TRUE;
+  } else {
+    ret = FALSE;
+  }
+
+  return ret;
+}
 
 static GstCtfDescriptor *
 ctf_create_struct (void)
@@ -651,20 +669,23 @@ add_metadata_event_struct (const gchar * metadata_event)
 {
   GError *error;
   gchar *event_mem;
-  gchar *event_mem_end;
   guint event_size;
   guint8 *mem;
 
   mem = ctf_descriptor->mem;
   event_mem = (gchar *) mem + TCP_HEADER_SIZE;
 
+  event_size = strlen (metadata_event);
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   /* This function only writes the event structure to the metadata file, it
      depends entirely of what is passed as an argument. */
   g_mutex_lock (&ctf_descriptor->mutex);
 
-  event_mem_end = g_stpcpy (event_mem, metadata_event);
-  /* Computer event size */
-  event_size = event_mem_end - event_mem;
+  memcpy (event_mem, metadata_event, event_size);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     fwrite (event_mem, sizeof (gchar), event_size, ctf_descriptor->metadata);
@@ -770,6 +791,12 @@ do_print_framerate_event (event_id id, guint32 pad_num, guint64 * fps)
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
 
+  event_size = pad_num * sizeof (guint64);
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   /* Lock mem and datastream and output_stream resources */
   g_mutex_lock (&ctf_descriptor->mutex);
   /* Add CTF header */
@@ -779,9 +806,6 @@ do_print_framerate_event (event_id id, guint32 pad_num, guint64 * fps)
     /* Write FPS */
     CTF_EVENT_WRITE_INT64 (fps[pad_idx], event_mem);
   }
-
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem = mem + TCP_HEADER_SIZE;
