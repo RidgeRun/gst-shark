@@ -28,39 +28,10 @@
 #include <gst/gsttracer.h>
 
 G_BEGIN_DECLS
-#define GST_TYPE_INTERLATENCY_TRACER \
-  (gst_interlatency_tracer_get_type())
-#define GST_INTERLATENCY_TRACER(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_INTERLATENCY_TRACER,GstInterLatencyTracer))
-#define GST_INTERLATENCY_TRACER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_INTERLATENCY_TRACER,GstInterLatencyTracerClass))
-#define GST_IS_INTERLATENCY_TRACER(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_INTERLATENCY_TRACER))
-#define GST_IS_INTERLATENCY_TRACER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_INTERLATENCY_TRACER))
-#define GST_INTERLATENCY_TRACER_CAST(obj) ((GstInterLatencyTracer *)(obj))
-typedef struct _GstInterLatencyTracer GstInterLatencyTracer;
-typedef struct _GstInterLatencyTracerClass GstInterLatencyTracerClass;
 
-/**
- * GstInterLatencyTracer:
- *
- * Opaque #GstInterLatencyTracer data structure
- */
-struct _GstInterLatencyTracer
-{
-  GstTracer parent;
-  /*< private > */
-};
-
-struct _GstInterLatencyTracerClass
-{
-  GstTracerClass parent_class;
-
-  /* signals */
-};
-
-G_GNUC_INTERNAL GType gst_interlatency_tracer_get_type (void);
+#define GST_TYPE_INTERLATENCY_TRACER (gst_interlatency_tracer_get_type ())
+G_DECLARE_FINAL_TYPE (GstInterlatencyTracer, gst_interlatency_tracer, GST, INTERLATENCY_TRACER, GstTracer)
 
 G_END_DECLS
+
 #endif /* __GST_INTERLATENCY_TRACER_H__ */
