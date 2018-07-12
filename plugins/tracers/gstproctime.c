@@ -70,13 +70,11 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   GstPad *pad_peer;
   gchar *name;
   GstClockTime time;
-  GString *time_string = NULL;
+  gchar *time_string;
   gboolean should_log;
 
   proc_time_tracer = GST_PROC_TIME_TRACER (self);
   proc_time = proc_time_tracer->proc_time;
-  time_string = g_string_new ("");
-
   name = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
 
   pad_peer = gst_pad_get_peer (pad);
@@ -87,14 +85,15 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   should_log = gst_proctime_proc_time (proc_time, &time, pad_peer, pad);
 
   if (should_log) {
-    g_string_printf (time_string, "%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
+    time_string = g_strdup_printf ("%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
-    gst_tracer_record_log (tr_proc_time, name, time_string->str);
+    gst_tracer_record_log (tr_proc_time, name, time_string);
 
     do_print_proctime_event (PROCTIME_EVENT_ID, name, time);
+
+    g_free (time_string);
   }
 
-  g_string_free (time_string, TRUE);
   gst_object_unref (pad_peer);
 }
 
