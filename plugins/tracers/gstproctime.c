@@ -126,6 +126,15 @@ gst_proc_time_tracer_class_init (GstProcTimeTracerClass * klass)
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
 
   gobject_class->finalize = gst_proc_time_tracer_finalize;
+
+  tr_proc_time = gst_tracer_record_new ("proc_time.class",
+      "element", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+          GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), "time", GST_TYPE_STRUCTURE,
+      gst_structure_new ("scope", "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+          GST_TRACER_VALUE_SCOPE_PROCESS, NULL), NULL);
 }
 
 
@@ -140,15 +149,6 @@ gst_proc_time_tracer_init (GstProcTimeTracer * self)
 
   gst_tracing_register_hook (tracer, "element-new",
       G_CALLBACK (do_element_new));
-
-  tr_proc_time = gst_tracer_record_new ("proc_time.class",
-      "element", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-          "type", G_TYPE_GTYPE, G_TYPE_STRING,
-          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
-          GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), "time", GST_TYPE_STRUCTURE,
-      gst_structure_new ("scope", "type", G_TYPE_GTYPE, G_TYPE_STRING,
-          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
-          GST_TRACER_VALUE_SCOPE_PROCESS, NULL), NULL);
 
   metadata_event =
       g_strdup_printf (proc_time_metadata_event, PROCTIME_EVENT_ID, 0);
