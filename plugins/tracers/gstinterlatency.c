@@ -262,6 +262,10 @@ gst_interlatency_tracer_class_init (GstInterlatencyTracerClass * klass)
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
           "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
           GST_TRACER_VALUE_SCOPE_PROCESS, NULL), NULL);
+
+  latency_probe_id = g_quark_from_static_string ("latency_probe.id");
+  latency_probe_pad = g_quark_from_static_string ("latency_probe.pad");
+  latency_probe_ts = g_quark_from_static_string ("latency_probe.ts");
 }
 
 static void
@@ -269,10 +273,6 @@ gst_interlatency_tracer_init (GstInterlatencyTracer * self)
 {
   GstTracer *tracer = GST_TRACER (self);
   gchar *metadata_event;
-
-  latency_probe_id = g_quark_from_static_string ("latency_probe.id");
-  latency_probe_pad = g_quark_from_static_string ("latency_probe.pad");
-  latency_probe_ts = g_quark_from_static_string ("latency_probe.ts");
 
   /* In push mode, pre/post will be called before/after the peer chain
    * function has been called. For this reason, we only use -pre to avoid
