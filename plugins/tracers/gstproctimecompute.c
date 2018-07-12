@@ -91,6 +91,7 @@ gst_proctime_add_in_list (GstProcTime * proc_time, GstPad * sink_pad,
   g_return_if_fail (src_pad);
 
   new_element = g_malloc0 (sizeof (GstProcTimeElement));
+  new_element->start_time = GST_CLOCK_TIME_NONE;
 
   new_element->sink_pad = gst_object_ref (sink_pad);
   new_element->src_pad = gst_object_ref (src_pad);
@@ -126,12 +127,12 @@ gst_proctime_add_new_element (GstProcTime * proc_time, GstElement * element)
   gst_iterator_free (iterator);
 
   /* Verify if the element only have one input and output */
-  if ((1 == num_src_pads) & (1 == num_sink_pads)) {
+  if ((1 == num_src_pads) && (1 == num_sink_pads)) {
     gst_proctime_add_in_list (proc_time, sink_pad, src_pad);
   }
 }
 
-void
+gboolean
 gst_proctime_proc_time (GstProcTime * proc_time, GstClockTime * time,
     GstPad * peer_pad, GstPad * src_pad)
 {
@@ -139,11 +140,12 @@ gst_proctime_proc_time (GstProcTime * proc_time, GstClockTime * time,
   GstClockTime stop_time;
   guint elem_num;
   gint elem_idx;
+  gboolean found = FALSE;
 
-  g_return_if_fail (proc_time);
-  g_return_if_fail (time);
-  g_return_if_fail (src_pad);
-  g_return_if_fail (peer_pad);
+  g_return_val_if_fail (proc_time, FALSE);
+  g_return_val_if_fail (time, FALSE);
+  g_return_val_if_fail (src_pad, FALSE);
+  g_return_val_if_fail (peer_pad, FALSE);
 
   elem_num = g_list_length (proc_time->elements);
   /* Search the peer pad in the list 
@@ -168,6 +170,9 @@ gst_proctime_proc_time (GstProcTime * proc_time, GstClockTime * time,
     if (element->src_pad == src_pad) {
       stop_time = gst_util_get_timestamp ();
       *time = stop_time - element->start_time;
+      found = TRUE;
     }
   }
+
+  return found;
 }
