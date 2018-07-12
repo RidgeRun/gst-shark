@@ -156,7 +156,7 @@ out:
 
 gboolean
 gst_proctime_proc_time (GstProcTime * proc_time, GstClockTime * time,
-    GstPad * peer_pad, GstPad * src_pad)
+    GstPad * peer_pad, GstPad * src_pad, GstClockTime ts)
 {
   GstProcTimeElement *element;
   GstClockTime stop_time;
@@ -177,7 +177,7 @@ gst_proctime_proc_time (GstProcTime * proc_time, GstClockTime * time,
   for (elem_idx = 0; elem_idx < elem_num; ++elem_idx) {
     element = g_list_nth_data (proc_time->elements, elem_idx);
     if (element->sink_pad == peer_pad) {
-      element->start_time = gst_util_get_timestamp ();
+      element->start_time = ts;
     }
   }
 
@@ -190,7 +190,7 @@ gst_proctime_proc_time (GstProcTime * proc_time, GstClockTime * time,
   for (elem_idx = 0; elem_idx < elem_num; ++elem_idx) {
     element = g_list_nth_data (proc_time->elements, elem_idx);
     if (element->src_pad == src_pad) {
-      stop_time = gst_util_get_timestamp ();
+      stop_time = ts;
       *time = stop_time - element->start_time;
       found = TRUE;
     }

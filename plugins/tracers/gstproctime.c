@@ -82,7 +82,7 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
     return;
   }
 
-  should_log = gst_proctime_proc_time (proc_time, &time, pad_peer, pad);
+  should_log = gst_proctime_proc_time (proc_time, &time, pad_peer, pad, ts);
 
   if (should_log) {
     time_string = g_strdup_printf ("%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
