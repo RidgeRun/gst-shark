@@ -80,6 +80,9 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   name = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
 
   pad_peer = gst_pad_get_peer (pad);
+  if (!pad_peer) {
+    return;
+  }
 
   should_log = gst_proctime_proc_time (proc_time, &time, pad_peer, pad);
 
