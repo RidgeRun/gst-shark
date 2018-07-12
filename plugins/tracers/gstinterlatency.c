@@ -37,10 +37,6 @@
  * latency.
  */
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include "gstinterlatency.h"
 #include "gstctf.h"
 
@@ -50,7 +46,6 @@ GST_DEBUG_CATEGORY_STATIC (gst_interlatency_debug);
 struct _GstInterlatencyTracer
 {
   GstTracer parent;
-  /*< private > */
 };
 
 #define _do_init \
@@ -63,9 +58,7 @@ static GQuark latency_probe_id;
 static GQuark latency_probe_pad;
 static GQuark latency_probe_ts;
 
-#ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_interlatency;
-#endif
 
 static const gchar interlatency_metadata_event[] = "event {\n\
     name = interlatency;\n\
@@ -78,10 +71,6 @@ static const gchar interlatency_metadata_event[] = "event {\n\
     };\n\
 };\n\
 \n";
-
-static void gst_interlatency_tracer_dispose (GObject * object);
-
-/* data helpers */
 
 /*
  * Get the element/bin owning the pad.
@@ -144,15 +133,7 @@ print_latency (GstInterlatencyTracer * self,
   time_string = g_string_new ("");
   g_string_printf (time_string, "%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
-#ifdef GST_STABLE_RELEASE
   gst_tracer_record_log (tr_interlatency, src, sink, time_string->str);
-#else
-  /* TODO(ensonic): report format is still unstable */
-  gst_tracer_log_trace (gst_structure_new ("interlatency",
-          "from_pad", G_TYPE_STRING, src,
-          "to_pad", G_TYPE_STRING, sink,
-          "time", G_TYPE_STRING, time_string->str, NULL));
-#endif
   do_print_interlatency_event (INTERLATENCY_EVENT_ID, src, sink, time);
 
   g_string_free (time_string, TRUE);
@@ -268,15 +249,6 @@ do_push_event_pre (GstTracer * tracer, guint64 ts, GstPad * pad, GstEvent * ev)
 static void
 gst_interlatency_tracer_class_init (GstInterlatencyTracerClass * klass)
 {
-  GObjectClass *gobject_class;
-
-  gobject_class = G_OBJECT_CLASS (klass);
-
-  gobject_class->dispose = gst_interlatency_tracer_dispose;
-
-  /* announce trace formats */
-  /* *INDENT-OFF* */
-#ifdef GST_STABLE_RELEASE
   tr_interlatency = gst_tracer_record_new ("interlatency.class",
       "from_pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
@@ -327,10 +299,4 @@ gst_interlatency_tracer_init (GstInterlatencyTracer * self)
       g_strdup_printf (interlatency_metadata_event, INTERLATENCY_EVENT_ID, 0);
   add_metadata_event_struct (metadata_event);
   g_free (metadata_event);
-}
-
-static void
-gst_interlatency_tracer_dispose (GObject * obj)
-{
-  G_OBJECT_CLASS (gst_interlatency_tracer_parent_class)->dispose (obj);
 }
