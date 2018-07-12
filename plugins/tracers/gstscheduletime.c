@@ -24,11 +24,6 @@
  * A tracing module that take scheduletime() snapshots and logs them.
  */
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include <unistd.h>
 #include "gstscheduletime.h"
 #include "gstctf.h"
 
@@ -127,13 +122,8 @@ sched_time_compute (GstTracer * tracer, guint64 ts, GstPad * pad)
     g_string_printf (time_string, "%" GST_TIME_FORMAT,
         GST_TIME_ARGS (time_diff));
 
-#ifdef GST_STABLE_RELEASE
     gst_tracer_record_log (tr_schedule, pad_name, time_string->str);
-#else
-    gst_tracer_log_trace (gst_structure_new ("scheduletime",
-            "pad", G_TYPE_STRING, pad_name,
-            "time", G_TYPE_STRING, time_string->str, NULL));
-#endif
+
     do_print_scheduling_event (SCHED_TIME_EVENT_ID, pad_name, time_diff);
     g_string_free (time_string, TRUE);
   }
