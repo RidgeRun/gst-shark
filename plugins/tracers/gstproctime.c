@@ -39,7 +39,7 @@ struct _GstProcTimeTracer
 {
   GstTracer parent;
 
-  GstProcTime proc_time;
+  GstProcTime *proc_time;
 };
 
 #define _do_init \
@@ -73,7 +73,7 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   GString *time_string = NULL;
 
   proc_time_tracer = GST_PROC_TIME_TRACER (self);
-  proc_time = &proc_time_tracer->proc_time;
+  proc_time = proc_time_tracer->proc_time;
   time_string = g_string_new ("");
 
   pad_peer = gst_pad_get_peer (pad);
@@ -99,7 +99,7 @@ do_element_new (GObject * self, GstClockTime ts, GstElement * element)
   GstProcTime *proc_time;
 
   proc_time_tracer = GST_PROC_TIME_TRACER (self);
-  proc_time = &proc_time_tracer->proc_time;
+  proc_time = proc_time_tracer->proc_time;
 
   gst_proctime_add_new_element (proc_time, element);
 }
@@ -109,13 +109,12 @@ do_element_new (GObject * self, GstClockTime ts, GstElement * element)
 static void
 gst_proc_time_tracer_finalize (GObject * obj)
 {
-  GstProcTimeTracer *proc_time_tracer;
-  GstProcTime *proc_time;
+  GstProcTimeTracer *self;
 
-  proc_time_tracer = GST_PROC_TIME_TRACER (obj);
-  proc_time = &proc_time_tracer->proc_time;
+  self = GST_PROC_TIME_TRACER (obj);
 
-  gst_proctime_finalize (proc_time);
+  gst_proctime_free (self->proc_time);
+  self->proc_time = NULL;
 
   G_OBJECT_CLASS (gst_proc_time_tracer_parent_class)->finalize (obj);
 }
@@ -143,6 +142,8 @@ gst_proc_time_tracer_init (GstProcTimeTracer * self)
 {
   GstTracer *tracer = GST_TRACER (self);
   gchar *metadata_event;
+
+  self->proc_time = gst_proctime_new ();
 
   gst_tracing_register_hook (tracer, "pad-push-pre",
       G_CALLBACK (do_push_buffer_pre));

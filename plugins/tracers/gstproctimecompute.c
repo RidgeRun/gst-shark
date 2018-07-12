@@ -18,29 +18,49 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include <gst/gst.h>
-
 #include "gstproctimecompute.h"
+
+typedef struct _GstProcTimeElement GstProcTimeElement;
+struct _GstProcTimeElement
+{
+  gchar *name;
+  GstPad *src_pad;
+  GThread *src_thread;
+  GstPad *sink_pad;
+  GThread *sink_thread;
+  GstClockTime start_time;
+};
+
+struct _GstProcTime
+{
+  gint elem_num;
+  GstProcTimeElement *element;
+};
 
 static gboolean gst_proctime_element_is_async (GstProcTimeElement * element);
 
-void
-gst_proctime_init (GstProcTime * proc_time)
+GstProcTime *
+gst_proctime_new (void)
 {
-  g_return_if_fail (proc_time);
-  proc_time->elem_num = 0;
-  proc_time->element = NULL;
+  GstProcTime *self;
+
+  self = g_malloc (sizeof (GstProcTime));
+
+  g_return_val_if_fail (self, NULL);
+
+  self->elem_num = 0;
+  self->element = NULL;
+
+  return self;
 }
 
 void
-gst_proctime_finalize (GstProcTime * proc_time)
+gst_proctime_free (GstProcTime * self)
 {
-  g_return_if_fail (proc_time);
-  g_free (proc_time->element);
+  g_return_if_fail (self);
+
+  g_free (self->element);
+  g_free (self);
 }
 
 /* Add a new element in the list.
