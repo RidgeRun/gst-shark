@@ -76,17 +76,17 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   proc_time = proc_time_tracer->proc_time;
   time_string = g_string_new ("");
 
+  name = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
+
   pad_peer = gst_pad_get_peer (pad);
 
-  gst_proctime_proc_time (proc_time, &time, &name, pad_peer, pad);
+  gst_proctime_proc_time (proc_time, &time, pad_peer, pad);
 
-  if (NULL != name) {
-    g_string_printf (time_string, "%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
+  g_string_printf (time_string, "%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
-    gst_tracer_record_log (tr_proc_time, name, time_string->str);
+  gst_tracer_record_log (tr_proc_time, name, time_string->str);
 
-    do_print_proctime_event (PROCTIME_EVENT_ID, name, time);
-  }
+  do_print_proctime_event (PROCTIME_EVENT_ID, name, time);
 
   g_string_free (time_string, TRUE);
   gst_object_unref (pad_peer);
