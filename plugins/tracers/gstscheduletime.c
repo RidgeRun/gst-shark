@@ -142,6 +142,17 @@ do_push_buffer_pre (GstTracer * tracer, guint64 ts, GstPad * pad)
   gst_object_unref (pad_peer);
 }
 
+static void
+do_push_buffer_list_pre (GstTracer * tracer, GstClockTime ts, GstPad * pad,
+    GstBufferList * list)
+{
+  guint idx;
+
+  for (idx = 0; idx < gst_buffer_list_length (list); ++idx) {
+    sched_time_compute (tracer, ts, pad);
+  }
+}
+
 /* tracer class */
 
 static void
@@ -186,7 +197,7 @@ gst_scheduletime_tracer_init (GstScheduletimeTracer * self)
       G_CALLBACK (do_push_buffer_pre));
 
   gst_tracing_register_hook (tracer, "pad-push-list-pre",
-      G_CALLBACK (do_push_buffer_pre));
+      G_CALLBACK (do_push_buffer_list_pre));
 
   gst_tracing_register_hook (tracer, "pad-pull-range-pre",
       G_CALLBACK (sched_time_compute));
