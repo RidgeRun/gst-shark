@@ -34,26 +34,38 @@
 
 #ifdef HAVE_SYS_RESOURCE_H
 #ifndef __USE_GNU
-# define __USE_GNU              /* PROCTIME_THREAD */
+# define __USE_GNU              /* PROC_TIME_THREAD */
 #endif
 #include <sys/resource.h>
 #endif
 
-GST_DEBUG_CATEGORY_STATIC (gst_proctime_debug);
-#define GST_CAT_DEFAULT gst_proctime_debug
+GST_DEBUG_CATEGORY_STATIC (gst_proc_time_debug);
+#define GST_CAT_DEFAULT gst_proc_time_debug
+
+/**
+ * GstProcTimeTracer:
+ *
+ * Opaque #GstProcTimeTracer data structure
+ */
+struct _GstProcTimeTracer
+{
+  GstTracer parent;
+
+  GstProcTime proc_time;
+};
 
 #define _do_init \
-    GST_DEBUG_CATEGORY_INIT (gst_proctime_debug, "proctime", 0, "proctime tracer");
-#define gst_proctime_tracer_parent_class parent_class
-G_DEFINE_TYPE_WITH_CODE (GstProcTimeTracer, gst_proctime_tracer,
+    GST_DEBUG_CATEGORY_INIT (gst_proc_time_debug, "proc_time", 0, "proc_time tracer");
+#define gst_proc_time_tracer_parent_class parent_class
+G_DEFINE_TYPE_WITH_CODE (GstProcTimeTracer, gst_proc_time_tracer,
     GST_TYPE_TRACER, _do_init);
 
 #ifdef GST_STABLE_RELEASE
-static GstTracerRecord *tr_proctime;
+static GstTracerRecord *tr_proc_time;
 #endif
 
-static const gchar proctime_metadata_event[] = "event {\n\
-    name = proctime;\n\
+static const gchar proc_time_metadata_event[] = "event {\n\
+    name = proc_time;\n\
     id = %d;\n\
     stream_id = %d;\n\
     fields := struct {\n\
@@ -74,7 +86,7 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   GstClockTime time;
   GString *time_string = NULL;
 
-  proc_time_tracer = GST_PROCTIME_TRACER_CAST (self);
+  proc_time_tracer = GST_PROC_TIME_TRACER (self);
   proc_time = &proc_time_tracer->proc_time;
   time_string = g_string_new ("");
 
@@ -86,9 +98,9 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
     g_string_printf (time_string, "%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
 #ifdef GST_STABLE_RELEASE
-    gst_tracer_record_log (tr_proctime, name, time_string->str);
+    gst_tracer_record_log (tr_proc_time, name, time_string->str);
 #else
-    gst_tracer_log_trace (gst_structure_new ("proctime",
+    gst_tracer_log_trace (gst_structure_new ("proc_time",
             "element", G_TYPE_STRING, name,
             "time", G_TYPE_STRING, time_string->str, NULL));
 #endif
@@ -105,7 +117,7 @@ do_element_new (GObject * self, GstClockTime ts, GstElement * element)
   GstProcTimeTracer *proc_time_tracer;
   GstProcTime *proc_time;
 
-  proc_time_tracer = GST_PROCTIME_TRACER (self);
+  proc_time_tracer = GST_PROC_TIME_TRACER (self);
   proc_time = &proc_time_tracer->proc_time;
 
   gst_proctime_add_new_element (proc_time, element);
@@ -114,12 +126,12 @@ do_element_new (GObject * self, GstClockTime ts, GstElement * element)
 /* tracer class */
 
 static void
-gst_proctime_tracer_finalize (GObject * obj)
+gst_proc_time_tracer_finalize (GObject * obj)
 {
   GstProcTimeTracer *proc_time_tracer;
   GstProcTime *proc_time;
 
-  proc_time_tracer = GST_PROCTIME_TRACER (obj);
+  proc_time_tracer = GST_PROC_TIME_TRACER (obj);
   proc_time = &proc_time_tracer->proc_time;
 
   gst_proctime_finalize (proc_time);
@@ -128,16 +140,16 @@ gst_proctime_tracer_finalize (GObject * obj)
 }
 
 static void
-gst_proctime_tracer_class_init (GstProcTimeTracerClass * klass)
+gst_proc_time_tracer_class_init (GstProcTimeTracerClass * klass)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
 
-  gobject_class->finalize = gst_proctime_tracer_finalize;
+  gobject_class->finalize = gst_proc_time_tracer_finalize;
 }
 
 
 static void
-gst_proctime_tracer_init (GstProcTimeTracer * self)
+gst_proc_time_tracer_init (GstProcTimeTracer * self)
 {
   GstTracer *tracer = GST_TRACER (self);
   gchar *metadata_event;
@@ -149,7 +161,7 @@ gst_proctime_tracer_init (GstProcTimeTracer * self)
       G_CALLBACK (do_element_new));
 
 #ifdef GST_STABLE_RELEASE
-  tr_proctime = gst_tracer_record_new ("proctime.class",
+  tr_proc_time = gst_tracer_record_new ("proc_time.class",
       "element", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
           "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
@@ -158,13 +170,13 @@ gst_proctime_tracer_init (GstProcTimeTracer * self)
           "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
           GST_TRACER_VALUE_SCOPE_PROCESS, NULL), NULL);
 #else
-  gst_tracer_log_trace (gst_structure_new ("proctime.class", "element", GST_TYPE_STRUCTURE, gst_structure_new ("scope", "related-to", G_TYPE_STRING, "element", /* TODO: use genum */
+  gst_tracer_log_trace (gst_structure_new ("proc_time.class", "element", GST_TYPE_STRUCTURE, gst_structure_new ("scope", "related-to", G_TYPE_STRING, "element",        /* TODO: use genum */
               NULL), "time", GST_TYPE_STRUCTURE, gst_structure_new ("scope", "related-to", G_TYPE_STRING, "process",    /* TODO: use genum */
               NULL), NULL));
 #endif
 
   metadata_event =
-      g_strdup_printf (proctime_metadata_event, PROCTIME_EVENT_ID, 0);
+      g_strdup_printf (proc_time_metadata_event, PROCTIME_EVENT_ID, 0);
   add_metadata_event_struct (metadata_event);
   g_free (metadata_event);
 }

@@ -49,7 +49,7 @@ plugin_init (GstPlugin * plugin)
     return FALSE;
   }
   if (!gst_tracer_register (plugin, "proctime",
-          gst_proctime_tracer_get_type ())) {
+          gst_proc_time_tracer_get_type ())) {
     return FALSE;
   }
   if (!gst_tracer_register (plugin, "interlatency",
