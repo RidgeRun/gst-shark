@@ -28,16 +28,8 @@
 #  include "config.h"
 #endif
 
-#include <unistd.h>
 #include "gstproctime.h"
 #include "gstctf.h"
-
-#ifdef HAVE_SYS_RESOURCE_H
-#ifndef __USE_GNU
-# define __USE_GNU              /* PROC_TIME_THREAD */
-#endif
-#include <sys/resource.h>
-#endif
 
 GST_DEBUG_CATEGORY_STATIC (gst_proc_time_debug);
 #define GST_CAT_DEFAULT gst_proc_time_debug
@@ -55,8 +47,8 @@ struct _GstProcTimeTracer
 };
 
 #define _do_init \
-    GST_DEBUG_CATEGORY_INIT (gst_proc_time_debug, "proc_time", 0, "proc_time tracer");
-#define gst_proc_time_tracer_parent_class parent_class
+    GST_DEBUG_CATEGORY_INIT (gst_proc_time_debug, "proctime", 0, "proctime tracer");
+
 G_DEFINE_TYPE_WITH_CODE (GstProcTimeTracer, gst_proc_time_tracer,
     GST_TYPE_TRACER, _do_init);
 
@@ -136,7 +128,7 @@ gst_proc_time_tracer_finalize (GObject * obj)
 
   gst_proctime_finalize (proc_time);
 
-  G_OBJECT_CLASS (parent_class)->finalize (obj);
+  G_OBJECT_CLASS (gst_proc_time_tracer_parent_class)->finalize (obj);
 }
 
 static void
