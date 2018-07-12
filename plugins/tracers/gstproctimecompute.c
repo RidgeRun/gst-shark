@@ -102,7 +102,8 @@ gst_proctime_add_in_list (GstProcTime * proc_time, GstPad * sink_pad,
 void
 gst_proctime_add_new_element (GstProcTime * proc_time, GstElement * element)
 {
-  GstIterator *iterator;
+  GstIterator *src_iterator = NULL;
+  GstIterator *sink_iterator = NULL;
   GValue vpad = G_VALUE_INIT;
   gint num_src_pads = 0;
   gint num_sink_pads = 0;
@@ -112,23 +113,44 @@ gst_proctime_add_new_element (GstProcTime * proc_time, GstElement * element)
   g_return_if_fail (proc_time);
   g_return_if_fail (element);
 
-  iterator = gst_element_iterate_src_pads (element);
-  while (gst_iterator_next (iterator, &vpad) == GST_ITERATOR_OK) {
+  src_iterator = gst_element_iterate_src_pads (element);
+  while (gst_iterator_next (src_iterator, &vpad) == GST_ITERATOR_OK) {
     src_pad = GST_PAD (g_value_get_object (&vpad));
+    g_value_reset (&vpad);
     num_src_pads++;
-  }
-  gst_iterator_free (iterator);
 
-  iterator = gst_element_iterate_sink_pads (element);
-  while (gst_iterator_next (iterator, &vpad) == GST_ITERATOR_OK) {
+    if (num_src_pads > 1) {
+      goto out;
+    }
+  }
+
+  sink_iterator = gst_element_iterate_sink_pads (element);
+  while (gst_iterator_next (sink_iterator, &vpad) == GST_ITERATOR_OK) {
     sink_pad = GST_PAD (g_value_get_object (&vpad));
+    g_value_reset (&vpad);
     num_sink_pads++;
-  }
-  gst_iterator_free (iterator);
 
-  /* Verify if the element only have one input and output */
-  if ((1 == num_src_pads) && (1 == num_sink_pads)) {
+    if (num_sink_pads > 1) {
+      goto out;
+    }
+  }
+
+  /* We are only interested in elements with one sink and src pad */
+  if (num_src_pads == 1 && num_sink_pads == 1) {
     gst_proctime_add_in_list (proc_time, sink_pad, src_pad);
+  }
+
+out:
+  {
+    g_value_unset (&vpad);
+
+    if (NULL != src_iterator) {
+      gst_iterator_free (src_iterator);
+    }
+
+    if (NULL != sink_iterator) {
+      gst_iterator_free (sink_iterator);
+    }
   }
 }
 
