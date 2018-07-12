@@ -31,8 +31,7 @@ struct _GstProcTimeElement
 
 struct _GstProcTime
 {
-  gint elem_num;
-  GstProcTimeElement *element;
+  GList *elements;
 };
 
 GstProcTime *
@@ -44,8 +43,7 @@ gst_proctime_new (void)
 
   g_return_val_if_fail (self, NULL);
 
-  self->elem_num = 0;
-  self->element = NULL;
+  self->elements = NULL;
 
   return self;
 }
@@ -55,7 +53,7 @@ gst_proctime_free (GstProcTime * self)
 {
   g_return_if_fail (self);
 
-  g_free (self->element);
+  g_list_free (self->elements);
   g_free (self);
 }
 
@@ -67,25 +65,20 @@ static void
 gst_proctime_add_in_list (GstProcTime * proc_time, gchar * name,
     GstPad * sink_pad, GstPad * src_pad)
 {
-  GstProcTimeElement *element;
-  gint elem_idx;
+  GstProcTimeElement *new_element;
 
-  element = proc_time->element;
-  /* Verify if is the first new element */
-  if (NULL == element) {
-    proc_time->elem_num++;
-    element = g_malloc (sizeof (GstProcTimeElement));
-    proc_time->element = element;
-  } else {
-    proc_time->elem_num++;
-    element = g_realloc (element, proc_time->elem_num * sizeof (GstProcTime));
-    proc_time->element = element;
-  }
-  elem_idx = proc_time->elem_num - 1;
-  /* Store element information (sink and src pads) */
-  element[elem_idx].name = name;
-  element[elem_idx].sink_pad = sink_pad;
-  element[elem_idx].src_pad = src_pad;
+  g_return_if_fail (proc_time);
+  g_return_if_fail (name);
+  g_return_if_fail (sink_pad);
+  g_return_if_fail (src_pad);
+
+  new_element = g_malloc0 (sizeof (GstProcTimeElement));
+
+  new_element->name = name;
+  new_element->sink_pad = sink_pad;
+  new_element->src_pad = src_pad;
+
+  proc_time->elements = g_list_append (proc_time->elements, new_element);
 }
 
 void
@@ -130,8 +123,8 @@ gst_proctime_proc_time (GstProcTime * proc_time, GstClockTime * time,
 {
   GstProcTimeElement *element;
   GstClockTime stop_time;
+  guint elem_num;
   gint elem_idx;
-  gint elem_num;
 
   g_return_if_fail (proc_time);
   g_return_if_fail (time);
@@ -139,17 +132,16 @@ gst_proctime_proc_time (GstProcTime * proc_time, GstClockTime * time,
   g_return_if_fail (src_pad);
   g_return_if_fail (peer_pad);
 
-  element = proc_time->element;
-  elem_num = proc_time->elem_num;
-
+  elem_num = g_list_length (proc_time->elements);
   *name = NULL;
   /* Search the peer pad in the list 
    * The peer pad is used to identify which is the element where the 
    * buffer is received.
    */
   for (elem_idx = 0; elem_idx < elem_num; ++elem_idx) {
-    if (element[elem_idx].sink_pad == peer_pad) {
-      element[elem_idx].start_time = gst_util_get_timestamp ();
+    element = g_list_nth_data (proc_time->elements, elem_idx);
+    if (element->sink_pad == peer_pad) {
+      element->start_time = gst_util_get_timestamp ();
     }
   }
 
@@ -160,10 +152,11 @@ gst_proctime_proc_time (GstProcTime * proc_time, GstClockTime * time,
    * precessing time is not computed
    */
   for (elem_idx = 0; elem_idx < elem_num; ++elem_idx) {
-    if (element[elem_idx].src_pad == src_pad) {
+    element = g_list_nth_data (proc_time->elements, elem_idx);
+    if (element->src_pad == src_pad) {
       stop_time = gst_util_get_timestamp ();
-      *time = stop_time - element[elem_idx].start_time;
-      *name = element[elem_idx].name;
+      *time = stop_time - element->start_time;
+      *name = element->name;
     }
   }
 }
