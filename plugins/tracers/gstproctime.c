@@ -24,10 +24,6 @@
  * A tracing module that take proctime() snapshots and logs them.
  */
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include "gstproctime.h"
 #include "gstctf.h"
 
@@ -52,9 +48,7 @@ struct _GstProcTimeTracer
 G_DEFINE_TYPE_WITH_CODE (GstProcTimeTracer, gst_proc_time_tracer,
     GST_TYPE_TRACER, _do_init);
 
-#ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_proc_time;
-#endif
 
 static const gchar proc_time_metadata_event[] = "event {\n\
     name = proc_time;\n\
@@ -89,13 +83,8 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   if (NULL != name) {
     g_string_printf (time_string, "%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
-#ifdef GST_STABLE_RELEASE
     gst_tracer_record_log (tr_proc_time, name, time_string->str);
-#else
-    gst_tracer_log_trace (gst_structure_new ("proc_time",
-            "element", G_TYPE_STRING, name,
-            "time", G_TYPE_STRING, time_string->str, NULL));
-#endif
+
     do_print_proctime_event (PROCTIME_EVENT_ID, name, time);
   }
 
@@ -152,7 +141,6 @@ gst_proc_time_tracer_init (GstProcTimeTracer * self)
   gst_tracing_register_hook (tracer, "element-new",
       G_CALLBACK (do_element_new));
 
-#ifdef GST_STABLE_RELEASE
   tr_proc_time = gst_tracer_record_new ("proc_time.class",
       "element", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
@@ -161,11 +149,6 @@ gst_proc_time_tracer_init (GstProcTimeTracer * self)
       gst_structure_new ("scope", "type", G_TYPE_GTYPE, G_TYPE_STRING,
           "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
           GST_TRACER_VALUE_SCOPE_PROCESS, NULL), NULL);
-#else
-  gst_tracer_log_trace (gst_structure_new ("proc_time.class", "element", GST_TYPE_STRUCTURE, gst_structure_new ("scope", "related-to", G_TYPE_STRING, "element",        /* TODO: use genum */
-              NULL), "time", GST_TYPE_STRUCTURE, gst_structure_new ("scope", "related-to", G_TYPE_STRING, "process",    /* TODO: use genum */
-              NULL), NULL));
-#endif
 
   metadata_event =
       g_strdup_printf (proc_time_metadata_event, PROCTIME_EVENT_ID, 0);
