@@ -34,6 +34,27 @@ struct _GstProcTime
   GList *elements;
 };
 
+static void free_element (gpointer data);
+
+static void
+free_element (gpointer data)
+{
+  GstProcTimeElement *element;
+
+  element = (GstProcTimeElement *) data;
+
+  gst_object_unref (element->src_pad);
+  element->src_pad = NULL;
+
+  gst_object_unref (element->sink_pad);
+  element->sink_pad = NULL;
+
+  g_free (element->name);
+  element->name = NULL;
+
+  g_free (element);
+}
+
 GstProcTime *
 gst_proctime_new (void)
 {
@@ -53,7 +74,7 @@ gst_proctime_free (GstProcTime * self)
 {
   g_return_if_fail (self);
 
-  g_list_free (self->elements);
+  g_list_free_full (self->elements, free_element);
   g_free (self);
 }
 
@@ -74,9 +95,9 @@ gst_proctime_add_in_list (GstProcTime * proc_time, gchar * name,
 
   new_element = g_malloc0 (sizeof (GstProcTimeElement));
 
-  new_element->name = name;
-  new_element->sink_pad = sink_pad;
-  new_element->src_pad = src_pad;
+  new_element->name = g_strdup (name);
+  new_element->sink_pad = gst_object_ref (sink_pad);
+  new_element->src_pad = gst_object_ref (src_pad);
 
   proc_time->elements = g_list_append (proc_time->elements, new_element);
 }
