@@ -42,17 +42,29 @@
 GST_DEBUG_CATEGORY_STATIC (gst_scheduletime_debug);
 #define GST_CAT_DEFAULT gst_scheduletime_debug
 
+typedef struct _GstSchedulePad GstSchedulePad;
+
+struct _GstSchedulePad
+{
+  GstPad *pad;
+  GstClockTime previous_time;
+};
+
+struct _GstScheduletimeTracer
+{
+  GstTracer parent;
+  GHashTable *schedule_pads;
+};
+
 #define _do_init \
     GST_DEBUG_CATEGORY_INIT (gst_scheduletime_debug, "scheduletime", 0, "scheduletime tracer");
-#define gst_scheduletime_tracer_parent_class parent_class
+
 G_DEFINE_TYPE_WITH_CODE (GstScheduletimeTracer, gst_scheduletime_tracer,
     GST_TYPE_TRACER, _do_init);
 
 #define PAD_NAME_SIZE  (64)
 
-#ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_schedule;
-#endif
 
 static const gchar scheduling_metadata_event[] = "event {\n\
     name = scheduling;\n\
@@ -150,7 +162,7 @@ gst_scheduletime_tracer_finalize (GObject * obj)
 
   g_hash_table_destroy (schedule_time_tracer->schedule_pads);
 
-  G_OBJECT_CLASS (parent_class)->finalize (obj);
+  G_OBJECT_CLASS (gst_scheduletime_tracer_parent_class)->finalize (obj);
 }
 
 static void
