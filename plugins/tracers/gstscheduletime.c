@@ -89,12 +89,10 @@ schedule_pad_destroy (gpointer data)
   g_free (data);
 }
 
-
 static void
-sched_time_compute (GstTracer * self, guint64 ts, GstPad * pad)
+sched_time_compute (GstTracer * tracer, guint64 ts, GstPad * pad)
 {
-  GObject *obj;
-  GstScheduletimeTracer *schedule_time_tracer;
+  GstScheduletimeTracer *self;
   GHashTable *schedule_pads;
   GstSchedulePad *schedule_pad;
   GstSchedulePad *schedule_pad_new;
@@ -102,9 +100,11 @@ sched_time_compute (GstTracer * self, guint64 ts, GstPad * pad)
   gchar pad_name[PAD_NAME_SIZE];
   guint64 time_diff;
 
-  obj = (GObject *) self;
-  schedule_time_tracer = GST_SCHEDULETIME_TRACER_CAST (self);
-  schedule_pads = schedule_time_tracer->schedule_pads;
+  g_return_if_fail (tracer);
+  g_return_if_fail (pad);
+
+  self = GST_SCHEDULETIME_TRACER (tracer);
+  schedule_pads = self->schedule_pads;
 
   g_snprintf (pad_name, PAD_NAME_SIZE, "%s_%s", GST_DEBUG_PAD_NAME (pad));
   schedule_pad = (GstSchedulePad *) g_hash_table_lookup (schedule_pads, pad);
@@ -116,7 +116,7 @@ sched_time_compute (GstTracer * self, guint64 ts, GstPad * pad)
     schedule_pad_new->previous_time = 0;
     gst_object_ref (pad);
     if (!g_hash_table_insert (schedule_pads, pad, (gpointer) schedule_pad_new)) {
-      GST_ERROR_OBJECT (obj, "Failed to create schedule pad");
+      GST_ERROR_OBJECT (self, "Failed to create schedule pad");
     }
     return;
   }
@@ -141,13 +141,13 @@ sched_time_compute (GstTracer * self, guint64 ts, GstPad * pad)
 }
 
 static void
-do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
+do_push_buffer_pre (GstTracer * tracer, guint64 ts, GstPad * pad)
 {
   GstPad *pad_peer;
 
   pad_peer = gst_pad_get_peer (pad);
 
-  sched_time_compute (self, ts, pad_peer);
+  sched_time_compute (tracer, ts, pad_peer);
 
   gst_object_unref (pad_peer);
 }
@@ -157,10 +157,9 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
 static void
 gst_scheduletime_tracer_finalize (GObject * obj)
 {
-  GstScheduletimeTracer *schedule_time_tracer;
-  schedule_time_tracer = GST_SCHEDULETIME_TRACER (obj);
+  GstScheduletimeTracer *self = GST_SCHEDULETIME_TRACER (obj);
 
-  g_hash_table_destroy (schedule_time_tracer->schedule_pads);
+  g_hash_table_destroy (self->schedule_pads);
 
   G_OBJECT_CLASS (gst_scheduletime_tracer_parent_class)->finalize (obj);
 }
@@ -171,8 +170,17 @@ gst_scheduletime_tracer_class_init (GstScheduletimeTracerClass * klass)
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
 
   gobject_class->finalize = gst_scheduletime_tracer_finalize;
-}
 
+  tr_schedule = gst_tracer_record_new ("scheduletime.class",
+      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PAD,
+          NULL),
+      "time", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+          GST_TRACER_VALUE_SCOPE_PROCESS, NULL), NULL);
+}
 
 static void
 gst_scheduletime_tracer_init (GstScheduletimeTracer * self)
@@ -192,22 +200,6 @@ gst_scheduletime_tracer_init (GstScheduletimeTracer * self)
 
   gst_tracing_register_hook (tracer, "pad-pull-range-pre",
       G_CALLBACK (sched_time_compute));
-
-#ifdef GST_STABLE_RELEASE
-  tr_schedule = gst_tracer_record_new ("scheduletime.class",
-      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-          "type", G_TYPE_GTYPE, G_TYPE_STRING,
-          "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PAD,
-          NULL),
-      "time", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-          "type", G_TYPE_GTYPE, G_TYPE_STRING,
-          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
-          GST_TRACER_VALUE_SCOPE_PROCESS, NULL), NULL);
-#else
-  gst_tracer_log_trace (gst_structure_new ("scheduletime.class", "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope", "related-to", G_TYPE_STRING, "pad",     /* TODO: use genum */
-              NULL), "time", GST_TYPE_STRUCTURE, gst_structure_new ("scope", "related-to", G_TYPE_STRING, "process",    /* TODO: use genum */
-              NULL), NULL));
-#endif
 
   metadata_event =
       g_strdup_printf (scheduling_metadata_event, SCHED_TIME_EVENT_ID, 0);
