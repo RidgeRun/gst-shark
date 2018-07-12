@@ -23,34 +23,21 @@
 
 #include <gst/gst.h>
 
-#include <sys/time.h>
+G_BEGIN_DECLS
 
-G_BEGIN_DECLS typedef struct
-{
-  gchar *name;
-  GstPad *src_pad;
-  GThread *src_thread;
-  GstPad *sink_pad;
-  GThread *sink_thread;
-  GstClockTime start_time;
-} GstProcTimeElement;
+typedef struct _GstProcTime GstProcTime;
 
-typedef struct
-{
-  gint elem_num;
-  GstProcTimeElement *element;
-  GstClock clock;
-} GstProcTime;
-
-void gst_proctime_init (GstProcTime * proc_time);
+GstProcTime *gst_proctime_new (void);
 
 void gst_proctime_add_new_element (GstProcTime * proc_time,
     GstElement * element);
 
-void gst_proctime_proc_time (GstProcTime * proc_time,
-    GstClockTime * time, gchar ** name, GstPad * peer_pad, GstPad * src_pad);
+gboolean gst_proctime_proc_time (GstProcTime * proc_time,
+    GstClockTime * time, GstPad * peer_pad, GstPad * src_pad,
+    GstClockTime ts);
 
-void gst_proctime_finalize (GstProcTime * proc_time);
+void gst_proctime_free (GstProcTime * proc_time);
 
 G_END_DECLS
+
 #endif //__GST_PROC_CTIME_COMPUTE_H__

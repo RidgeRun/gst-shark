@@ -1,5 +1,5 @@
 /* GstShark - A Front End for GstTracer
- * Copyright (C) 2016 RidgeRun Engineering <manuel.leiva@ridgerun.com>
+ * Copyright (C) 2016-2018 RidgeRun Engineering <manuel.leiva@ridgerun.com>
  *
  * This file is part of GstShark.
  *
@@ -18,46 +18,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef __GST_PROCTIME_TRACER_H__
-#define __GST_PROCTIME_TRACER_H__
+#ifndef __GST_PROC_TIME_TRACER_H__
+#define __GST_PROC_TIME_TRACER_H__
 
 #include <gst/gst.h>
 #include <gst/gsttracer.h>
 #include "gstproctimecompute.h"
 
 G_BEGIN_DECLS
-#define GST_TYPE_PROCTIME_TRACER \
-  (gst_proctime_tracer_get_type())
-#define GST_PROCTIME_TRACER(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_PROCTIME_TRACER,GstProcTimeTracer))
-#define GST_PROCTIME_TRACER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_PROCTIME_TRACER,GstProcTimeTracerClass))
-#define GST_IS_PROCTIME_TRACER(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_PROCTIME_TRACER))
-#define GST_IS_PROCTIME_TRACER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_PROCTIME_TRACER))
-#define GST_PROCTIME_TRACER_CAST(obj) ((GstProcTimeTracer *)(obj))
-typedef struct _GstProcTimeTracer GstProcTimeTracer;
-typedef struct _GstProcTimeTracerClass GstProcTimeTracerClass;
 
-/**
- * GstProcTimeTracer:
- *
- * Opaque #GstProcTimeTracer data structure
- */
-struct _GstProcTimeTracer
-{
-  GstTracer parent;
-  GstProcTime proc_time;
-};
-
-struct _GstProcTimeTracerClass
-{
-  GstTracerClass parent_class;
-
-};
-
-G_GNUC_INTERNAL GType gst_proctime_tracer_get_type (void);
+#define GST_TYPE_PROC_TIME_TRACER (gst_proc_time_tracer_get_type())
+G_DECLARE_FINAL_TYPE (GstProcTimeTracer, gst_proc_time_tracer, GST, PROC_TIME_TRACER, GstTracer)
 
 G_END_DECLS
-#endif /* __GST_PROCTIME_TRACER_H__ */
+
+#endif /* __GST_PROC_TIME_TRACER_H__ */
