@@ -25,9 +25,7 @@ struct _GstProcTimeElement
 {
   gchar *name;
   GstPad *src_pad;
-  GThread *src_thread;
   GstPad *sink_pad;
-  GThread *sink_thread;
   GstClockTime start_time;
 };
 
@@ -36,8 +34,6 @@ struct _GstProcTime
   gint elem_num;
   GstProcTimeElement *element;
 };
-
-static gboolean gst_proctime_element_is_async (GstProcTimeElement * element);
 
 GstProcTime *
 gst_proctime_new (void)
@@ -90,8 +86,6 @@ gst_proctime_add_in_list (GstProcTime * proc_time, gchar * name,
   element[elem_idx].name = name;
   element[elem_idx].sink_pad = sink_pad;
   element[elem_idx].src_pad = src_pad;
-  element[elem_idx].sink_thread = NULL;
-  element[elem_idx].src_thread = NULL;
 }
 
 void
@@ -156,7 +150,6 @@ gst_proctime_proc_time (GstProcTime * proc_time, GstClockTime * time,
   for (elem_idx = 0; elem_idx < elem_num; ++elem_idx) {
     if (element[elem_idx].sink_pad == peer_pad) {
       element[elem_idx].start_time = gst_util_get_timestamp ();
-      element[elem_idx].sink_thread = g_thread_self ();
     }
   }
 
@@ -170,21 +163,7 @@ gst_proctime_proc_time (GstProcTime * proc_time, GstClockTime * time,
     if (element[elem_idx].src_pad == src_pad) {
       stop_time = gst_util_get_timestamp ();
       *time = stop_time - element[elem_idx].start_time;
-      element[elem_idx].src_thread = g_thread_self ();
-      if (FALSE == gst_proctime_element_is_async (&element[elem_idx])) {
-        *name = element[elem_idx].name;
-      }
+      *name = element[elem_idx].name;
     }
   }
-}
-
-static gboolean
-gst_proctime_element_is_async (GstProcTimeElement * element)
-{
-  /* If threads are not defined yet we can't tell if its async or not */
-  if (NULL == element->sink_thread || NULL == element->src_thread) {
-    return FALSE;
-  }
-
-  return element->sink_thread != element->src_thread;
 }
