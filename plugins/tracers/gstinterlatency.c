@@ -1,6 +1,6 @@
 /* GStreamer
  * Copyright (C) 2013 Stefan Sauer <ensonic@users.sf.net>
- * Copyright (C) 2016 RidgeRun Engineering <carlos.rodriguez@ridgerun.com>
+ * Copyright (C) 2016-2018 RidgeRun Engineering <carlos.rodriguez@ridgerun.com>
  *
  * gstinterlatency.c: tracing module that logs processing latencies
  * stats between source and intermediate elements
@@ -103,8 +103,7 @@ get_real_pad_parent (GstPad * pad)
 {
   GstObject *parent = NULL;
 
-  if (!pad)
-    return NULL;
+  g_return_val_if_fail (pad, NULL);
 
   parent = GST_OBJECT_PARENT (pad);
 
@@ -120,7 +119,7 @@ get_real_pad_parent (GstPad * pad)
 /* hooks */
 
 static void
-log_latency (GstInterLatencyTracer * interlatency_tracer,
+print_latency (GstInterlatencyTracer * self,
     const GstStructure * data, GstPad * sink_pad, guint64 sink_ts)
 {
   GstPad *src_pad = NULL;
@@ -128,6 +127,10 @@ log_latency (GstInterLatencyTracer * interlatency_tracer,
   gchar *src = NULL, *sink = NULL;
   guint64 time;
   GString *time_string = NULL;
+
+  g_return_if_fail (self);
+  g_return_if_fail (data);
+  g_return_if_fail (sink_pad);
 
   gst_structure_id_get (data,
       latency_probe_pad, GST_TYPE_PAD, &src_pad,
@@ -160,7 +163,10 @@ log_latency (GstInterLatencyTracer * interlatency_tracer,
 static void
 send_latency_probe (GstElement * parent, GstPad * pad, guint64 ts)
 {
-  if (parent && (!GST_IS_BIN (parent))) {
+  g_return_if_fail (parent);
+  g_return_if_fail (pad);
+
+  if (!GST_IS_BIN (parent)) {
     GstEvent *latency_probe = gst_event_new_custom (GST_EVENT_CUSTOM_DOWNSTREAM,
         gst_structure_new_id (latency_probe_id,
             latency_probe_pad, GST_TYPE_PAD, pad,
@@ -171,67 +177,70 @@ send_latency_probe (GstElement * parent, GstPad * pad, guint64 ts)
 }
 
 static void
-calculate_latency (GstInterLatencyTracer * interlatency_tracer,
+calculate_latency (GstInterlatencyTracer * self,
     GstElement * parent, GstPad * pad, guint64 ts)
 {
-  if (parent && (!GST_IS_BIN (parent))) {
+  g_return_if_fail (self);
+  g_return_if_fail (parent);
+  g_return_if_fail (pad);
+
+  if (!GST_IS_BIN (parent)) {
     GstEvent *ev = g_object_get_qdata ((GObject *) pad, latency_probe_id);
 
     if (GST_IS_EVENT (ev))
-      log_latency (interlatency_tracer, gst_event_get_structure (ev), pad, ts);
+      print_latency (self, gst_event_get_structure (ev), pad, ts);
   }
 }
 
 static void
-do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
+do_push_buffer_pre (GstTracer * tracer, guint64 ts, GstPad * pad)
 {
   GstElement *parent = get_real_pad_parent (pad);
   GstPad *peer_pad = GST_PAD_PEER (pad);
   GstElement *peer_parent = get_real_pad_parent (peer_pad);
-  GstInterLatencyTracer *interlatency_tracer;
+  GstInterlatencyTracer *self;
 
-  interlatency_tracer = GST_INTERLATENCY_TRACER_CAST (self);
+  self = GST_INTERLATENCY_TRACER (tracer);
 
   if (GST_OBJECT_FLAG_IS_SET (parent, GST_ELEMENT_FLAG_SOURCE)) {
     send_latency_probe (parent, pad, ts);
-    calculate_latency (interlatency_tracer, peer_parent, peer_pad, ts);
+    calculate_latency (self, peer_parent, peer_pad, ts);
   } else
-    calculate_latency (interlatency_tracer, parent, pad, ts);
+    calculate_latency (self, parent, pad, ts);
 
   if (GST_OBJECT_FLAG_IS_SET (peer_parent, GST_ELEMENT_FLAG_SINK))
-    calculate_latency (interlatency_tracer, peer_parent, peer_pad, ts);
-
+    calculate_latency (self, peer_parent, peer_pad, ts);
 }
 
 static void
-do_pull_range_pre (GstTracer * self, guint64 ts, GstPad * pad)
+do_pull_range_pre (GstTracer * tracer, guint64 ts, GstPad * pad)
 {
-  GstInterLatencyTracer *interlatency_tracer;
+  GstInterlatencyTracer *self;
 
   GstPad *peer_pad = GST_PAD_PEER (pad);
   GstElement *parent_peer = get_real_pad_parent (peer_pad);
 
-  interlatency_tracer = GST_INTERLATENCY_TRACER_CAST (self);
+  self = GST_INTERLATENCY_TRACER (tracer);
 
   if (GST_OBJECT_FLAG_IS_SET (parent_peer, GST_ELEMENT_FLAG_SOURCE))
     send_latency_probe (parent_peer, peer_pad, ts);
   else
-    calculate_latency (interlatency_tracer, parent_peer, peer_pad, ts);
+    calculate_latency (self, parent_peer, peer_pad, ts);
 }
 
 static void
-do_pull_range_post (GstTracer * self, guint64 ts, GstPad * pad)
+do_pull_range_post (GstTracer * tracer, guint64 ts, GstPad * pad)
 {
-  GstInterLatencyTracer *interlatency_tracer;
+  GstInterlatencyTracer *self;
   GstElement *parent = get_real_pad_parent (pad);
 
-  interlatency_tracer = GST_INTERLATENCY_TRACER_CAST (self);
+  self = GST_INTERLATENCY_TRACER (tracer);
   if (GST_OBJECT_FLAG_IS_SET (parent, GST_ELEMENT_FLAG_SINK))
-    calculate_latency (interlatency_tracer, parent, pad, ts);
+    calculate_latency (self, parent, pad, ts);
 }
 
 static void
-do_push_event_pre (GstTracer * self, guint64 ts, GstPad * pad, GstEvent * ev)
+do_push_event_pre (GstTracer * tracer, guint64 ts, GstPad * pad, GstEvent * ev)
 {
   GstPad *peer_pad = GST_PAD_PEER (pad);
   GstElement *parent = get_real_pad_parent (pad);
@@ -256,17 +265,14 @@ do_push_event_pre (GstTracer * self, guint64 ts, GstPad * pad, GstEvent * ev)
 }
 
 /* tracer class */
-
 static void
-gst_interlatency_tracer_class_init (GstInterLatencyTracerClass * klass)
+gst_interlatency_tracer_class_init (GstInterlatencyTracerClass * klass)
 {
-  GObjectClass *oclass;
+  GObjectClass *gobject_class;
 
-  oclass = G_OBJECT_CLASS (klass);
+  gobject_class = G_OBJECT_CLASS (klass);
 
-  latency_probe_id = g_quark_from_static_string ("latency_probe.id");
-  latency_probe_pad = g_quark_from_static_string ("latency_probe.pad");
-  latency_probe_ts = g_quark_from_static_string ("latency_probe.ts");
+  gobject_class->dispose = gst_interlatency_tracer_dispose;
 
   /* announce trace formats */
   /* *INDENT-OFF* */
@@ -282,32 +288,19 @@ gst_interlatency_tracer_class_init (GstInterLatencyTracerClass * klass)
           NULL),
       "time", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
-          "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PROCESS,
-          NULL),
-      NULL);
-#else
-  gst_tracer_log_trace (gst_structure_new ("interlatency.class",
-      "from_pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-          "related-to", G_TYPE_STRING, "pad", /* TODO: use genum */
-          NULL),
-      "to_pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-          "related-to", G_TYPE_STRING, "pad", /* TODO: use genum */
-          NULL),
-      "time", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-          "related-to", G_TYPE_STRING, "process", /* TODO: use genum */
-          NULL),
-      NULL));
-#endif
-  /* *INDENT-ON* */
-
-  oclass->dispose = gst_interlatency_tracer_dispose;
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+          GST_TRACER_VALUE_SCOPE_PROCESS, NULL), NULL);
 }
 
 static void
-gst_interlatency_tracer_init (GstInterLatencyTracer * self)
+gst_interlatency_tracer_init (GstInterlatencyTracer * self)
 {
   GstTracer *tracer = GST_TRACER (self);
   gchar *metadata_event;
+
+  latency_probe_id = g_quark_from_static_string ("latency_probe.id");
+  latency_probe_pad = g_quark_from_static_string ("latency_probe.pad");
+  latency_probe_ts = g_quark_from_static_string ("latency_probe.ts");
 
   /* In push mode, pre/post will be called before/after the peer chain
    * function has been called. For this reason, we only use -pre to avoid
