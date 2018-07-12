@@ -47,10 +47,16 @@
 GST_DEBUG_CATEGORY_STATIC (gst_interlatency_debug);
 #define GST_CAT_DEFAULT gst_interlatency_debug
 
+struct _GstInterlatencyTracer
+{
+  GstTracer parent;
+  /*< private > */
+};
+
 #define _do_init \
     GST_DEBUG_CATEGORY_INIT (gst_interlatency_debug, "interlatency", 0, "interlatency tracer");
-#define gst_interlatency_tracer_parent_class parent_class
-G_DEFINE_TYPE_WITH_CODE (GstInterLatencyTracer, gst_interlatency_tracer,
+
+G_DEFINE_TYPE_WITH_CODE (GstInterlatencyTracer, gst_interlatency_tracer,
     GST_TYPE_TRACER, _do_init);
 
 static GQuark latency_probe_id;
@@ -331,9 +337,7 @@ gst_interlatency_tracer_init (GstInterLatencyTracer * self)
 }
 
 static void
-gst_interlatency_tracer_dispose (GObject * object)
+gst_interlatency_tracer_dispose (GObject * obj)
 {
-  GstInterLatencyTracer *self;
-
-  self = GST_INTERLATENCY_TRACER (object);
+  G_OBJECT_CLASS (gst_interlatency_tracer_parent_class)->dispose (obj);
 }
