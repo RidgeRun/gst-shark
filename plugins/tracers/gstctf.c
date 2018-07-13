@@ -46,6 +46,7 @@ typedef guint8 tcp_header_id;
 typedef guint32 tcp_header_length;
 
 #define TCP_HEADER_SIZE (sizeof(tcp_header_id) + sizeof(tcp_header_length))
+#define CTF_HEADER_SIZE (sizeof(guint16) + sizeof(guint32))
 #define CTF_AVAILABLE_MEM_SIZE (CTF_MEM_SIZE - TCP_HEADER_SIZE)
 
 typedef guint16 ctf_header_id;
