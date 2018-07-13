@@ -749,6 +749,12 @@ do_print_proctime_event (event_id id, gchar * elementname, guint64 time)
   guint8 *event_mem;
   gsize event_size;
 
+  event_size = strlen (elementname) + 1 + sizeof (time);
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
 
@@ -759,9 +765,7 @@ do_print_proctime_event (event_id id, gchar * elementname, guint64 time)
   /* Write element name */
   CTF_EVENT_WRITE_STRING (elementname, event_mem);
   /* Write time */
-  CTF_EVENT_WRITE_INT64 (time, event_mem)
-      /* Computer event size */
-      event_size = event_mem - (mem + TCP_HEADER_SIZE);
+  CTF_EVENT_WRITE_INT64 (time, event_mem);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem -= event_size;
