@@ -122,7 +122,7 @@ do_print_bitrate (gpointer * data)
       goto out;
     }
   }
-  do_print_bitrate_event (FPS_EVENT_ID, size, pad_counts);
+  do_print_bitrate_event (BITRATE_EVENT_ID, size, pad_counts);
 
 out:
   g_free (pad_counts);
@@ -309,7 +309,7 @@ create_metadata_event (GHashTable * bitrate_counters)
 
   builder = g_string_new (NULL);
 
-  g_string_printf (builder, bitrate_metadata_event_header, FPS_EVENT_ID, 0);
+  g_string_printf (builder, bitrate_metadata_event_header, BITRATE_EVENT_ID, 0);
 
   g_hash_table_iter_init (&iter, bitrate_counters);
   while (g_hash_table_iter_next (&iter, &key, &value)) {

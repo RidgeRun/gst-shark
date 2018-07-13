@@ -964,6 +964,12 @@ do_print_bitrate_event (event_id id, guint32 pad_num, guint64 * fps)
   gsize event_size;
   guint32 pad_idx;
 
+  event_size = pad_num * sizeof (guint64) + CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
 
@@ -976,9 +982,6 @@ do_print_bitrate_event (event_id id, guint32 pad_num, guint64 * fps)
     /* Write bitrate */
     CTF_EVENT_WRITE_INT64 (fps[pad_idx], event_mem);
   }
-
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem = mem + TCP_HEADER_SIZE;
