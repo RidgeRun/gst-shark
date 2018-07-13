@@ -21,8 +21,7 @@
 #ifndef __GST_QUEUE_LEVEL_TRACER_H__
 #define __GST_QUEUE_LEVEL_TRACER_H__
 
-#include <gst/gst.h>
-#include <gst/gsttracer.h>
+#include "gstsharktracer.h"
 
 G_BEGIN_DECLS
 #define GST_TYPE_QUEUE_LEVEL_TRACER \
@@ -47,12 +46,12 @@ typedef struct _GstQueueLevelTracerClass GstQueueLevelTracerClass;
  */
 struct _GstQueueLevelTracer
 {
-  GstTracer parent;
+  GstSharkTracer parent;
 };
 
 struct _GstQueueLevelTracerClass
 {
-  GstTracerClass parent_class;
+  GstSharkTracerClass parent_class;
 };
 
 G_GNUC_INTERNAL GType gst_queue_level_tracer_get_type (void);

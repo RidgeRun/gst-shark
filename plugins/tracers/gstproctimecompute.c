@@ -156,7 +156,8 @@ out:
 
 gboolean
 gst_proctime_proc_time (GstProcTime * proc_time, GstClockTime * time,
-    GstPad * peer_pad, GstPad * src_pad, GstClockTime ts)
+    GstPad * peer_pad, GstPad * src_pad, GstClockTime ts,
+    gboolean do_calculation)
 {
   GstProcTimeElement *element;
   GstClockTime stop_time;
@@ -181,6 +182,9 @@ gst_proctime_proc_time (GstProcTime * proc_time, GstClockTime * time,
     }
   }
 
+  if (!do_calculation)
+    goto exit;
+
   /* Search the src pad in the list 
    * The peer pad is used to identify which is the element where the 
    * buffer was processed.
@@ -196,5 +200,6 @@ gst_proctime_proc_time (GstProcTime * proc_time, GstClockTime * time,
     }
   }
 
+exit:
   return found;
 }

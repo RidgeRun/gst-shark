@@ -37,7 +37,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_framerate_debug);
 
 struct _GstFramerateTracer
 {
-  GstTracer parent;
+  GstSharkTracer parent;
 
   GHashTable *frame_counters;
   guint callback_id;
@@ -49,7 +49,7 @@ struct _GstFramerateTracer
     GST_DEBUG_CATEGORY_INIT (gst_framerate_debug, "framerate", 0, "framerate tracer");
 
 G_DEFINE_TYPE_WITH_CODE (GstFramerateTracer, gst_framerate_tracer,
-    GST_TYPE_TRACER, _do_init);
+    GST_SHARK_TYPE_TRACER, _do_init);
 
 static GstTracerRecord *tr_framerate;
 
@@ -118,6 +118,7 @@ gst_framerate_tracer_class_init (GstFramerateTracerClass * klass)
 static void
 gst_framerate_tracer_init (GstFramerateTracer * self)
 {
+  GstSharkTracer *stracer = GST_SHARK_TRACER (self);
   GstTracer *tracer = GST_TRACER (self);
 
   self->frame_counters =
@@ -127,11 +128,11 @@ gst_framerate_tracer_init (GstFramerateTracer * self)
   self->pipes_running = 0;
   self->metadata_written = FALSE;
 
-  gst_tracing_register_hook (tracer, "pad-push-pre",
+  gst_shark_tracer_register_hook (stracer, "pad-push-pre",
       G_CALLBACK (pad_push_buffer_pre));
-  gst_tracing_register_hook (tracer, "pad-push-list-pre",
+  gst_shark_tracer_register_hook (stracer, "pad-push-list-pre",
       G_CALLBACK (pad_push_list_pre));
-  gst_tracing_register_hook (tracer, "pad-pull-range-pre",
+  gst_shark_tracer_register_hook (stracer, "pad-pull-range-pre",
       G_CALLBACK (pad_pull_range_pre));
 
   gst_tracing_register_hook (tracer, "element-change-state-post",
