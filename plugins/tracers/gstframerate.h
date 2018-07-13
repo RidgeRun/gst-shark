@@ -22,44 +22,13 @@
 #define __GST_FRAMERATE_TRACER_H__
 
 #include <gst/gst.h>
-#include <gst/gsttracer.h>
+#include "gstsharktracer.h"
 
 G_BEGIN_DECLS
-#define GST_TYPE_FRAMERATE_TRACER \
-  (gst_framerate_tracer_get_type())
-#define GST_FRAMERATE_TRACER(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_FRAMERATE_TRACER,GstFramerateTracer))
-#define GST_FRAMERATE_TRACER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_FRAMERATE_TRACER,GstFramerateTracerClass))
-#define GST_IS_FRAMERATE_TRACER(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_FRAMERATE_TRACER))
-#define GST_IS_FRAMERATE_TRACER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_FRAMERATE_TRACER))
-#define GST_FRAMERATE_TRACER_CAST(obj) ((GstFramerateTracer *)(obj))
-typedef struct _GstFramerateTracer GstFramerateTracer;
-typedef struct _GstFramerateTracerClass GstFramerateTracerClass;
 
-gboolean do_print_framerate (gpointer * data);
-
-struct _GstFramerateTracer
-{
-  GstTracer parent;
-
-  /*< private > */
-
-  GHashTable *frame_counters;
-  gboolean start_timer;
-  gboolean metadata_written;
-};
-
-struct _GstFramerateTracerClass
-{
-  GstTracerClass parent_class;
-
-  /* signals */
-};
-
-G_GNUC_INTERNAL GType gst_framerate_tracer_get_type (void);
+#define GST_TYPE_FRAMERATE_TRACER (gst_framerate_tracer_get_type ())
+G_DECLARE_FINAL_TYPE (GstFramerateTracer, gst_framerate_tracer, GST, FRAMERATE_TRACER, GstSharkTracer)
 
 G_END_DECLS
+
 #endif /* __GST_FRAMERATE_TRACER_H__ */

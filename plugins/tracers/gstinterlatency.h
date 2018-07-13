@@ -24,8 +24,7 @@
 #ifndef __GST_INTERLATENCY_TRACER_H__
 #define __GST_INTERLATENCY_TRACER_H__
 
-#include <gst/gst.h>
-#include <gst/gsttracer.h>
+#include "gstsharktracer.h"
 
 G_BEGIN_DECLS
 #define GST_TYPE_INTERLATENCY_TRACER \
@@ -49,13 +48,13 @@ typedef struct _GstInterLatencyTracerClass GstInterLatencyTracerClass;
  */
 struct _GstInterLatencyTracer
 {
-  GstTracer parent;
+  GstSharkTracer parent;
   /*< private > */
 };
 
 struct _GstInterLatencyTracerClass
 {
-  GstTracerClass parent_class;
+  GstSharkTracerClass parent_class;
 
   /* signals */
 };
