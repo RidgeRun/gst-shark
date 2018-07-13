@@ -66,24 +66,37 @@ static void
 do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
 {
   GstProcTimeTracer *proc_time_tracer;
+  GstSharkTracer *shark_tracer;
   GstProcTime *proc_time;
 
   GstPad *pad_peer;
+  GstElement *element;
+  gchar *element_name;
   gchar *name;
   GstClockTime time;
   gchar *time_string;
   gboolean should_log;
+  gboolean should_calculate;
 
   proc_time_tracer = GST_PROC_TIME_TRACER (self);
+  shark_tracer = GST_SHARK_TRACER (proc_time_tracer);
   proc_time = proc_time_tracer->proc_time;
   name = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
 
+  element = gst_pad_get_parent_element (pad);
+  element_name = gst_element_get_name (element);
+  gst_object_unref (element);
+
   pad_peer = gst_pad_get_peer (pad);
   if (!pad_peer) {
-    return;
+    goto exit;
   }
 
-  should_log = gst_proctime_proc_time (proc_time, &time, pad_peer, pad, ts);
+  should_calculate =
+      gst_shark_tracer_element_is_filtered (shark_tracer, element_name);
+  should_log =
+      gst_proctime_proc_time (proc_time, &time, pad_peer, pad, ts,
+      should_calculate);
 
   if (should_log) {
     time_string = g_strdup_printf ("%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
@@ -96,6 +109,9 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   }
 
   gst_object_unref (pad_peer);
+
+exit:
+  g_free (element_name);
 }
 
 static void
