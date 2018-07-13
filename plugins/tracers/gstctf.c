@@ -710,6 +710,12 @@ do_print_cpuusage_event (event_id id, guint32 cpu_num, gfloat * cpuload)
   gsize event_size;
   gint cpu_idx;
 
+  event_size = cpu_num * sizeof (gfloat) + CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
 
@@ -722,9 +728,6 @@ do_print_cpuusage_event (event_id id, guint32 cpu_num, gfloat * cpuload)
     /* Write CPU load */
     CTF_EVENT_WRITE_FLOAT (cpuload[cpu_idx], event_mem);
   }
-
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem = mem + TCP_HEADER_SIZE;
