@@ -42,7 +42,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_bitrate_debug);
 
 #define gst_bitrate_tracer_parent_class parent_class
 G_DEFINE_TYPE_WITH_CODE (GstBitrateTracer, gst_bitrate_tracer,
-    GST_TYPE_TRACER, _do_init);
+    GST_SHARK_TYPE_TRACER, _do_init);
 
 #ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_bitrate;
@@ -254,7 +254,7 @@ gst_bitrate_tracer_class_init (GstBitrateTracerClass * klass)
 static void
 gst_bitrate_tracer_init (GstBitrateTracer * self)
 {
-  GstTracer *tracer = GST_TRACER (self);
+  GstSharkTracer *tracer = GST_SHARK_TRACER (self);
 
   self->bitrate_counters =
       g_hash_table_new_full (g_direct_hash, g_direct_equal,
@@ -262,14 +262,14 @@ gst_bitrate_tracer_init (GstBitrateTracer * self)
   self->start_timer = FALSE;
   self->metadata_written = FALSE;
 
-  gst_tracing_register_hook (tracer, "pad-push-pre",
+  gst_shark_tracer_register_hook (tracer, "pad-push-pre",
       G_CALLBACK (do_pad_push_buffer_pre));
-  gst_tracing_register_hook (tracer, "pad-push-list-pre",
+  gst_shark_tracer_register_hook (tracer, "pad-push-list-pre",
       G_CALLBACK (do_pad_push_list_pre));
-  gst_tracing_register_hook (tracer, "pad-pull-range-pre",
+  gst_shark_tracer_register_hook (tracer, "pad-pull-range-pre",
       G_CALLBACK (do_pad_pull_range_pre));
 
-  gst_tracing_register_hook (tracer, "element-change-state-post",
+  gst_tracing_register_hook (GST_TRACER (tracer), "element-change-state-post",
       G_CALLBACK (do_element_change_state_post));
 
 #ifdef GST_STABLE_RELEASE

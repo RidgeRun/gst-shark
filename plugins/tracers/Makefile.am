@@ -24,7 +24,8 @@ libgstshark_la_LIBADD = \
 plugin_LTLIBRARIES = libgstsharktracers.la
 
 libgstsharktracers_la_SOURCES = \
-	gstsharktracers.c \
+	gstplugin.c \
+	gstsharktracer.c \
 	gstgraphic.c \
 	gstcpuusage.c \
 	gstproctime.c \
@@ -65,7 +66,8 @@ noinst_HEADERS = \
 	gstparser.h \
 	gstqueuelevel.h \
 	gstbitrate.h \
-	gstbuffer.h
+	gstbuffer.h \
+	gstsharktracer.h
 
 CLEANFILES = *.gcno *.gcda *.gcov *.gcov.out
 

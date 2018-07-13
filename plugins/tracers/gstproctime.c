@@ -24,6 +24,7 @@
  * A tracing module that take proctime() snapshots and logs them.
  */
 
+#include "gstproctimecompute.h"
 #include "gstproctime.h"
 #include "gstctf.h"
 
@@ -37,7 +38,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_proc_time_debug);
  */
 struct _GstProcTimeTracer
 {
-  GstTracer parent;
+  GstSharkTracer parent;
 
   GstProcTime *proc_time;
 };
@@ -46,7 +47,7 @@ struct _GstProcTimeTracer
     GST_DEBUG_CATEGORY_INIT (gst_proc_time_debug, "proctime", 0, "proctime tracer");
 
 G_DEFINE_TYPE_WITH_CODE (GstProcTimeTracer, gst_proc_time_tracer,
-    GST_TYPE_TRACER, _do_init);
+    GST_SHARK_TYPE_TRACER, _do_init);
 
 static GstTracerRecord *tr_proc_time;
 

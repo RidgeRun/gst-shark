@@ -21,8 +21,7 @@
 #ifndef __GST_BUFFER_TRACER_H__
 #define __GST_BUFFER_TRACER_H__
 
-#include <gst/gst.h>
-#include <gst/gsttracer.h>
+#include "gstsharktracer.h"
 
 G_BEGIN_DECLS
 #define GST_TYPE_BUFFER_TRACER \
@@ -47,12 +46,12 @@ typedef struct _GstBufferTracerClass GstBufferTracerClass;
  */
 struct _GstBufferTracer
 {
-  GstTracer parent;
+  GstSharkTracer parent;
 };
 
 struct _GstBufferTracerClass
 {
-  GstTracerClass parent_class;
+  GstSharkTracerClass parent_class;
 };
 
 G_GNUC_INTERNAL GType gst_buffer_tracer_get_type (void);

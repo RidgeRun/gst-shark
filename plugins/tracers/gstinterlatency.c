@@ -51,7 +51,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_interlatency_debug);
     GST_DEBUG_CATEGORY_INIT (gst_interlatency_debug, "interlatency", 0, "interlatency tracer");
 #define gst_interlatency_tracer_parent_class parent_class
 G_DEFINE_TYPE_WITH_CODE (GstInterLatencyTracer, gst_interlatency_tracer,
-    GST_TYPE_TRACER, _do_init);
+    GST_SHARK_TYPE_TRACER, _do_init);
 
 static GQuark latency_probe_id;
 static GQuark latency_probe_pad;

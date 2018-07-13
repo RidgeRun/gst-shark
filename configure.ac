@@ -22,7 +22,7 @@ dnl check if this is a release version
 AS_NANO(GST_GIT="no", GST_GIT="yes")
 
 dnl can autoconf find the source ?
-AC_CONFIG_SRCDIR([plugins/tracers/gstsharktracers.c])
+AC_CONFIG_SRCDIR([plugins/tracers/gstplugin.c])
 
 dnl define the output header for config
 AC_CONFIG_HEADERS([config.h])
