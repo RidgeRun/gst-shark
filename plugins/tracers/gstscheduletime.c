@@ -72,6 +72,12 @@ static const gchar scheduling_metadata_event[] = "event {\n\
 };\n\
 \n";
 
+static void sched_time_compute (GstTracer * tracer, guint64 ts, GstPad * pad);
+static void do_push_buffer_pre (GstTracer * tracer, guint64 ts, GstPad * pad);
+static void do_push_buffer_list_pre (GstTracer * tracer, GstClockTime ts,
+    GstPad * pad, GstBufferList * list);
+static void gst_scheduletime_tracer_finalize (GObject * obj);
+
 static void
 key_destroy (gpointer pad)
 {
