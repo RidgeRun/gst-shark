@@ -753,7 +753,7 @@ do_print_proctime_event (event_id id, gchar * elementname, guint64 time)
   guint8 *event_mem;
   gsize event_size;
 
-  event_size = strlen (elementname) + 1 + sizeof (time);
+  event_size = strlen (elementname) + 1 + sizeof (time) + CTF_HEADER_SIZE;
 
   if (event_exceeds_mem_size (event_size)) {
     return;
