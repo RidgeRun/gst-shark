@@ -91,7 +91,7 @@ schedule_pad_destroy (gpointer data)
 }
 
 static void
-sched_time_compute (GstTracer * self, guint64 ts, GstPad * pad)
+sched_time_compute (GstTracer * tracer, guint64 ts, GstPad * pad)
 {
   GstScheduletimeTracer *self;
   GHashTable *schedule_pads;
