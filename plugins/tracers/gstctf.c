@@ -1028,6 +1028,14 @@ do_print_buffer_event (event_id id, const gchar * pad, GstClockTime pts,
   guint8 *event_mem;
   gsize event_size;
 
+  event_size =
+      strlen (pad) + 1 + 6 * sizeof (guint64) + 2 * sizeof (guint32) +
+      CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
 
@@ -1046,9 +1054,6 @@ do_print_buffer_event (event_id id, const gchar * pad, GstClockTime pts,
   CTF_EVENT_WRITE_INT64 (size, event_mem);
   CTF_EVENT_WRITE_INT32 (flags, event_mem);
   CTF_EVENT_WRITE_INT32 (refcount, event_mem);
-
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem -= event_size;
