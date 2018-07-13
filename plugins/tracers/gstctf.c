@@ -673,14 +673,14 @@ add_metadata_event_struct (const gchar * metadata_event)
   guint event_size;
   guint8 *mem;
 
-  mem = ctf_descriptor->mem;
-  event_mem = (gchar *) mem + TCP_HEADER_SIZE;
-
   event_size = strlen (metadata_event);
 
   if (event_exceeds_mem_size (event_size)) {
     return;
   }
+
+  mem = ctf_descriptor->mem;
+  event_mem = (gchar *) mem + TCP_HEADER_SIZE;
 
   /* This function only writes the event structure to the metadata file, it
      depends entirely of what is passed as an argument. */
@@ -793,14 +793,14 @@ do_print_framerate_event (event_id id, guint32 pad_num, guint64 * fps)
   gsize event_size;
   guint32 pad_idx;
 
-  mem = ctf_descriptor->mem;
-  event_mem = mem + TCP_HEADER_SIZE;
-
-  event_size = pad_num * sizeof (guint64);
+  event_size = pad_num * sizeof (guint64) + CTF_HEADER_SIZE;
 
   if (event_exceeds_mem_size (event_size)) {
     return;
   }
+
+  mem = ctf_descriptor->mem;
+  event_mem = mem + TCP_HEADER_SIZE;
 
   /* Lock mem and datastream and output_stream resources */
   g_mutex_lock (&ctf_descriptor->mutex);
