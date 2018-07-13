@@ -840,6 +840,14 @@ do_print_interlatency_event (event_id id,
   guint8 *event_mem;
   gsize event_size;
 
+  event_size =
+      strlen (originpad) + 1 + strlen (destinationpad) + 1 + sizeof (guint64) +
+      CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
 
@@ -854,8 +862,6 @@ do_print_interlatency_event (event_id id,
   CTF_EVENT_WRITE_STRING (destinationpad, event_mem);
   /* Write time */
   CTF_EVENT_WRITE_INT64 (time, event_mem);
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem = mem + TCP_HEADER_SIZE;
