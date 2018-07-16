@@ -46,6 +46,7 @@ typedef guint8 tcp_header_id;
 typedef guint32 tcp_header_length;
 
 #define TCP_HEADER_SIZE (sizeof(tcp_header_id) + sizeof(tcp_header_length))
+#define CTF_HEADER_SIZE (sizeof(guint16) + sizeof(guint32))
 #define CTF_AVAILABLE_MEM_SIZE (CTF_MEM_SIZE - TCP_HEADER_SIZE)
 
 typedef guint16 ctf_header_id;
@@ -672,14 +673,14 @@ add_metadata_event_struct (const gchar * metadata_event)
   guint event_size;
   guint8 *mem;
 
-  mem = ctf_descriptor->mem;
-  event_mem = (gchar *) mem + TCP_HEADER_SIZE;
-
   event_size = strlen (metadata_event);
 
   if (event_exceeds_mem_size (event_size)) {
     return;
   }
+
+  mem = ctf_descriptor->mem;
+  event_mem = (gchar *) mem + TCP_HEADER_SIZE;
 
   /* This function only writes the event structure to the metadata file, it
      depends entirely of what is passed as an argument. */
@@ -709,6 +710,12 @@ do_print_cpuusage_event (event_id id, guint32 cpu_num, gfloat * cpuload)
   gsize event_size;
   gint cpu_idx;
 
+  event_size = cpu_num * sizeof (gfloat) + CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
 
@@ -721,9 +728,6 @@ do_print_cpuusage_event (event_id id, guint32 cpu_num, gfloat * cpuload)
     /* Write CPU load */
     CTF_EVENT_WRITE_FLOAT (cpuload[cpu_idx], event_mem);
   }
-
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem = mem + TCP_HEADER_SIZE;
@@ -749,7 +753,7 @@ do_print_proctime_event (event_id id, gchar * elementname, guint64 time)
   guint8 *event_mem;
   gsize event_size;
 
-  event_size = strlen (elementname) + 1 + sizeof (time);
+  event_size = strlen (elementname) + 1 + sizeof (time) + CTF_HEADER_SIZE;
 
   if (event_exceeds_mem_size (event_size)) {
     return;
@@ -792,14 +796,14 @@ do_print_framerate_event (event_id id, guint32 pad_num, guint64 * fps)
   gsize event_size;
   guint32 pad_idx;
 
-  mem = ctf_descriptor->mem;
-  event_mem = mem + TCP_HEADER_SIZE;
-
-  event_size = pad_num * sizeof (guint64);
+  event_size = pad_num * sizeof (guint64) + CTF_HEADER_SIZE;
 
   if (event_exceeds_mem_size (event_size)) {
     return;
   }
+
+  mem = ctf_descriptor->mem;
+  event_mem = mem + TCP_HEADER_SIZE;
 
   /* Lock mem and datastream and output_stream resources */
   g_mutex_lock (&ctf_descriptor->mutex);
@@ -836,6 +840,14 @@ do_print_interlatency_event (event_id id,
   guint8 *event_mem;
   gsize event_size;
 
+  event_size =
+      strlen (originpad) + 1 + strlen (destinationpad) + 1 + sizeof (guint64) +
+      CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
 
@@ -850,8 +862,6 @@ do_print_interlatency_event (event_id id,
   CTF_EVENT_WRITE_STRING (destinationpad, event_mem);
   /* Write time */
   CTF_EVENT_WRITE_INT64 (time, event_mem);
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem = mem + TCP_HEADER_SIZE;
@@ -876,6 +886,12 @@ do_print_scheduling_event (event_id id, gchar * elementname, guint64 time)
   guint8 *event_mem;
   gsize event_size;
 
+  event_size = strlen (elementname) + 1 + sizeof (guint64) + CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
 
@@ -885,11 +901,9 @@ do_print_scheduling_event (event_id id, gchar * elementname, guint64 time)
   CTF_EVENT_WRITE_HEADER (id, event_mem);
   /* Add event payload */
   /* Write element name */
-  CTF_EVENT_WRITE_STRING (elementname, event_mem)
-      /* Write time */
-      CTF_EVENT_WRITE_INT64 (time, event_mem);
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
+  CTF_EVENT_WRITE_STRING (elementname, event_mem);
+  /* Write time */
+  CTF_EVENT_WRITE_INT64 (time, event_mem);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem = mem + TCP_HEADER_SIZE;
@@ -916,6 +930,14 @@ do_print_queue_level_event (event_id id, const gchar * elementname,
   guint8 *event_mem;
   gsize event_size;
 
+  event_size =
+      strlen (elementname) + 1 + 2 * sizeof (guint32) + sizeof (guint64) +
+      CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
 
@@ -935,8 +957,6 @@ do_print_queue_level_event (event_id id, const gchar * elementname,
 
   /* Write time */
   CTF_EVENT_WRITE_INT64 (time, event_mem);
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem = mem + TCP_HEADER_SIZE;
@@ -963,6 +983,12 @@ do_print_bitrate_event (event_id id, guint32 pad_num, guint64 * fps)
   gsize event_size;
   guint32 pad_idx;
 
+  event_size = pad_num * sizeof (guint64) + CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
 
@@ -975,9 +1001,6 @@ do_print_bitrate_event (event_id id, guint32 pad_num, guint64 * fps)
     /* Write bitrate */
     CTF_EVENT_WRITE_INT64 (fps[pad_idx], event_mem);
   }
-
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem = mem + TCP_HEADER_SIZE;
@@ -1005,6 +1028,14 @@ do_print_buffer_event (event_id id, const gchar * pad, GstClockTime pts,
   guint8 *event_mem;
   gsize event_size;
 
+  event_size =
+      strlen (pad) + 1 + 6 * sizeof (guint64) + 2 * sizeof (guint32) +
+      CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
 
@@ -1023,9 +1054,6 @@ do_print_buffer_event (event_id id, const gchar * pad, GstClockTime pts,
   CTF_EVENT_WRITE_INT64 (size, event_mem);
   CTF_EVENT_WRITE_INT32 (flags, event_mem);
   CTF_EVENT_WRITE_INT32 (refcount, event_mem);
-
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem -= event_size;
