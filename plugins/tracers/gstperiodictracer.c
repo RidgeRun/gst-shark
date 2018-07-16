@@ -23,13 +23,24 @@
 GST_DEBUG_CATEGORY_STATIC (gst_periodic_debug);
 #define GST_CAT_DEFAULT gst_periodic_debug
 
+static void element_change_state_post (GstTracer * self, guint64 ts,
+    GstElement * element, GstStateChange transition,
+    GstStateChangeReturn result);
+static void install_callback (GstPeriodicTracer * self);
+static void remove_callback (GstPeriodicTracer * self);
+static void reset_internal (GstPeriodicTracer * self);
+static gboolean callback_internal (gpointer * data);
+
 #define GST_PERIODIC_TRACER_PRIVATE(o) \
   G_TYPE_INSTANCE_GET_PRIVATE((o), GST_TYPE_PERIODIC_TRACER, GstPeriodicTracerPrivate)
+
+#define TIMEOUT_INTERVAL 1
 
 typedef struct _GstPeriodicTracerPrivate GstPeriodicTracerPrivate;
 struct _GstPeriodicTracerPrivate
 {
-
+  guint pipes_running;
+  guint callback_id;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GstPeriodicTracer, gst_periodic_tracer,
@@ -48,5 +59,125 @@ gst_periodic_tracer_class_init (GstPeriodicTracerClass * klass)
 static void
 gst_periodic_tracer_init (GstPeriodicTracer * self)
 {
-  //GstPeriodicTracerPrivate *priv = GST_PERIODIC_TRACER_PRIVATE (self);
+  GstPeriodicTracerPrivate *priv;
+  GstTracer *tracer;
+
+  priv = GST_PERIODIC_TRACER_PRIVATE (self);
+  tracer = GST_TRACER (self);
+
+  priv->pipes_running = 0;
+  priv->callback_id = 0;
+
+  gst_tracing_register_hook (tracer, "element-change-state-post",
+      G_CALLBACK (element_change_state_post));
+}
+
+static void
+element_change_state_post (GstTracer * tracer, guint64 ts,
+    GstElement * element, GstStateChange transition,
+    GstStateChangeReturn result)
+{
+  GstPeriodicTracer *self = GST_PERIODIC_TRACER (tracer);
+
+  /* We are only interested in capturing when a pipeline goes to
+     playing, but this hook reports for every element in the
+     pipeline
+   */
+  if (FALSE == GST_IS_PIPELINE (element)) {
+    return;
+  }
+
+  if (transition == GST_STATE_CHANGE_READY_TO_PAUSED) {
+    GST_DEBUG_OBJECT (self, "Pipeline %s changed to paused",
+        GST_OBJECT_NAME (element));
+    reset_internal (self);
+    install_callback (self);
+  } else if (transition == GST_STATE_CHANGE_PAUSED_TO_READY) {
+    GST_DEBUG_OBJECT (self, "Pipeline %s changed to ready",
+        GST_OBJECT_NAME (element));
+    remove_callback (self);
+  }
+}
+
+static void
+install_callback (GstPeriodicTracer * self)
+{
+  GstPeriodicTracerPrivate *priv;
+
+  g_return_if_fail (self);
+
+  priv = GST_PERIODIC_TRACER_PRIVATE (self);
+
+  GST_OBJECT_LOCK (self);
+
+  if (0 == priv->pipes_running) {
+    GST_INFO_OBJECT (self,
+        "First pipeline started running, starting profiling");
+
+    priv->callback_id =
+        g_timeout_add_seconds (TIMEOUT_INTERVAL,
+        (GSourceFunc) callback_internal, (gpointer) self);
+  }
+
+  priv->pipes_running++;
+  GST_DEBUG_OBJECT (self, "Pipes running: %d", priv->pipes_running);
+
+  GST_OBJECT_UNLOCK (self);
+}
+
+static void
+remove_callback (GstPeriodicTracer * self)
+{
+  GstPeriodicTracerPrivate *priv;
+
+  g_return_if_fail (self);
+
+  priv = GST_PERIODIC_TRACER_PRIVATE (self);
+
+  GST_OBJECT_LOCK (self);
+
+  if (1 == priv->pipes_running) {
+    GST_INFO_OBJECT (self, "Last pipeline stopped running, stopped profiling");
+    g_source_remove (priv->callback_id);
+    priv->callback_id = 0;
+  }
+
+  priv->pipes_running--;
+  GST_DEBUG_OBJECT (self, "Pipes running: %d", priv->pipes_running);
+
+  GST_OBJECT_UNLOCK (self);
+}
+
+static void
+reset_internal (GstPeriodicTracer * self)
+{
+  GstPeriodicTracerClass *klass;
+
+  g_return_if_fail (self);
+
+  klass = GST_PERIODIC_TRACER_GET_CLASS (self);
+
+  /* It is okay if subclass didn't provide a reset implementation */
+  if (klass->reset) {
+    GST_DEBUG_OBJECT (self, "Resetting ourselves");
+    klass->reset (self);
+  }
+}
+
+static gboolean
+callback_internal (gpointer * data)
+{
+  GstPeriodicTracer *self;
+  GstPeriodicTracerClass *klass;
+
+  g_return_val_if_fail (data, FALSE);
+
+  self = GST_PERIODIC_TRACER (data);
+  klass = GST_PERIODIC_TRACER_GET_CLASS (self);
+
+  /* This is a required method, if no implementation was provided, we
+     consider it as a programming error */
+  g_return_val_if_fail (klass->timer_callback, FALSE);
+
+  return klass->timer_callback (self);
 }

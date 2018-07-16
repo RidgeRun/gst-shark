@@ -21,13 +21,12 @@
 #ifndef __GST_FRAMERATE_TRACER_H__
 #define __GST_FRAMERATE_TRACER_H__
 
-#include <gst/gst.h>
-#include "gstsharktracer.h"
+#include "gstperiodictracer.h"
 
 G_BEGIN_DECLS
 
 #define GST_TYPE_FRAMERATE_TRACER (gst_framerate_tracer_get_type ())
-G_DECLARE_FINAL_TYPE (GstFramerateTracer, gst_framerate_tracer, GST, FRAMERATE_TRACER, GstSharkTracer)
+G_DECLARE_FINAL_TYPE (GstFramerateTracer, gst_framerate_tracer, GST, FRAMERATE_TRACER, GstPeriodicTracer)
 
 G_END_DECLS
 

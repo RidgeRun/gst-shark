@@ -32,7 +32,7 @@ struct _GstPeriodicTracerClass
 {
   GstSharkTracerClass parent_class;
 
-  void (* timer_callback) (GstPeriodicTracer * tracer);
+  gboolean (* timer_callback) (GstPeriodicTracer * tracer);
   void (* reset) (GstPeriodicTracer * tracer);
 };
 
