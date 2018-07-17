@@ -1,5 +1,5 @@
 /* GstShark - A Front End for GstTracer
- * Copyright (C) 2016-2017 RidgeRun Engineering <sebastian.fatjo@ridgerun.com>
+ * Copyright (C) 2016-2018 RidgeRun Engineering <sebastian.fatjo@ridgerun.com>
  *
  * This file is part of GstShark.
  *
@@ -27,31 +27,35 @@
  * the scheduling mode.
  */
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include "gstbitrate.h"
 #include "gstctf.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_bitrate_debug);
 #define GST_CAT_DEFAULT gst_bitrate_debug
 
+struct _GstBitrateTracer
+{
+  GstPeriodicTracer parent;
+
+  GHashTable *bitrate_counters;
+  gboolean metadata_written;
+};
+
 #define _do_init \
     GST_DEBUG_CATEGORY_INIT (gst_bitrate_debug, "bitrate", 0, "bitrate tracer");
 
 #define gst_bitrate_tracer_parent_class parent_class
 G_DEFINE_TYPE_WITH_CODE (GstBitrateTracer, gst_bitrate_tracer,
-    GST_SHARK_TYPE_TRACER, _do_init);
+    GST_TYPE_PERIODIC_TRACER, _do_init);
 
-#ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_bitrate;
-#endif
 
 static gchar *make_char_array_valid (gchar * src);
 static void create_metadata_event (GHashTable * table);
 static void add_bytes (GstBitrateTracer * self, GstClockTime ts, GstPad * pad,
     guint64 bytes);
+static gboolean do_print_bitrate (GstPeriodicTracer * tracer);
+static void reset_counters (GstPeriodicTracer * tracer);
 
 typedef struct _GstBitrateHash GstBitrateHash;
 
@@ -75,8 +79,8 @@ static const gchar bitrate_metadata_event_footer[] = "\
 static const gchar bitrate_metadata_event_field[] =
     "      integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } %s;\n";
 
-gboolean
-do_print_bitrate (gpointer * data)
+static gboolean
+do_print_bitrate (GstPeriodicTracer * tracer)
 {
   GstBitrateTracer *self;
   GHashTableIter iter;
@@ -85,14 +89,12 @@ do_print_bitrate (gpointer * data)
   guint size;
   guint64 *pad_counts;
   guint32 pad_idx;
-  gboolean ret;
 
-  self = GST_BITRATE_TRACER (data);
+  self = GST_BITRATE_TRACER (tracer);
 
   size = g_hash_table_size (self->bitrate_counters);
   pad_counts = g_malloc (size * sizeof (guint64));
   pad_idx = 0;
-  ret = TRUE;
 
   if (!self->metadata_written) {
     create_metadata_event (self->bitrate_counters);
@@ -105,29 +107,18 @@ do_print_bitrate (gpointer * data)
   while (g_hash_table_iter_next (&iter, &key, &value)) {
     pad_table = (GstBitrateHash *) value;
 
-#ifdef GST_STABLE_RELEASE
     gst_tracer_record_log (tr_bitrate, pad_table->fullname, pad_table->bitrate);
-#else
-    gst_tracer_log_trace (gst_structure_new ("bitrate",
-            "pad", G_TYPE_STRING, pad_table->fullname,
-            "fps", G_TYPE_UINT, pad_table->bitrate, NULL));
-#endif
 
     pad_counts[pad_idx] = pad_table->bitrate;
     pad_idx++;
 
     pad_table->bitrate = 0;
-    if (!self->start_timer) {
-      ret = FALSE;
-      goto out;
-    }
   }
   do_print_bitrate_event (BITRATE_EVENT_ID, size, pad_counts);
 
-out:
   g_free (pad_counts);
 
-  return ret;
+  return TRUE;
 }
 
 static void
@@ -154,34 +145,42 @@ add_bytes (GstBitrateTracer * self, GstClockTime ts, GstPad * pad,
     guint64 bytes)
 {
   gchar *fullname;
-  gint value = 1;
   GstBitrateHash *pad_frames;
 
-  /* The full name of every pad has the format elementName.padName and it is going 
-     to be used for displaying the bitrate in a friendly user way */
-  fullname = g_strdup_printf ("%s_%s", GST_DEBUG_PAD_NAME (pad));
+  pad_frames = g_hash_table_lookup (self->bitrate_counters, pad);
 
-  /* Function contains on the Hash table returns TRUE if the key already exists */
-  if (g_hash_table_contains (self->bitrate_counters, pad)) {
-    /* If the pad that is pushing a buffer has already a space on the Hash table
-       only the value should be updated */
-    pad_frames =
-        (GstBitrateHash *) g_hash_table_lookup (self->bitrate_counters, pad);
-    pad_frames->bitrate += bytes * 8;
-  } else {
+  if (NULL == pad_frames) {
+    /* The full name of every pad has the format elementName.padName and it is going 
+       to be used for displaying the bitrate in a friendly user way */
+    fullname = g_strdup_printf ("%s_%s", GST_DEBUG_PAD_NAME (pad));
+    fullname = make_char_array_valid (fullname);
+
     GST_INFO_OBJECT (self, "The %s key was added to the Hash Table", fullname);
 
-    /* Ref pad to be used in the Hash table */
-    gst_object_ref (pad);
-    /* Reserving memory space for every structure that is going to be stored as a 
-       value in the Hash table */
     pad_frames = g_malloc0 (sizeof (GstBitrateHash));
-    pad_frames->fullname = make_char_array_valid (g_strdup (fullname));
-    pad_frames->bitrate = value;
-    g_hash_table_insert (self->bitrate_counters, pad, (gpointer) pad_frames);
+    pad_frames->fullname = fullname;
+    g_hash_table_insert (self->bitrate_counters, gst_object_ref (pad),
+        (gpointer) pad_frames);
   }
 
-  g_free (fullname);
+  pad_frames->bitrate += bytes * 8;
+}
+
+static void
+reset_counters (GstPeriodicTracer * tracer)
+{
+  GstBitrateTracer *self;
+  GstBitrateHash *pad_table;
+  GHashTableIter iter;
+  gpointer key, value;
+
+  self = GST_BITRATE_TRACER (tracer);
+
+  g_hash_table_iter_init (&iter, self->bitrate_counters);
+  while (g_hash_table_iter_next (&iter, &key, &value)) {
+    pad_table = (GstBitrateHash *) value;
+    pad_table->bitrate = 0;
+  }
 }
 
 static void
@@ -214,23 +213,6 @@ do_pad_pull_range_pre (GstBitrateTracer * self, GstClockTime ts, GstPad * pad,
   add_bytes (self, ts, pad, size);
 }
 
-static void
-do_element_change_state_post (GstBitrateTracer * self, guint64 ts,
-    GstElement * element, GstStateChange transition,
-    GstStateChangeReturn result)
-{
-  if (GST_IS_PIPELINE (element)) {
-    if (transition == GST_STATE_CHANGE_PAUSED_TO_PLAYING && !self->start_timer) {
-      /* Creating a calback function to display the updated counter of frames every second */
-      self->start_timer = TRUE;
-      g_timeout_add_seconds (1, (GSourceFunc) do_print_bitrate,
-          (gpointer) self);
-    } else if (transition == GST_STATE_CHANGE_PLAYING_TO_PAUSED) {
-      self->start_timer = FALSE;
-    }
-  }
-}
-
 /* tracer class */
 
 static void
@@ -247,32 +229,13 @@ static void
 gst_bitrate_tracer_class_init (GstBitrateTracerClass * klass)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
+  GstPeriodicTracerClass *ptracer_class = GST_PERIODIC_TRACER_CLASS (klass);
 
   gobject_class->finalize = gst_bitrate_tracer_finalize;
-}
 
-static void
-gst_bitrate_tracer_init (GstBitrateTracer * self)
-{
-  GstSharkTracer *tracer = GST_SHARK_TRACER (self);
+  ptracer_class->timer_callback = GST_DEBUG_FUNCPTR (do_print_bitrate);
+  ptracer_class->reset = GST_DEBUG_FUNCPTR (reset_counters);
 
-  self->bitrate_counters =
-      g_hash_table_new_full (g_direct_hash, g_direct_equal,
-      do_destroy_hashtable_key, do_destroy_hashtable_value);
-  self->start_timer = FALSE;
-  self->metadata_written = FALSE;
-
-  gst_shark_tracer_register_hook (tracer, "pad-push-pre",
-      G_CALLBACK (do_pad_push_buffer_pre));
-  gst_shark_tracer_register_hook (tracer, "pad-push-list-pre",
-      G_CALLBACK (do_pad_push_list_pre));
-  gst_shark_tracer_register_hook (tracer, "pad-pull-range-pre",
-      G_CALLBACK (do_pad_pull_range_pre));
-
-  gst_tracing_register_hook (GST_TRACER (tracer), "element-change-state-post",
-      G_CALLBACK (do_element_change_state_post));
-
-#ifdef GST_STABLE_RELEASE
   tr_bitrate = gst_tracer_record_new ("bitrate.class",
       "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
@@ -284,19 +247,24 @@ gst_bitrate_tracer_init (GstBitrateTracer * self)
           "flags", GST_TYPE_TRACER_VALUE_FLAGS,
           GST_TRACER_VALUE_FLAGS_AGGREGATED, "min", G_TYPE_UINT64, 0, "max",
           G_TYPE_UINT64, G_MAXUINT64, NULL), NULL);
-#else
-  gst_tracer_log_trace (gst_structure_new ("bitrate.class",
-          "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-              "related-to", G_TYPE_STRING, "pad",
-              NULL),
-          "bitrate", GST_TYPE_STRUCTURE, gst_structure_new ("value",
-              "type", G_TYPE_GTYPE, G_TYPE_UINT,
-              "description", G_TYPE_STRING, "Bitrate",
-              "flags", G_TYPE_STRING, "aggregated",
-              "min", G_TYPE_UINT64, G_GUINT64_CONSTANT (0),
-              "max", G_TYPE_UINT64, G_GUINT64_CONSTANT (G_MAXUINT64), NULL),
-          NULL));
-#endif
+}
+
+static void
+gst_bitrate_tracer_init (GstBitrateTracer * self)
+{
+  GstSharkTracer *tracer = GST_SHARK_TRACER (self);
+
+  self->bitrate_counters =
+      g_hash_table_new_full (g_direct_hash, g_direct_equal,
+      do_destroy_hashtable_key, do_destroy_hashtable_value);
+  self->metadata_written = FALSE;
+
+  gst_shark_tracer_register_hook (tracer, "pad-push-pre",
+      G_CALLBACK (do_pad_push_buffer_pre));
+  gst_shark_tracer_register_hook (tracer, "pad-push-list-pre",
+      G_CALLBACK (do_pad_push_list_pre));
+  gst_shark_tracer_register_hook (tracer, "pad-pull-range-pre",
+      G_CALLBACK (do_pad_pull_range_pre));
 }
 
 static void
@@ -325,8 +293,6 @@ create_metadata_event (GHashTable * bitrate_counters)
   /* Add event in metadata file */
   add_metadata_event_struct (cstring);
   g_free (cstring);
-
-
 }
 
 static gchar *
