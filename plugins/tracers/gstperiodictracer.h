@@ -1,5 +1,5 @@
 /* GstShark - A Front End for GstTracer
- * Copyright (C) 2016 RidgeRun Engineering <michael.gruner@ridgerun.com>
+ * Copyright (C) 2016-2018 RidgeRun Engineering <michael.gruner@ridgerun.com>
  *
  * This file is part of GstShark.
  *
@@ -18,16 +18,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef __GST_FRAMERATE_TRACER_H__
-#define __GST_FRAMERATE_TRACER_H__
+#ifndef __GST_PERIODIC_TRACER_H__
+#define __GST_PERIODIC_TRACER_H__
 
-#include "gstperiodictracer.h"
+#include "gstsharktracer.h"
 
 G_BEGIN_DECLS
 
-#define GST_TYPE_FRAMERATE_TRACER (gst_framerate_tracer_get_type ())
-G_DECLARE_FINAL_TYPE (GstFramerateTracer, gst_framerate_tracer, GST, FRAMERATE_TRACER, GstPeriodicTracer)
+#define GST_TYPE_PERIODIC_TRACER (gst_periodic_tracer_get_type())
+G_DECLARE_DERIVABLE_TYPE (GstPeriodicTracer, gst_periodic_tracer, GST, PERIODIC_TRACER, GstSharkTracer)
+
+struct _GstPeriodicTracerClass
+{
+  GstSharkTracerClass parent_class;
+
+  gboolean (* timer_callback) (GstPeriodicTracer * tracer);
+  void (* reset) (GstPeriodicTracer * tracer);
+};
 
 G_END_DECLS
 
-#endif /* __GST_FRAMERATE_TRACER_H__ */
+#endif /* __GST_PERIODIC_TRACER_H__ */
