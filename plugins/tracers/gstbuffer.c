@@ -1,5 +1,5 @@
 /* GstShark - A Front End for GstTracer
- * Copyright (C) 2016-2017 RidgeRun Engineering <carlos.rodriguez@ridgerun.com>
+ * Copyright (C) 2016-2018 RidgeRun Engineering <carlos.rodriguez@ridgerun.com>
  *
  * This file is part of GstShark.
  *
@@ -92,7 +92,7 @@ gst_buffer_buffer_pre (GObject * self, GstClockTime ts, GstPad * pad,
   pts = GST_BUFFER_PTS (buffer);
   spts = g_strdup_printf ("%" GST_TIME_FORMAT, GST_TIME_ARGS (pts));
 
-  dts = GST_BUFFER_PTS (buffer);
+  dts = GST_BUFFER_DTS (buffer);
   sdts = g_strdup_printf ("%" GST_TIME_FORMAT, GST_TIME_ARGS (dts));
 
   duration = GST_BUFFER_DURATION (buffer);
