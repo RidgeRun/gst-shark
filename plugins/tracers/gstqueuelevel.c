@@ -1,5 +1,5 @@
 /* GstShark - A Front End for GstTracer
- * Copyright (C) 2016-2017 RidgeRun Engineering <carlos.rodriguez@ridgerun.com>
+ * Copyright (C) 2016-2018 RidgeRun Engineering <carlos.rodriguez@ridgerun.com>
  *
  * This file is part of GstShark.
  *
@@ -34,9 +34,14 @@
 GST_DEBUG_CATEGORY_STATIC (gst_queue_level_debug);
 #define GST_CAT_DEFAULT gst_queue_level_debug
 
+struct _GstQueueLevelTracer
+{
+  GstSharkTracer parent;
+};
+
 #define _do_init \
     GST_DEBUG_CATEGORY_INIT (gst_queue_level_debug, "queuelevel", 0, "queuelevel tracer");
-#define gst_queue_level_tracer_parent_class parent_class
+
 G_DEFINE_TYPE_WITH_CODE (GstQueueLevelTracer, gst_queue_level_tracer,
     GST_SHARK_TYPE_TRACER, _do_init);
 
