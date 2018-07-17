@@ -24,10 +24,6 @@
  * A tracing module that takes queue's current level
  */
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include "gstqueuelevel.h"
 #include "gstctf.h"
 
@@ -50,11 +46,7 @@ static void do_queue_level_list (GstTracer * tracer, guint64 ts, GstPad * pad,
     GstBufferList * list);
 static gboolean is_queue (GstElement * element);
 
-
-
-#ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_qlevel;
-#endif
 
 static const gchar queue_level_metadata_event[] = "event {\n\
     name = queuelevel;\n\
@@ -94,16 +86,9 @@ do_queue_level (GstTracer * self, guint64 ts, GstPad * pad)
   size_time_string =
       g_strdup_printf ("%" GST_TIME_FORMAT, GST_TIME_ARGS (size_time));
 
-#ifdef GST_STABLE_RELEASE
   gst_tracer_record_log (tr_qlevel, element_name, size_bytes, size_buffers,
       size_time_string);
-#else
-  gst_tracer_log_trace (gst_structure_new ("queuelevel",
-          "queue", G_TYPE_STRING, element_name,
-          "size_bytes", G_TYPE_UINT, size_bytes,
-          "size_buffers", G_TYPE_UINT, size_buffers,
-          "size_time", G_TYPE_STRING, size_time_string, NULL));
-#endif
+
   g_free (size_time_string);
 
   do_print_queue_level_event (QUEUE_LEVEL_EVENT_ID, element_name, size_bytes,
@@ -151,7 +136,6 @@ gst_queue_level_tracer_class_init (GstQueueLevelTracerClass * klass)
 {
 }
 
-
 static void
 gst_queue_level_tracer_init (GstQueueLevelTracer * self)
 {
@@ -167,7 +151,6 @@ gst_queue_level_tracer_init (GstQueueLevelTracer * self)
   gst_shark_tracer_register_hook (tracer, "pad-pull-range-pre",
       G_CALLBACK (do_queue_level));
 
-#ifdef GST_STABLE_RELEASE
   tr_qlevel = gst_tracer_record_new ("queuelevel.class",
       "queue", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
@@ -182,17 +165,6 @@ gst_queue_level_tracer_init (GstQueueLevelTracer * self)
       GST_TYPE_STRUCTURE, gst_structure_new ("scope", "type", G_TYPE_GTYPE,
           G_TYPE_STRING, "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
           GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), NULL);
-#else
-  gst_tracer_log_trace (gst_structure_new ("queuelevel.class",
-          "queue", GST_TYPE_STRUCTURE, gst_structure_new ("scope", "related-to",
-              G_TYPE_STRING, "element", NULL), "size_bytes", GST_TYPE_STRUCTURE,
-          gst_structure_new ("scope", "related-to", G_TYPE_STRING, "element",
-              NULL), "size_buffers", GST_TYPE_STRUCTURE,
-          gst_structure_new ("scope", "related-to", G_TYPE_STRING, "element",
-              NULL), "size_time", GST_TYPE_STRUCTURE,
-          gst_structure_new ("scope", "related-to", G_TYPE_STRING, "element",
-              NULL), NULL));
-#endif
 
   metadata_event =
       g_strdup_printf (queue_level_metadata_event, QUEUE_LEVEL_EVENT_ID, 0);
