@@ -1,5 +1,5 @@
 /* GstShark - A Front End for GstTracer
- * Copyright (C) 2016 RidgeRun Engineering <manuel.leiva@ridgerun.com>
+ * Copyright (C) 2018 RidgeRun Engineering <manuel.leiva@ridgerun.com>
  *
  * This file is part of GstShark.
  *
@@ -35,12 +35,6 @@
 #include "gstctf.h"
 #include <glib/gstdio.h>
 
-#ifdef HAVE_SYS_RESOURCE_H
-#ifndef __USE_GNU
-# define __USE_GNU              /* CPUUSAGE_THREAD */
-#endif
-#include <sys/resource.h>
-#endif
 GST_DEBUG_CATEGORY_STATIC (gst_cpu_usage_debug);
 #define GST_CAT_DEFAULT gst_cpu_usage_debug
 
@@ -57,9 +51,7 @@ struct _GstCPUUsageTracer
 G_DEFINE_TYPE_WITH_CODE (GstCPUUsageTracer, gst_cpu_usage_tracer,
     GST_SHARK_TYPE_TRACER, _do_init);
 
-#ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_cpuusage;
-#endif
 
 static const gchar cpuusage_metadata_event_header[] = "\
 event {\n\
@@ -125,13 +117,7 @@ cpu_usage_thread_func (gpointer data)
   gst_cpu_usage_compute (cpu_usage);
 
   for (cpu_id = 0; cpu_id < cpu_load_len; ++cpu_id) {
-#ifdef GST_STABLE_RELEASE
     gst_tracer_record_log (tr_cpuusage, cpu_id, cpu_load[cpu_id]);
-#else
-    gst_tracer_log_trace (gst_structure_new ("cpuusage",
-            "number", G_TYPE_UINT, cpu_id,
-            "load", G_TYPE_DOUBLE, cpu_load[cpu_id], NULL));
-#endif
   }
   do_print_cpuusage_event (CPUUSAGE_EVENT_ID, cpu_load_len, cpu_load);
 
@@ -209,7 +195,6 @@ gst_cpu_usage_tracer_init (GstCPUUsageTracer * self)
   gst_cpu_usage_init (cpu_usage);
   cpu_usage->cpu_array_sel = FALSE;
 
-#ifdef GST_STABLE_RELEASE
   tr_cpuusage = gst_tracer_record_new ("cpuusage.class",
       "number", GST_TYPE_STRUCTURE, gst_structure_new ("value",
           "type", G_TYPE_GTYPE, G_TYPE_UINT,
@@ -221,21 +206,6 @@ gst_cpu_usage_tracer_init (GstCPUUsageTracer * self)
           "description", G_TYPE_STRING, "Core load percentage [%]", "flags",
           GST_TYPE_TRACER_VALUE_FLAGS, GST_TRACER_VALUE_FLAGS_AGGREGATED, "min",
           G_TYPE_DOUBLE, 0.0f, "max", G_TYPE_DOUBLE, 100.0f, NULL), NULL);
-#else
-  gst_tracer_log_trace (gst_structure_new ("cpuusage.class",
-          "number", GST_TYPE_STRUCTURE, gst_structure_new ("value",
-              "type", G_TYPE_GTYPE, G_TYPE_UINT,
-              "description", G_TYPE_STRING, "Core number",
-              "flags", G_TYPE_STRING, "aggregated",
-              "min", G_TYPE_UINT, G_GUINT64_CONSTANT (0),
-              "max", G_TYPE_UINT, CPU_NUM_MAX, NULL),
-          "load", GST_TYPE_STRUCTURE, gst_structure_new ("value",
-              "type", G_TYPE_GTYPE, G_TYPE_DOUBLE,
-              "description", G_TYPE_STRING, "Core load percentage [%]",
-              "flags", G_TYPE_STRING, "aggregated",
-              "min", G_TYPE_DOUBLE, G_GUINT64_CONSTANT (0),
-              "max", G_TYPE_DOUBLE, G_GUINT64_CONSTANT (100), NULL), NULL));
-#endif
 
   create_metadata_event (CPU_USAGE_ARRAY_LENGTH (cpu_usage));
 
