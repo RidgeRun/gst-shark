@@ -144,34 +144,25 @@ add_bytes (GstBitrateTracer * self, GstClockTime ts, GstPad * pad,
     guint64 bytes)
 {
   gchar *fullname;
-  gint value = 1;
   GstBitrateHash *pad_frames;
 
-  /* The full name of every pad has the format elementName.padName and it is going 
-     to be used for displaying the bitrate in a friendly user way */
-  fullname = g_strdup_printf ("%s_%s", GST_DEBUG_PAD_NAME (pad));
+  pad_frames = g_hash_table_lookup (self->bitrate_counters, pad);
 
-  /* Function contains on the Hash table returns TRUE if the key already exists */
-  if (g_hash_table_contains (self->bitrate_counters, pad)) {
-    /* If the pad that is pushing a buffer has already a space on the Hash table
-       only the value should be updated */
-    pad_frames =
-        (GstBitrateHash *) g_hash_table_lookup (self->bitrate_counters, pad);
-    pad_frames->bitrate += bytes * 8;
-  } else {
+  if (NULL == pad_frames) {
+    /* The full name of every pad has the format elementName.padName and it is going 
+       to be used for displaying the bitrate in a friendly user way */
+    fullname = g_strdup_printf ("%s_%s", GST_DEBUG_PAD_NAME (pad));
+    fullname = make_char_array_valid (fullname);
+
     GST_INFO_OBJECT (self, "The %s key was added to the Hash Table", fullname);
 
-    /* Ref pad to be used in the Hash table */
-    gst_object_ref (pad);
-    /* Reserving memory space for every structure that is going to be stored as a 
-       value in the Hash table */
     pad_frames = g_malloc0 (sizeof (GstBitrateHash));
-    pad_frames->fullname = make_char_array_valid (g_strdup (fullname));
-    pad_frames->bitrate = value;
-    g_hash_table_insert (self->bitrate_counters, pad, (gpointer) pad_frames);
+    pad_frames->fullname = fullname;
+    g_hash_table_insert (self->bitrate_counters, gst_object_ref (pad),
+        (gpointer) pad_frames);
   }
 
-  g_free (fullname);
+  pad_frames->bitrate += bytes * 8;
 }
 
 static void
