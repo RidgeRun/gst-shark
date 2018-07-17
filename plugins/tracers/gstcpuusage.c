@@ -41,14 +41,20 @@
 #endif
 #include <sys/resource.h>
 #endif
+GST_DEBUG_CATEGORY_STATIC (gst_cpu_usage_debug);
+#define GST_CAT_DEFAULT gst_cpu_usage_debug
 
-GST_DEBUG_CATEGORY_STATIC (gst_cpuusage_debug);
-#define GST_CAT_DEFAULT gst_cpuusage_debug
+struct _GstCPUUsageTracer
+{
+  GstSharkTracer parent;
+  GstCPUUsage cpu_usage;
+  guint source_id;
+};
 
 #define _do_init \
-    GST_DEBUG_CATEGORY_INIT (gst_cpuusage_debug, "cpuusage", 0, "cpuusage tracer");
-#define gst_cpuusage_tracer_parent_class parent_class
-G_DEFINE_TYPE_WITH_CODE (GstCPUUsageTracer, gst_cpuusage_tracer,
+    GST_DEBUG_CATEGORY_INIT (gst_cpu_usage_debug, "cpuusage", 0, "cpuusage tracer");
+
+G_DEFINE_TYPE_WITH_CODE (GstCPUUsageTracer, gst_cpu_usage_tracer,
     GST_SHARK_TYPE_TRACER, _do_init);
 
 #ifdef GST_STABLE_RELEASE
@@ -70,33 +76,27 @@ static const gchar cpuusage_metadata_event_footer[] = "\
 static const gchar floating_point_event_field[] =
     "        floating_point { exp_dig = %lu; mant_dig = %d; byte_order = le; align = 8; } _cpu%d;\n";
 
-static gboolean cpu_usage_thread_func (gpointer data);
+static void gst_cpu_usage_tracer_finalize (GObject * obj);
 static void cpuusage_dummy_bin_add_post (GObject * obj, GstClockTime ts,
     GstBin * bin, GstElement * element, gboolean result);
+static gboolean cpu_usage_thread_func (gpointer data);
+static void create_metadata_event (gint cpu_num);
 
 /* tracer class */
 
 static void
-gst_cpuusage_tracer_finalize (GObject * obj)
+gst_cpu_usage_tracer_finalize (GObject * obj)
 {
   GstCPUUsageTracer *self;
 
-  self = GST_CPUUSAGE_TRACER (obj);
+  self = GST_CPU_USAGE_TRACER (obj);
 
   if (self->source_id) {
     g_source_remove (self->source_id);
     self->source_id = 0;
   }
 
-  G_OBJECT_CLASS (parent_class)->finalize (obj);
-}
-
-static void
-gst_cpuusage_tracer_class_init (GstCPUUsageTracerClass * klass)
-{
-  GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
-
-  gobject_class->finalize = gst_cpuusage_tracer_finalize;
+  G_OBJECT_CLASS (gst_cpu_usage_tracer_parent_class)->finalize (obj);
 }
 
 static void
@@ -115,7 +115,7 @@ cpu_usage_thread_func (gpointer data)
   gint cpu_id;
   gint cpu_load_len;
 
-  self = GST_CPUUSAGE_TRACER (data);
+  self = GST_CPU_USAGE_TRACER (data);
 
   cpu_usage = &self->cpu_usage;
 
@@ -193,7 +193,15 @@ create_metadata_event (gint cpu_num)
 }
 
 static void
-gst_cpuusage_tracer_init (GstCPUUsageTracer * self)
+gst_cpu_usage_tracer_class_init (GstCPUUsageTracerClass * klass)
+{
+  GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
+
+  gobject_class->finalize = gst_cpu_usage_tracer_finalize;
+}
+
+static void
+gst_cpu_usage_tracer_init (GstCPUUsageTracer * self)
 {
   GstCPUUsage *cpu_usage;
 
