@@ -235,6 +235,18 @@ gst_bitrate_tracer_class_init (GstBitrateTracerClass * klass)
 
   ptracer_class->timer_callback = GST_DEBUG_FUNCPTR (do_print_bitrate);
   ptracer_class->reset = GST_DEBUG_FUNCPTR (reset_counters);
+
+  tr_bitrate = gst_tracer_record_new ("bitrate.class",
+      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PAD,
+          NULL),
+      "bitrate", GST_TYPE_STRUCTURE, gst_structure_new ("value",
+          "type", G_TYPE_GTYPE, G_TYPE_UINT64,
+          "description", G_TYPE_STRING, "Bitrate",
+          "flags", GST_TYPE_TRACER_VALUE_FLAGS,
+          GST_TRACER_VALUE_FLAGS_AGGREGATED, "min", G_TYPE_UINT64, 0, "max",
+          G_TYPE_UINT64, G_MAXUINT64, NULL), NULL);
 }
 
 static void
@@ -253,18 +265,6 @@ gst_bitrate_tracer_init (GstBitrateTracer * self)
       G_CALLBACK (do_pad_push_list_pre));
   gst_shark_tracer_register_hook (tracer, "pad-pull-range-pre",
       G_CALLBACK (do_pad_pull_range_pre));
-
-  tr_bitrate = gst_tracer_record_new ("bitrate.class",
-      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-          "type", G_TYPE_GTYPE, G_TYPE_STRING,
-          "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PAD,
-          NULL),
-      "bitrate", GST_TYPE_STRUCTURE, gst_structure_new ("value",
-          "type", G_TYPE_GTYPE, G_TYPE_UINT64,
-          "description", G_TYPE_STRING, "Bitrate",
-          "flags", GST_TYPE_TRACER_VALUE_FLAGS,
-          GST_TRACER_VALUE_FLAGS_AGGREGATED, "min", G_TYPE_UINT64, 0, "max",
-          G_TYPE_UINT64, G_MAXUINT64, NULL), NULL);
 }
 
 static void
