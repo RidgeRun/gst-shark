@@ -24,37 +24,9 @@
 #include "gstsharktracer.h"
 
 G_BEGIN_DECLS
-#define GST_TYPE_BUFFER_TRACER \
-  (gst_buffer_tracer_get_type())
-#define GST_BUFFER_TRACER(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_BUFFER_TRACER,GstBufferTracer))
-#define GST_BUFFER_TRACER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_BUFFER_TRACER,GstBufferTracerClass))
-#define GST_IS_BUFFER_TRACER(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_BUFFER_TRACER))
-#define GST_IS_BUFFER_TRACER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_BUFFER_TRACER))
-#define GST_BUFFER_TRACER_CAST(obj) ((GstBufferTracer *)(obj))
-typedef struct _GstSchedulePad GstSchedulePad;
-typedef struct _GstBufferTracer GstBufferTracer;
-typedef struct _GstBufferTracerClass GstBufferTracerClass;
 
-/**
- * GstBufferTracer:
- *
- * Opaque #GstBufferTracer data structure
- */
-struct _GstBufferTracer
-{
-  GstSharkTracer parent;
-};
-
-struct _GstBufferTracerClass
-{
-  GstSharkTracerClass parent_class;
-};
-
-G_GNUC_INTERNAL GType gst_buffer_tracer_get_type (void);
+#define GST_TYPE_BUFFER_TRACER (gst_buffer_tracer_get_type ())
+G_DECLARE_FINAL_TYPE (GstBufferTracer, gst_buffer_tracer, GST, BUFFER_TRACER, GstSharkTracer)
 
 G_END_DECLS
 #endif /* __GST_BUFFER_TRACER_H__ */

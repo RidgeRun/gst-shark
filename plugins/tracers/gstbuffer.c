@@ -34,9 +34,14 @@
 GST_DEBUG_CATEGORY_STATIC (gst_buffer_debug);
 #define GST_CAT_DEFAULT gst_buffer_debug
 
+struct _GstBufferTracer
+{
+  GstSharkTracer parent;
+};
+
 #define _do_init \
     GST_DEBUG_CATEGORY_INIT (gst_buffer_debug, "buffer", 0, "buffer tracer");
-#define gst_buffer_tracer_parent_class parent_class
+
 G_DEFINE_TYPE_WITH_CODE (GstBufferTracer, gst_buffer_tracer,
     GST_SHARK_TYPE_TRACER, _do_init);
 
