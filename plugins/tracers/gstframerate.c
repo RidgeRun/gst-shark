@@ -42,7 +42,6 @@ struct _GstFramerateTracer
   GHashTable *frame_counters;
   guint callback_id;
   guint pipes_running;
-  gboolean metadata_written;
 };
 
 #define _do_init \
@@ -54,7 +53,7 @@ G_DEFINE_TYPE_WITH_CODE (GstFramerateTracer, gst_framerate_tracer,
 static GstTracerRecord *tr_framerate;
 
 static gchar *make_char_array_valid (gchar * src);
-static void create_metadata_event (GHashTable * table);
+static void create_metadata_event (GstPeriodicTracer * tracer);
 static gboolean print_framerate (GstPeriodicTracer * tracer);
 static void reset_counters (GstPeriodicTracer * tracer);
 static void consider_frames (GstFramerateTracer * self, GstPad * pad,
@@ -98,6 +97,7 @@ gst_framerate_tracer_class_init (GstFramerateTracerClass * klass)
 
   ptracer_class->reset = GST_DEBUG_FUNCPTR (reset_counters);
   ptracer_class->timer_callback = GST_DEBUG_FUNCPTR (print_framerate);
+  ptracer_class->write_header = GST_DEBUG_FUNCPTR (create_metadata_event);
 
   gobject_class->finalize = gst_framerate_tracer_finalize;
 
@@ -122,7 +122,6 @@ gst_framerate_tracer_init (GstFramerateTracer * self)
   self->frame_counters =
       g_hash_table_new_full (g_direct_hash, g_direct_equal,
       gst_object_unref, destroy_hashtable_value);
-  self->metadata_written = FALSE;
 
   gst_shark_tracer_register_hook (stracer, "pad-push-pre",
       G_CALLBACK (pad_push_buffer_pre));
@@ -155,12 +154,18 @@ reset_counters (GstPeriodicTracer * tracer)
 }
 
 static void
-create_metadata_event (GHashTable * frame_counters)
+create_metadata_event (GstPeriodicTracer * tracer)
 {
+  GstFramerateTracer *self;
   GString *builder;
+  GHashTable *frame_counters;
   GHashTableIter iter;
   gpointer key, value;
   gchar *cstring;
+
+
+  self = GST_FRAMERATE_TRACER (tracer);
+  frame_counters = self->frame_counters;
 
   builder = g_string_new (NULL);
 
@@ -198,11 +203,6 @@ print_framerate (GstPeriodicTracer * tracer)
   size = g_hash_table_size (self->frame_counters);
   pad_counts = g_malloc (size * sizeof (guint64));
   pad_idx = 0;
-
-  if (!self->metadata_written) {
-    create_metadata_event (self->frame_counters);
-    self->metadata_written = TRUE;
-  }
 
   /* Lock the tracer to make sure no new pad is added while we are logging */
   GST_OBJECT_LOCK (self);
