@@ -55,6 +55,7 @@ static void create_metadata_event (GHashTable * table);
 static void add_bytes (GstBitrateTracer * self, GstClockTime ts, GstPad * pad,
     guint64 bytes);
 static gboolean do_print_bitrate (GstPeriodicTracer * tracer);
+static void reset_counters (GstPeriodicTracer * tracer);
 
 typedef struct _GstBitrateHash GstBitrateHash;
 
@@ -166,6 +167,23 @@ add_bytes (GstBitrateTracer * self, GstClockTime ts, GstPad * pad,
 }
 
 static void
+reset_counters (GstPeriodicTracer * tracer)
+{
+  GstBitrateTracer *self;
+  GstBitrateHash *pad_table;
+  GHashTableIter iter;
+  gpointer key, value;
+
+  self = GST_BITRATE_TRACER (tracer);
+
+  g_hash_table_iter_init (&iter, self->bitrate_counters);
+  while (g_hash_table_iter_next (&iter, &key, &value)) {
+    pad_table = (GstBitrateHash *) value;
+    pad_table->bitrate = 0;
+  }
+}
+
+static void
 do_pad_push_buffer_pre (GstBitrateTracer * self, guint64 ts, GstPad * pad,
     GstBuffer * buffer)
 {
@@ -216,6 +234,7 @@ gst_bitrate_tracer_class_init (GstBitrateTracerClass * klass)
   gobject_class->finalize = gst_bitrate_tracer_finalize;
 
   ptracer_class->timer_callback = GST_DEBUG_FUNCPTR (do_print_bitrate);
+  ptracer_class->reset = GST_DEBUG_FUNCPTR (reset_counters);
 }
 
 static void
