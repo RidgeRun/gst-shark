@@ -1,5 +1,5 @@
 /* GstShark - A Front End for GstTracer
- * Copyright (C) 2016 RidgeRun Engineering <michael.gruner@ridgerun.com>
+ * Copyright (C) 2018 RidgeRun Engineering <michael.gruner@ridgerun.com>
  *
  * This file is part of GstShark.
  *
@@ -24,35 +24,10 @@
 #include "gstsharktracer.h"
 
 G_BEGIN_DECLS
-#define GST_TYPE_GRAPHIC_TRACER \
-  (gst_graphic_tracer_get_type())
-#define GST_GRAPHIC_TRACER(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_GRAPHIC_TRACER,GstGraphicTracer))
-#define GST_GRAPHIC_TRACER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_GRAPHIC_TRACER,GstGraphicTracerClass))
-#define GST_IS_GRAPHIC_TRACER(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_GRAPHIC_TRACER))
-#define GST_IS_GRAPHIC_TRACER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_GRAPHIC_TRACER))
-#define GST_GRAPHIC_TRACER_CAST(obj) ((GstGraphicTracer *)(obj))
-typedef struct _GstGraphicTracer GstGraphicTracer;
-typedef struct _GstGraphicTracerClass GstGraphicTracerClass;
 
-struct _GstGraphicTracer
-{
-  GstSharkTracer parent;
-
-  /*< private > */
-};
-
-struct _GstGraphicTracerClass
-{
-  GstSharkTracerClass parent_class;
-
-  /* signals */
-};
-
-G_GNUC_INTERNAL GType gst_graphic_tracer_get_type (void);
+#define GST_TYPE_GRAPHIC_TRACER (gst_graphic_tracer_get_type())
+G_DECLARE_FINAL_TYPE (GstGraphicTracer, gst_graphic_tracer, GST, GRAPHIC_TRACER, GstSharkTracer)
 
 G_END_DECLS
+
 #endif /* __GST_GRAPHIC_TRACER_H__ */

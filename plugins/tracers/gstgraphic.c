@@ -1,5 +1,5 @@
 /* GstShark - A Front End for GstTracer
- * Copyright (C) 2016 RidgeRun Engineering <michael.gruner@ridgerun.com>
+ * Copyright (C) 2018 RidgeRun Engineering <michael.gruner@ridgerun.com>
  *
  * This file is part of GstShark.
  *
@@ -25,10 +25,6 @@
  * A tracing module that uses the DOT libraries in order to show the pipeline executed graphically
  */
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include "gstgraphic.h"
 #include "gstdot.h"
 
@@ -36,12 +32,23 @@ GST_DEBUG_CATEGORY_STATIC (gst_graphic_debug);
 #define GST_CAT_DEFAULT gst_graphic_debug
 GST_DEBUG_CATEGORY_STATIC (GST_CAT_STATES);
 
+struct _GstGraphicTracer
+{
+  GstSharkTracer parent;
+};
+
 #define _do_init \
     GST_DEBUG_CATEGORY_INIT (gst_graphic_debug, "graphic", 0, "graphic tracer"); \
     GST_DEBUG_CATEGORY_GET (GST_CAT_STATES, "GST_STATES");
-#define gst_graphic_tracer_parent_class parent_class
+
 G_DEFINE_TYPE_WITH_CODE (GstGraphicTracer, gst_graphic_tracer,
     GST_SHARK_TYPE_TRACER, _do_init);
+
+static void log_graphic (GstDebugCategory * cat, const gchar * fmt, ...);
+static void do_element_change_state_post (GstGraphicTracer * self, guint64 ts,
+    GstElement * element, GstStateChange transition,
+    GstStateChangeReturn result);
+static void gst_graphic_tracer_finalize (GObject * obj);
 
 static void
 log_graphic (GstDebugCategory * cat, const gchar * fmt, ...)
@@ -85,7 +92,7 @@ do_element_change_state_post (GstGraphicTracer * self, guint64 ts,
 static void
 gst_graphic_tracer_finalize (GObject * obj)
 {
-  G_OBJECT_CLASS (parent_class)->finalize (obj);
+  G_OBJECT_CLASS (gst_graphic_tracer_parent_class)->finalize (obj);
 }
 
 static void
