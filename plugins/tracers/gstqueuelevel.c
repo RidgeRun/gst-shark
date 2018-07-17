@@ -45,7 +45,9 @@ struct _GstQueueLevelTracer
 G_DEFINE_TYPE_WITH_CODE (GstQueueLevelTracer, gst_queue_level_tracer,
     GST_SHARK_TYPE_TRACER, _do_init);
 
-static void do_queue_level (GstTracer * self, guint64 ts, GstPad * pad);
+static void do_queue_level (GstTracer * tracer, guint64 ts, GstPad * pad);
+static void do_queue_level_list (GstTracer * tracer, guint64 ts, GstPad * pad,
+    GstBufferList * list);
 static gboolean is_queue (GstElement * element);
 
 
@@ -113,6 +115,17 @@ out:
   }
 }
 
+static void
+do_queue_level_list (GstTracer * tracer, guint64 ts, GstPad * pad,
+    GstBufferList * list)
+{
+  guint idx;
+
+  for (idx = 0; idx < gst_buffer_list_length (list); ++idx) {
+    do_queue_level (tracer, ts, pad);
+  }
+}
+
 static gboolean
 is_queue (GstElement * element)
 {
@@ -149,7 +162,7 @@ gst_queue_level_tracer_init (GstQueueLevelTracer * self)
       G_CALLBACK (do_queue_level));
 
   gst_shark_tracer_register_hook (tracer, "pad-push-list-pre",
-      G_CALLBACK (do_queue_level));
+      G_CALLBACK (do_queue_level_list));
 
   gst_shark_tracer_register_hook (tracer, "pad-pull-range-pre",
       G_CALLBACK (do_queue_level));
