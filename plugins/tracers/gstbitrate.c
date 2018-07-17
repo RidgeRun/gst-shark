@@ -27,10 +27,6 @@
  * the scheduling mode.
  */
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include "gstbitrate.h"
 #include "gstctf.h"
 
@@ -40,8 +36,6 @@ GST_DEBUG_CATEGORY_STATIC (gst_bitrate_debug);
 struct _GstBitrateTracer
 {
   GstPeriodicTracer parent;
-
-  /*< private > */
 
   GHashTable *bitrate_counters;
   gboolean metadata_written;
@@ -54,9 +48,7 @@ struct _GstBitrateTracer
 G_DEFINE_TYPE_WITH_CODE (GstBitrateTracer, gst_bitrate_tracer,
     GST_TYPE_PERIODIC_TRACER, _do_init);
 
-#ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_bitrate;
-#endif
 
 static gchar *make_char_array_valid (gchar * src);
 static void create_metadata_event (GHashTable * table);
@@ -114,13 +106,7 @@ do_print_bitrate (GstPeriodicTracer * tracer)
   while (g_hash_table_iter_next (&iter, &key, &value)) {
     pad_table = (GstBitrateHash *) value;
 
-#ifdef GST_STABLE_RELEASE
     gst_tracer_record_log (tr_bitrate, pad_table->fullname, pad_table->bitrate);
-#else
-    gst_tracer_log_trace (gst_structure_new ("bitrate",
-            "pad", G_TYPE_STRING, pad_table->fullname,
-            "fps", G_TYPE_UINT, pad_table->bitrate, NULL));
-#endif
 
     pad_counts[pad_idx] = pad_table->bitrate;
     pad_idx++;
@@ -258,7 +244,6 @@ gst_bitrate_tracer_init (GstBitrateTracer * self)
   gst_shark_tracer_register_hook (tracer, "pad-pull-range-pre",
       G_CALLBACK (do_pad_pull_range_pre));
 
-#ifdef GST_STABLE_RELEASE
   tr_bitrate = gst_tracer_record_new ("bitrate.class",
       "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
@@ -270,19 +255,6 @@ gst_bitrate_tracer_init (GstBitrateTracer * self)
           "flags", GST_TYPE_TRACER_VALUE_FLAGS,
           GST_TRACER_VALUE_FLAGS_AGGREGATED, "min", G_TYPE_UINT64, 0, "max",
           G_TYPE_UINT64, G_MAXUINT64, NULL), NULL);
-#else
-  gst_tracer_log_trace (gst_structure_new ("bitrate.class",
-          "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-              "related-to", G_TYPE_STRING, "pad",
-              NULL),
-          "bitrate", GST_TYPE_STRUCTURE, gst_structure_new ("value",
-              "type", G_TYPE_GTYPE, G_TYPE_UINT,
-              "description", G_TYPE_STRING, "Bitrate",
-              "flags", G_TYPE_STRING, "aggregated",
-              "min", G_TYPE_UINT64, G_GUINT64_CONSTANT (0),
-              "max", G_TYPE_UINT64, G_GUINT64_CONSTANT (G_MAXUINT64), NULL),
-          NULL));
-#endif
 }
 
 static void
@@ -311,8 +283,6 @@ create_metadata_event (GHashTable * bitrate_counters)
   /* Add event in metadata file */
   add_metadata_event_struct (cstring);
   g_free (cstring);
-
-
 }
 
 static gchar *
