@@ -1,5 +1,5 @@
 /* GstShark - A Front End for GstTracer
- * Copyright (C) 2016 RidgeRun Engineering <manuel.leiva@ridgerun.com>
+ * Copyright (C) 2018 RidgeRun Engineering <manuel.leiva@ridgerun.com>
  *
  * This file is part of GstShark.
  *
@@ -18,48 +18,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef __GST_CPUUSAGE_TRACER_H__
-#define __GST_CPUUSAGE_TRACER_H__
+#ifndef __GST_CPU_USAGE_TRACER_H__
+#define __GST_CPU_USAGE_TRACER_H__
 
-#include "gstsharktracer.h"
-#include "gstcpuusagecompute.h"
+#include "gstperiodictracer.h"
 
 G_BEGIN_DECLS
-#define GST_TYPE_CPUUSAGE_TRACER \
-  (gst_cpuusage_tracer_get_type())
-#define GST_CPUUSAGE_TRACER(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_CPUUSAGE_TRACER,GstCPUUsageTracer))
-#define GST_CPUUSAGE_TRACER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_CPUUSAGE_TRACER,GstCPUUsageTracerClass))
-#define GST_IS_CPUUSAGE_TRACER(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_CPUUSAGE_TRACER))
-#define GST_IS_CPUUSAGE_TRACER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_CPUUSAGE_TRACER))
-#define GST_CPUUSAGE_TRACER_CAST(obj) ((GstCPUUsageTracer *)(obj))
-typedef struct _GstCPUUsageTracer GstCPUUsageTracer;
-typedef struct _GstCPUUsageTracerClass GstCPUUsageTracerClass;
 
-
-/**
- * GstCPUUsageTracer:
- *
- * Opaque #GstCPUUsageTracer data structure
- */
-struct _GstCPUUsageTracer
-{
-  GstSharkTracer parent;
-  GstCPUUsage cpu_usage;
-  guint source_id;
-};
-
-struct _GstCPUUsageTracerClass
-{
-  GstSharkTracerClass parent_class;
-
-  /* signals */
-};
-
-G_GNUC_INTERNAL GType gst_cpuusage_tracer_get_type (void);
+#define GST_TYPE_CPU_USAGE_TRACER (gst_cpu_usage_tracer_get_type())
+G_DECLARE_FINAL_TYPE (GstCPUUsageTracer, gst_cpu_usage_tracer, GST, CPU_USAGE_TRACER, GstPeriodicTracer)
 
 G_END_DECLS
-#endif /* __GST_CPUUSAGE_TRACER_H__ */
+#endif /* __GST_CPU_USAGE_TRACER_H__ */
