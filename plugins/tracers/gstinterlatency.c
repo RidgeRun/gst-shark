@@ -333,7 +333,4 @@ gst_interlatency_tracer_init (GstInterLatencyTracer * self)
 static void
 gst_interlatency_tracer_dispose (GObject * object)
 {
-  GstInterLatencyTracer *self;
-
-  self = GST_INTERLATENCY_TRACER (object);
 }

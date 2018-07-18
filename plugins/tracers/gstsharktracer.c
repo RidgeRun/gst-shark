@@ -293,7 +293,7 @@ gst_shark_tracer_save_params (GstSharkTracer * self)
     g_strfreev (keyvalue);
   }
   g_strfreev (tokens);
-
+  g_free (params);
 
   if (i > 0) {
     gst_shark_tracer_dump_params (self);
@@ -377,7 +377,7 @@ gst_shark_tracer_register_hook (GstSharkTracer * self, const gchar * detail,
     GST_INFO_OBJECT (self, "Registering new shark hook for %s", detail);
 
     /* Save child's hook */
-    g_hash_table_insert (priv->hooks, strdup (detail), func);
+    g_hash_table_insert (priv->hooks, g_strdup (detail), func);
 
     /* Register our hook */
     gst_tracing_register_hook (GST_TRACER (self), detail, myhook);
