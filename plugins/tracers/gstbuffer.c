@@ -1,5 +1,5 @@
 /* GstShark - A Front End for GstTracer
- * Copyright (C) 2016-2017 RidgeRun Engineering <carlos.rodriguez@ridgerun.com>
+ * Copyright (C) 2016-2018 RidgeRun Engineering <carlos.rodriguez@ridgerun.com>
  *
  * This file is part of GstShark.
  *
@@ -24,21 +24,22 @@
  * A tracing module that prints buffer info at every sink pad
  */
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include "gstbuffer.h"
 #include "gstctf.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_buffer_debug);
 #define GST_CAT_DEFAULT gst_buffer_debug
 
+struct _GstBufferTracer
+{
+  GstSharkTracer parent;
+};
+
 #define _do_init \
     GST_DEBUG_CATEGORY_INIT (gst_buffer_debug, "buffer", 0, "buffer tracer");
-#define gst_buffer_tracer_parent_class parent_class
+
 G_DEFINE_TYPE_WITH_CODE (GstBufferTracer, gst_buffer_tracer,
-    GST_TYPE_TRACER, _do_init);
+    GST_SHARK_TYPE_TRACER, _do_init);
 
 static void gst_buffer_buffer_pre (GObject * self, GstClockTime ts,
     GstPad * pad, GstBuffer * buffer);
@@ -47,10 +48,7 @@ static void gst_buffer_buffer_list_pre (GObject * self, GstClockTime ts,
 static void gst_buffer_range_post (GObject * self, GstClockTime ts,
     GstPad * pad, GstBuffer * buffer, GstFlowReturn res);
 
-
-#ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_buffer;
-#endif
 
 static const gchar buffer_metadata_event[] = "event {\n\
     name = buffer;\n\
@@ -94,7 +92,7 @@ gst_buffer_buffer_pre (GObject * self, GstClockTime ts, GstPad * pad,
   pts = GST_BUFFER_PTS (buffer);
   spts = g_strdup_printf ("%" GST_TIME_FORMAT, GST_TIME_ARGS (pts));
 
-  dts = GST_BUFFER_PTS (buffer);
+  dts = GST_BUFFER_DTS (buffer);
   sdts = g_strdup_printf ("%" GST_TIME_FORMAT, GST_TIME_ARGS (dts));
 
   duration = GST_BUFFER_DURATION (buffer);
@@ -112,21 +110,8 @@ gst_buffer_buffer_pre (GObject * self, GstClockTime ts, GstPad * pad,
 
   refcount = GST_MINI_OBJECT_REFCOUNT_VALUE (buffer);
 
-#ifdef GST_STABLE_RELEASE
   gst_tracer_record_log (tr_buffer, pad_name, spts, sdts, sduration, offset,
       offset_end, size, sflags, refcount);
-#else
-  gst_tracer_log_trace (gst_structure_new ("buffer",
-          "pad", G_TYPE_STRING, pad_name,
-          "pts", G_TYPE_STRING, spts,
-          "dts", G_TYPE_STRING, sdts,
-          "duration", G_TYPE_STRING, sduration,
-          "offset", G_TYPE_UINT64, offset,
-          "offset_end", G_TYPE_UINT64, offset_end,
-          "size", G_TYPE_UINT64, size,
-          "flags", G_TYPE_STRING, flags,
-          "refcount", G_TYPE_UINT, refcount, NULL));
-#endif
 
   do_print_buffer_event (BUFFER_EVENT_ID, pad_name, pts, dts, duration,
       offset, offset_end, size, flags, refcount);
@@ -163,25 +148,8 @@ gst_buffer_buffer_list_pre (GObject * self, GstClockTime ts, GstPad * pad,
 static void
 gst_buffer_tracer_class_init (GstBufferTracerClass * klass)
 {
-}
-
-
-static void
-gst_buffer_tracer_init (GstBufferTracer * self)
-{
-  GstTracer *tracer = GST_TRACER (self);
   gchar *metadata_event;
 
-  gst_tracing_register_hook (tracer, "pad-push-pre",
-      G_CALLBACK (gst_buffer_buffer_pre));
-
-  gst_tracing_register_hook (tracer, "pad-push-list-pre",
-      G_CALLBACK (gst_buffer_buffer_list_pre));
-
-  gst_tracing_register_hook (tracer, "pad-pull-range-post",
-      G_CALLBACK (gst_buffer_range_post));
-
-#ifdef GST_STABLE_RELEASE
   tr_buffer = gst_tracer_record_new ("buffer.class",
       "pad", GST_TYPE_STRUCTURE, gst_structure_new ("value",
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
@@ -209,31 +177,23 @@ gst_buffer_tracer_init (GstBufferTracer * self)
       GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE,
           G_TYPE_UINT, "description", G_TYPE_STRING, "Ref Count", "min",
           G_TYPE_UINT, 0, "max", G_TYPE_UINT, G_MAXUINT32, NULL), NULL);
-#else
-  gst_tracer_log_trace (gst_structure_new ("buffer.class",
-          "buffer", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-              "related-to", G_TYPE_STRING, "pad", NULL),
-          "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-              "related-to", G_TYPE_STRING, "pad", NULL),
-          "pts", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-              "related-to", G_TYPE_STRING, "pad", NULL),
-          "dts", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-              "related-to", G_TYPE_STRING, "pad", NULL),
-          "duration", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-              "related-to", G_TYPE_STRING, "pad", NULL),
-          "offset", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-              "related-to", G_TYPE_STRING, "pad", NULL),
-          "offset_end", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-              "related-to", G_TYPE_STRING, "pad", NULL),
-          "size", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-              "related-to", G_TYPE_STRING, "pad", NULL),
-          "flags", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-              "related-to", G_TYPE_STRING, "pad", NULL),
-          "refcount", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-              "related-to", G_TYPE_STRING, "pad", NULL), NULL));
-#endif
 
   metadata_event = g_strdup_printf (buffer_metadata_event, BUFFER_EVENT_ID, 0);
   add_metadata_event_struct (metadata_event);
   g_free (metadata_event);
+}
+
+static void
+gst_buffer_tracer_init (GstBufferTracer * self)
+{
+  GstSharkTracer *tracer = GST_SHARK_TRACER (self);
+
+  gst_shark_tracer_register_hook (tracer, "pad-push-pre",
+      G_CALLBACK (gst_buffer_buffer_pre));
+
+  gst_shark_tracer_register_hook (tracer, "pad-push-list-pre",
+      G_CALLBACK (gst_buffer_buffer_list_pre));
+
+  gst_shark_tracer_register_hook (tracer, "pad-pull-range-post",
+      G_CALLBACK (gst_buffer_range_post));
 }

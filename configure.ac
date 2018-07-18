@@ -6,7 +6,7 @@ dnl when going to/from release please set the nano (fourth number) right !
 dnl releases only do Wall, git and prerelease does Werror too
 dnl
 AC_INIT([GstShark],
-        [0.4.7.1],
+        [0.5.0.0],
 	[https://github.com/RidgeRun/gst-shark],
 	[gst-shark],
 	[https://github.com/RidgeRun/gst-shark])
@@ -22,7 +22,7 @@ dnl check if this is a release version
 AS_NANO(GST_GIT="no", GST_GIT="yes")
 
 dnl can autoconf find the source ?
-AC_CONFIG_SRCDIR([plugins/tracers/gstsharktracers.c])
+AC_CONFIG_SRCDIR([plugins/tracers/gstplugin.c])
 
 dnl define the output header for config
 AC_CONFIG_HEADERS([config.h])
@@ -203,7 +203,7 @@ dnl *** checks for dependency libraries ***
 
 dnl GLib
 dnl GLib
-GLIB_REQ=2.40.0
+GLIB_REQ=2.44.0
 AG_GST_GLIB_CHECK([$GLIB_REQ])
 
 dnl Check for documentation xrefs

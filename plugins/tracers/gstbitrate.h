@@ -21,45 +21,13 @@
 #ifndef __GST_BITRATE_TRACER_H__
 #define __GST_BITRATE_TRACER_H__
 
-#include <gst/gst.h>
-#include <gst/gsttracer.h>
+#include "gstperiodictracer.h"
 
 G_BEGIN_DECLS
-#define GST_TYPE_BITRATE_TRACER \
-  (gst_bitrate_tracer_get_type())
-#define GST_BITRATE_TRACER(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_BITRATE_TRACER,GstBitrateTracer))
-#define GST_BITRATE_TRACER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_BITRATE_TRACER,GstBitrateTracerClass))
-#define GST_IS_BITRATE_TRACER(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_BITRATE_TRACER))
-#define GST_IS_BITRATE_TRACER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_BITRATE_TRACER))
-#define GST_BITRATE_TRACER_CAST(obj) ((GstBitrateTracer *)(obj))
+
 typedef struct _GstBitrateTracer GstBitrateTracer;
-typedef struct _GstBitrateTracerClass GstBitrateTracerClass;
-
-gboolean do_print_bitrate (gpointer * data);
-
-struct _GstBitrateTracer
-{
-  GstTracer parent;
-
-  /*< private > */
-
-  GHashTable *bitrate_counters;
-  gboolean start_timer;
-  gboolean metadata_written;
-};
-
-struct _GstBitrateTracerClass
-{
-  GstTracerClass parent_class;
-
-  /* signals */
-};
-
-G_GNUC_INTERNAL GType gst_bitrate_tracer_get_type (void);
+G_DECLARE_FINAL_TYPE (GstBitrateTracer, gst_bitrate_tracer, GST, BITRATE_TRACER, GstPeriodicTracer)
 
 G_END_DECLS
+
 #endif /* __GST_BITRATE_TRACER_H__ */
