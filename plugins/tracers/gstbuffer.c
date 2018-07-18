@@ -148,22 +148,7 @@ gst_buffer_buffer_list_pre (GObject * self, GstClockTime ts, GstPad * pad,
 static void
 gst_buffer_tracer_class_init (GstBufferTracerClass * klass)
 {
-}
-
-static void
-gst_buffer_tracer_init (GstBufferTracer * self)
-{
-  GstSharkTracer *tracer = GST_SHARK_TRACER (self);
   gchar *metadata_event;
-
-  gst_shark_tracer_register_hook (tracer, "pad-push-pre",
-      G_CALLBACK (gst_buffer_buffer_pre));
-
-  gst_shark_tracer_register_hook (tracer, "pad-push-list-pre",
-      G_CALLBACK (gst_buffer_buffer_list_pre));
-
-  gst_shark_tracer_register_hook (tracer, "pad-pull-range-post",
-      G_CALLBACK (gst_buffer_range_post));
 
   tr_buffer = gst_tracer_record_new ("buffer.class",
       "pad", GST_TYPE_STRUCTURE, gst_structure_new ("value",
@@ -196,4 +181,19 @@ gst_buffer_tracer_init (GstBufferTracer * self)
   metadata_event = g_strdup_printf (buffer_metadata_event, BUFFER_EVENT_ID, 0);
   add_metadata_event_struct (metadata_event);
   g_free (metadata_event);
+}
+
+static void
+gst_buffer_tracer_init (GstBufferTracer * self)
+{
+  GstSharkTracer *tracer = GST_SHARK_TRACER (self);
+
+  gst_shark_tracer_register_hook (tracer, "pad-push-pre",
+      G_CALLBACK (gst_buffer_buffer_pre));
+
+  gst_shark_tracer_register_hook (tracer, "pad-push-list-pre",
+      G_CALLBACK (gst_buffer_buffer_list_pre));
+
+  gst_shark_tracer_register_hook (tracer, "pad-pull-range-post",
+      G_CALLBACK (gst_buffer_range_post));
 }

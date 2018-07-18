@@ -38,7 +38,6 @@ struct _GstBitrateTracer
   GstPeriodicTracer parent;
 
   GHashTable *bitrate_counters;
-  gboolean metadata_written;
 };
 
 #define _do_init \
@@ -51,7 +50,7 @@ G_DEFINE_TYPE_WITH_CODE (GstBitrateTracer, gst_bitrate_tracer,
 static GstTracerRecord *tr_bitrate;
 
 static gchar *make_char_array_valid (gchar * src);
-static void create_metadata_event (GHashTable * table);
+static void create_metadata_event (GstPeriodicTracer * tracer);
 static void add_bytes (GstBitrateTracer * self, GstClockTime ts, GstPad * pad,
     guint64 bytes);
 static gboolean do_print_bitrate (GstPeriodicTracer * tracer);
@@ -95,11 +94,6 @@ do_print_bitrate (GstPeriodicTracer * tracer)
   size = g_hash_table_size (self->bitrate_counters);
   pad_counts = g_malloc (size * sizeof (guint64));
   pad_idx = 0;
-
-  if (!self->metadata_written) {
-    create_metadata_event (self->bitrate_counters);
-    self->metadata_written = TRUE;
-  }
 
   /* Using the iterator functions to go through the Hash table and print the bitrate
      of every element stored */
@@ -235,6 +229,7 @@ gst_bitrate_tracer_class_init (GstBitrateTracerClass * klass)
 
   ptracer_class->timer_callback = GST_DEBUG_FUNCPTR (do_print_bitrate);
   ptracer_class->reset = GST_DEBUG_FUNCPTR (reset_counters);
+  ptracer_class->write_header = GST_DEBUG_FUNCPTR (create_metadata_event);
 
   tr_bitrate = gst_tracer_record_new ("bitrate.class",
       "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
@@ -257,7 +252,6 @@ gst_bitrate_tracer_init (GstBitrateTracer * self)
   self->bitrate_counters =
       g_hash_table_new_full (g_direct_hash, g_direct_equal,
       do_destroy_hashtable_key, do_destroy_hashtable_value);
-  self->metadata_written = FALSE;
 
   gst_shark_tracer_register_hook (tracer, "pad-push-pre",
       G_CALLBACK (do_pad_push_buffer_pre));
@@ -268,12 +262,17 @@ gst_bitrate_tracer_init (GstBitrateTracer * self)
 }
 
 static void
-create_metadata_event (GHashTable * bitrate_counters)
+create_metadata_event (GstPeriodicTracer * tracer)
 {
+  GstBitrateTracer *self;
   GString *builder;
+  GHashTable *bitrate_counters;
   GHashTableIter iter;
   gpointer key, value;
   gchar *cstring;
+
+  self = GST_BITRATE_TRACER (tracer);
+  bitrate_counters = self->bitrate_counters;
 
   builder = g_string_new (NULL);
 

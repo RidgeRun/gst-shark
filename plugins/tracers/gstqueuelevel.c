@@ -134,22 +134,7 @@ is_queue (GstElement * element)
 static void
 gst_queue_level_tracer_class_init (GstQueueLevelTracerClass * klass)
 {
-}
-
-static void
-gst_queue_level_tracer_init (GstQueueLevelTracer * self)
-{
-  GstSharkTracer *tracer = GST_SHARK_TRACER (self);
   gchar *metadata_event;
-
-  gst_shark_tracer_register_hook (tracer, "pad-push-pre",
-      G_CALLBACK (do_queue_level));
-
-  gst_shark_tracer_register_hook (tracer, "pad-push-list-pre",
-      G_CALLBACK (do_queue_level_list));
-
-  gst_shark_tracer_register_hook (tracer, "pad-pull-range-pre",
-      G_CALLBACK (do_queue_level));
 
   tr_qlevel = gst_tracer_record_new ("queuelevel.class",
       "queue", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
@@ -170,4 +155,19 @@ gst_queue_level_tracer_init (GstQueueLevelTracer * self)
       g_strdup_printf (queue_level_metadata_event, QUEUE_LEVEL_EVENT_ID, 0);
   add_metadata_event_struct (metadata_event);
   g_free (metadata_event);
+}
+
+static void
+gst_queue_level_tracer_init (GstQueueLevelTracer * self)
+{
+  GstSharkTracer *tracer = GST_SHARK_TRACER (self);
+
+  gst_shark_tracer_register_hook (tracer, "pad-push-pre",
+      G_CALLBACK (do_queue_level));
+
+  gst_shark_tracer_register_hook (tracer, "pad-push-list-pre",
+      G_CALLBACK (do_queue_level_list));
+
+  gst_shark_tracer_register_hook (tracer, "pad-pull-range-pre",
+      G_CALLBACK (do_queue_level));
 }

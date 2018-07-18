@@ -34,6 +34,7 @@ struct _GstPeriodicTracerClass
 
   gboolean (* timer_callback) (GstPeriodicTracer * tracer);
   void (* reset) (GstPeriodicTracer * tracer);
+  void (* write_header) (GstPeriodicTracer * tracer);
 };
 
 G_END_DECLS

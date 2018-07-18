@@ -30,6 +30,7 @@ static void install_callback (GstPeriodicTracer * self);
 static void remove_callback (GstPeriodicTracer * self);
 static void reset_internal (GstPeriodicTracer * self);
 static gboolean callback_internal (gpointer * data);
+static void write_header_internal (GstPeriodicTracer * self);
 
 #define GST_PERIODIC_TRACER_PRIVATE(o) \
   G_TYPE_INSTANCE_GET_PRIVATE((o), GST_TYPE_PERIODIC_TRACER, GstPeriodicTracerPrivate)
@@ -41,6 +42,7 @@ struct _GstPeriodicTracerPrivate
 {
   guint pipes_running;
   guint callback_id;
+  gboolean header_written;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GstPeriodicTracer, gst_periodic_tracer,
@@ -54,6 +56,7 @@ gst_periodic_tracer_class_init (GstPeriodicTracerClass * klass)
 
   klass->timer_callback = NULL;
   klass->reset = NULL;
+  klass->write_header = NULL;
 }
 
 static void
@@ -67,6 +70,7 @@ gst_periodic_tracer_init (GstPeriodicTracer * self)
 
   priv->pipes_running = 0;
   priv->callback_id = 0;
+  priv->header_written = FALSE;
 
   gst_tracing_register_hook (tracer, "element-change-state-post",
       G_CALLBACK (element_change_state_post));
@@ -87,15 +91,49 @@ element_change_state_post (GstTracer * tracer, guint64 ts,
     return;
   }
 
-  if (transition == GST_STATE_CHANGE_READY_TO_PAUSED) {
-    GST_DEBUG_OBJECT (self, "Pipeline %s changed to paused",
+  if (transition == GST_STATE_CHANGE_PAUSED_TO_PLAYING
+      && result == GST_STATE_CHANGE_SUCCESS) {
+    GST_DEBUG_OBJECT (self, "Pipeline %s changed to playing",
         GST_OBJECT_NAME (element));
+    write_header_internal (self);
     reset_internal (self);
     install_callback (self);
-  } else if (transition == GST_STATE_CHANGE_PAUSED_TO_READY) {
-    GST_DEBUG_OBJECT (self, "Pipeline %s changed to ready",
+  } else if (transition == GST_STATE_CHANGE_PLAYING_TO_PAUSED) {
+    GST_DEBUG_OBJECT (self, "Pipeline %s changed to paused",
         GST_OBJECT_NAME (element));
     remove_callback (self);
+  }
+}
+
+static void
+write_header_internal (GstPeriodicTracer * self)
+{
+  GstPeriodicTracerClass *klass;
+  GstPeriodicTracerPrivate *priv;
+  gboolean header_written;
+
+  g_return_if_fail (self);
+
+  priv = GST_PERIODIC_TRACER_PRIVATE (self);
+
+  GST_OBJECT_LOCK (self);
+  header_written = priv->header_written;
+  if (FALSE == priv->header_written) {
+    priv->header_written = TRUE;
+  }
+  GST_OBJECT_UNLOCK (self);
+
+  /* Header must only be written once in all the lifetime of the tracer */
+  if (TRUE == header_written) {
+    return;
+  }
+
+  GST_DEBUG_OBJECT (self, "Writing event header");
+
+  klass = GST_PERIODIC_TRACER_GET_CLASS (self);
+
+  if (klass->write_header) {
+    klass->write_header (self);
   }
 }
 

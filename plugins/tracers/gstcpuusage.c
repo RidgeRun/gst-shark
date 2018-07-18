@@ -67,7 +67,7 @@ static const gchar floating_point_event_field[] =
 static void cpuusage_dummy_bin_add_post (GObject * obj, GstClockTime ts,
     GstBin * bin, GstElement * element, gboolean result);
 static gboolean cpu_usage_thread_func (GstPeriodicTracer * tracer);
-static void create_metadata_event (gint cpu_num);
+static void create_metadata_event (GstPeriodicTracer * tracer);
 static void reset_counters (GstPeriodicTracer * tracer);
 
 static void
@@ -114,8 +114,10 @@ cpu_usage_thread_func (GstPeriodicTracer * tracer)
 }
 
 static void
-create_metadata_event (gint cpu_num)
+create_metadata_event (GstPeriodicTracer * tracer)
 {
+  GstCPUUsageTracer *self;
+  gint cpu_num;
   gchar *mem;
   gchar *mem_start;
   gchar *event_header;
@@ -123,6 +125,9 @@ create_metadata_event (gint cpu_num)
   gsize mem_size;
   gint msg_id;
   gint number_of_bytes;
+
+  self = GST_CPU_USAGE_TRACER (tracer);
+  cpu_num = self->cpu_usage.cpu_num;
 
   event_header =
       g_strdup_printf (cpuusage_metadata_event_header, CPUUSAGE_EVENT_ID, 0);
@@ -176,16 +181,7 @@ gst_cpu_usage_tracer_class_init (GstCPUUsageTracerClass * klass)
 
   tracer_class->timer_callback = GST_DEBUG_FUNCPTR (cpu_usage_thread_func);
   tracer_class->reset = GST_DEBUG_FUNCPTR (reset_counters);
-}
-
-static void
-gst_cpu_usage_tracer_init (GstCPUUsageTracer * self)
-{
-  GstCPUUsage *cpu_usage;
-
-  cpu_usage = &self->cpu_usage;
-  gst_cpu_usage_init (cpu_usage);
-  cpu_usage->cpu_array_sel = FALSE;
+  tracer_class->write_header = GST_DEBUG_FUNCPTR (create_metadata_event);
 
   tr_cpuusage = gst_tracer_record_new ("cpuusage.class",
       "number", GST_TYPE_STRUCTURE, gst_structure_new ("value",
@@ -198,8 +194,16 @@ gst_cpu_usage_tracer_init (GstCPUUsageTracer * self)
           "description", G_TYPE_STRING, "Core load percentage [%]", "flags",
           GST_TYPE_TRACER_VALUE_FLAGS, GST_TRACER_VALUE_FLAGS_AGGREGATED, "min",
           G_TYPE_DOUBLE, 0.0f, "max", G_TYPE_DOUBLE, 100.0f, NULL), NULL);
+}
 
-  create_metadata_event (CPU_USAGE_ARRAY_LENGTH (cpu_usage));
+static void
+gst_cpu_usage_tracer_init (GstCPUUsageTracer * self)
+{
+  GstCPUUsage *cpu_usage;
+
+  cpu_usage = &self->cpu_usage;
+  gst_cpu_usage_init (cpu_usage);
+  cpu_usage->cpu_array_sel = FALSE;
 
   /* Register a dummy hook so that the tracer remains alive */
   gst_tracing_register_hook (GST_TRACER (self), "bin-add-post",
