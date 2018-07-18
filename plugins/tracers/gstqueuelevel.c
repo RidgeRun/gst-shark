@@ -136,6 +136,21 @@ gst_queue_level_tracer_class_init (GstQueueLevelTracerClass * klass)
 {
   gchar *metadata_event;
 
+  tr_qlevel = gst_tracer_record_new ("queuelevel.class",
+      "queue", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+          GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), "size_bytes",
+      GST_TYPE_STRUCTURE, gst_structure_new ("scope", "type", G_TYPE_GTYPE,
+          G_TYPE_UINT, "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+          GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), "size_buffers",
+      GST_TYPE_STRUCTURE, gst_structure_new ("scope", "type", G_TYPE_GTYPE,
+          G_TYPE_UINT, "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+          GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), "size_time",
+      GST_TYPE_STRUCTURE, gst_structure_new ("scope", "type", G_TYPE_GTYPE,
+          G_TYPE_STRING, "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+          GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), NULL);
+
   metadata_event =
       g_strdup_printf (queue_level_metadata_event, QUEUE_LEVEL_EVENT_ID, 0);
   add_metadata_event_struct (metadata_event);
@@ -155,19 +170,4 @@ gst_queue_level_tracer_init (GstQueueLevelTracer * self)
 
   gst_shark_tracer_register_hook (tracer, "pad-pull-range-pre",
       G_CALLBACK (do_queue_level));
-
-  tr_qlevel = gst_tracer_record_new ("queuelevel.class",
-      "queue", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
-          "type", G_TYPE_GTYPE, G_TYPE_STRING,
-          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
-          GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), "size_bytes",
-      GST_TYPE_STRUCTURE, gst_structure_new ("scope", "type", G_TYPE_GTYPE,
-          G_TYPE_UINT, "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
-          GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), "size_buffers",
-      GST_TYPE_STRUCTURE, gst_structure_new ("scope", "type", G_TYPE_GTYPE,
-          G_TYPE_UINT, "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
-          GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), "size_time",
-      GST_TYPE_STRUCTURE, gst_structure_new ("scope", "type", G_TYPE_GTYPE,
-          G_TYPE_STRING, "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
-          GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), NULL);
 }
