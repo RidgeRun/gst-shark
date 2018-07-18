@@ -21,13 +21,12 @@
 #ifndef __GST_CPU_USAGE_TRACER_H__
 #define __GST_CPU_USAGE_TRACER_H__
 
-#include "gstsharktracer.h"
-#include "gstcpuusagecompute.h"
+#include "gstperiodictracer.h"
 
 G_BEGIN_DECLS
 
 #define GST_TYPE_CPU_USAGE_TRACER (gst_cpu_usage_tracer_get_type())
-G_DECLARE_FINAL_TYPE (GstCPUUsageTracer, gst_cpu_usage_tracer, GST, CPU_USAGE_TRACER, GstSharkTracer)
+G_DECLARE_FINAL_TYPE (GstCPUUsageTracer, gst_cpu_usage_tracer, GST, CPU_USAGE_TRACER, GstPeriodicTracer)
 
 G_END_DECLS
 #endif /* __GST_CPU_USAGE_TRACER_H__ */

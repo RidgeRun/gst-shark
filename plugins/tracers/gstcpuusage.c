@@ -24,32 +24,28 @@
  * A tracing module that take cpuusage() snapshots and logs them.
  */
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
+#include <glib/gstdio.h>
 #include <unistd.h>
 #include <string.h>
+
 #include "gstcpuusage.h"
 #include "gstcpuusagecompute.h"
 #include "gstctf.h"
-#include <glib/gstdio.h>
 
 GST_DEBUG_CATEGORY_STATIC (gst_cpu_usage_debug);
 #define GST_CAT_DEFAULT gst_cpu_usage_debug
 
 struct _GstCPUUsageTracer
 {
-  GstSharkTracer parent;
+  GstPeriodicTracer parent;
   GstCPUUsage cpu_usage;
-  guint source_id;
 };
 
 #define _do_init \
     GST_DEBUG_CATEGORY_INIT (gst_cpu_usage_debug, "cpuusage", 0, "cpuusage tracer");
 
 G_DEFINE_TYPE_WITH_CODE (GstCPUUsageTracer, gst_cpu_usage_tracer,
-    GST_SHARK_TYPE_TRACER, _do_init);
+    GST_TYPE_PERIODIC_TRACER, _do_init);
 
 static GstTracerRecord *tr_cpuusage;
 
@@ -68,28 +64,11 @@ static const gchar cpuusage_metadata_event_footer[] = "\
 static const gchar floating_point_event_field[] =
     "        floating_point { exp_dig = %lu; mant_dig = %d; byte_order = le; align = 8; } _cpu%d;\n";
 
-static void gst_cpu_usage_tracer_finalize (GObject * obj);
 static void cpuusage_dummy_bin_add_post (GObject * obj, GstClockTime ts,
     GstBin * bin, GstElement * element, gboolean result);
-static gboolean cpu_usage_thread_func (gpointer data);
+static gboolean cpu_usage_thread_func (GstPeriodicTracer * tracer);
 static void create_metadata_event (gint cpu_num);
-
-/* tracer class */
-
-static void
-gst_cpu_usage_tracer_finalize (GObject * obj)
-{
-  GstCPUUsageTracer *self;
-
-  self = GST_CPU_USAGE_TRACER (obj);
-
-  if (self->source_id) {
-    g_source_remove (self->source_id);
-    self->source_id = 0;
-  }
-
-  G_OBJECT_CLASS (gst_cpu_usage_tracer_parent_class)->finalize (obj);
-}
+static void reset_counters (GstPeriodicTracer * tracer);
 
 static void
 cpuusage_dummy_bin_add_post (GObject * obj, GstClockTime ts,
@@ -98,8 +77,18 @@ cpuusage_dummy_bin_add_post (GObject * obj, GstClockTime ts,
   return;
 }
 
+static void
+reset_counters (GstPeriodicTracer * tracer)
+{
+  GstCPUUsageTracer *self;
+
+  self = GST_CPU_USAGE_TRACER (tracer);
+
+  gst_cpu_usage_init (&(self->cpu_usage));
+}
+
 static gboolean
-cpu_usage_thread_func (gpointer data)
+cpu_usage_thread_func (GstPeriodicTracer * tracer)
 {
   GstCPUUsageTracer *self;
   GstCPUUsage *cpu_usage;
@@ -107,7 +96,7 @@ cpu_usage_thread_func (gpointer data)
   gint cpu_id;
   gint cpu_load_len;
 
-  self = GST_CPU_USAGE_TRACER (data);
+  self = GST_CPU_USAGE_TRACER (tracer);
 
   cpu_usage = &self->cpu_usage;
 
@@ -181,9 +170,12 @@ create_metadata_event (gint cpu_num)
 static void
 gst_cpu_usage_tracer_class_init (GstCPUUsageTracerClass * klass)
 {
-  GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
+  GstPeriodicTracerClass *tracer_class;
 
-  gobject_class->finalize = gst_cpu_usage_tracer_finalize;
+  tracer_class = GST_PERIODIC_TRACER_CLASS (klass);
+
+  tracer_class->timer_callback = GST_DEBUG_FUNCPTR (cpu_usage_thread_func);
+  tracer_class->reset = GST_DEBUG_FUNCPTR (reset_counters);
 }
 
 static void
@@ -212,8 +204,4 @@ gst_cpu_usage_tracer_init (GstCPUUsageTracer * self)
   /* Register a dummy hook so that the tracer remains alive */
   gst_tracing_register_hook (GST_TRACER (self), "bin-add-post",
       G_CALLBACK (cpuusage_dummy_bin_add_post));
-
-  /* Create new thread to compute the cpu usage periodically */
-  self->source_id =
-      g_timeout_add_seconds (1, cpu_usage_thread_func, (gpointer) self);
 }
