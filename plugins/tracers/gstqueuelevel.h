@@ -1,5 +1,5 @@
 /* GstShark - A Front End for GstTracer
- * Copyright (C) 2016-2017 RidgeRun Engineering <carlos.rodriguez@ridgerun.com>
+ * Copyright (C) 2016-2018 RidgeRun Engineering <carlos.rodriguez@ridgerun.com>
  *
  * This file is part of GstShark.
  *
@@ -24,37 +24,10 @@
 #include "gstsharktracer.h"
 
 G_BEGIN_DECLS
-#define GST_TYPE_QUEUE_LEVEL_TRACER \
-  (gst_queue_level_tracer_get_type())
-#define GST_QUEUE_LEVEL_TRACER(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_QUEUE_LEVEL_TRACER,GstQueueLevelTracer))
-#define GST_QUEUE_LEVEL_TRACER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_QUEUE_LEVEL_TRACER,GstQueueLevelTracerClass))
-#define GST_IS_QUEUE_LEVEL_TRACER(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_QUEUE_LEVEL_TRACER))
-#define GST_IS_QUEUE_LEVEL_TRACER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_QUEUE_LEVEL_TRACER))
-#define GST_QUEUE_LEVEL_TRACER_CAST(obj) ((GstQueueLevelTracer *)(obj))
-typedef struct _GstSchedulePad GstSchedulePad;
-typedef struct _GstQueueLevelTracer GstQueueLevelTracer;
-typedef struct _GstQueueLevelTracerClass GstQueueLevelTracerClass;
 
-/**
- * GstQueueLevelTracer:
- *
- * Opaque #GstQueueLevelTracer data structure
- */
-struct _GstQueueLevelTracer
-{
-  GstSharkTracer parent;
-};
-
-struct _GstQueueLevelTracerClass
-{
-  GstSharkTracerClass parent_class;
-};
-
-G_GNUC_INTERNAL GType gst_queue_level_tracer_get_type (void);
+#define GST_TYPE_QUEUE_LEVEL_TRACER (gst_queue_level_tracer_get_type ())
+G_DECLARE_FINAL_TYPE (GstQueueLevelTracer, gst_queue_level_tracer, GST, QUEUE_LEVEL_TRACER, GstSharkTracer)
 
 G_END_DECLS
+
 #endif /* __GST_QUEUE_LEVEL_TRACER_H__ */
