@@ -48,7 +48,7 @@ void do_print_interlatency_event (event_id id,
     char *originpad, gchar * destinationpad, guint64 time);
 void do_print_scheduling_event (event_id id, gchar * elementname, guint64 time);
 void do_print_queue_level_event (event_id id, const gchar * elementname, guint32 bytes,
-    guint32 buffers, guint64 time);
+    guint32 max_bytes, guint32 buffers, guint32 max_buffers, guint64 time, guint64 max_time);
 void do_print_bitrate_event (event_id id, guint32 pad_num, guint64 * fps);
 void do_print_buffer_event (event_id id, const gchar * pad, GstClockTime pts,
     GstClockTime dts, GstClockTime duration, guint64 offset,

@@ -55,8 +55,11 @@ static const gchar queue_level_metadata_event[] = "event {\n\
     fields := struct {\n\
         string queue;\n\
         integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } size_bytes;\n\
+        integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } max_size_bytes;\n \
         integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } size_buffers;\n\
+        integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } max_size_buffers;\n\
         integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } size_time;\n\
+        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } max_size_time;\n\
     };\n\
 };\n\
 \n";
@@ -125,7 +128,7 @@ do_queue_level (GstTracer * self, guint64 ts, GstPad * pad)
   g_free (max_size_time_string);
 
   do_print_queue_level_event (QUEUE_LEVEL_EVENT_ID, element_name, size_bytes,
-      size_buffers, size_time);
+      max_size_bytes, size_buffers, max_size_buffers, size_time, max_size_time);
 
 out:
   {
