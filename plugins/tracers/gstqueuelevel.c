@@ -61,6 +61,28 @@ static const gchar queue_level_metadata_event[] = "event {\n\
 };\n\
 \n";
 
+static GstElement *
+get_parent_element (GstPad * pad)
+{
+  GstElement *element;
+  GstObject *parent;
+  GstObject *child = GST_OBJECT (pad);
+
+  do {
+    parent = GST_OBJECT_PARENT (child);
+
+    if (GST_IS_ELEMENT (parent))
+      break;
+
+    child = parent;
+
+  } while (GST_IS_OBJECT (child));
+
+  element = gst_pad_get_parent_element (GST_PAD (child));
+
+  return element;
+}
+
 static void
 do_queue_level (GstTracer * self, guint64 ts, GstPad * pad)
 {
@@ -71,7 +93,7 @@ do_queue_level (GstTracer * self, guint64 ts, GstPad * pad)
   gchar *size_time_string;
   const gchar *element_name;
 
-  element = gst_pad_get_parent_element (pad);
+  element = get_parent_element (pad);
 
   if (!is_queue (element)) {
     goto out;
