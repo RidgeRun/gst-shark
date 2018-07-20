@@ -983,15 +983,14 @@ do_print_queue_level_event (event_id id, const gchar * elementname,
 }
 
 void
-do_print_bitrate_event (event_id id, guint32 pad_num, guint64 * fps)
+do_print_bitrate_event (event_id id, gchar * elementname, guint64 bps)
 {
   GError *error;
   guint8 *mem;
   guint8 *event_mem;
   gsize event_size;
-  guint32 pad_idx;
 
-  event_size = pad_num * sizeof (guint64) + CTF_HEADER_SIZE;
+  event_size = strlen (elementname) + 1 + sizeof (bps) + CTF_HEADER_SIZE;
 
   if (event_exceeds_mem_size (event_size)) {
     return;
@@ -1004,11 +1003,10 @@ do_print_bitrate_event (event_id id, guint32 pad_num, guint64 * fps)
   g_mutex_lock (&ctf_descriptor->mutex);
   /* Add CTF header */
   CTF_EVENT_WRITE_HEADER (id, event_mem);
-
-  for (pad_idx = 0; pad_idx < pad_num; ++pad_idx) {
-    /* Write bitrate */
-    CTF_EVENT_WRITE_INT64 (fps[pad_idx], event_mem);
-  }
+  /* Write element name */
+  CTF_EVENT_WRITE_STRING (elementname, event_mem);
+  /* Write bitrate */
+  CTF_EVENT_WRITE_INT64 (bps, event_mem);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem = mem + TCP_HEADER_SIZE;

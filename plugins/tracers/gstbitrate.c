@@ -60,23 +60,20 @@ typedef struct _GstBitrateHash GstBitrateHash;
 
 struct _GstBitrateHash
 {
-  const gchar *fullname;
+  gchar *fullname;
   guint64 bitrate;
 };
 
-static const gchar bitrate_metadata_event_header[] = "event {\n\
+static const gchar bitrate_metadata_event[] = "event {\n\
     name = bitrate;\n\
     id = %d;\n\
     stream_id = %d;\n\
-    fields := struct {\n";
-
-static const gchar bitrate_metadata_event_footer[] = "\
+    fields := struct {\n\
+        string pad;\n\
+        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _bps;\n\
     };\n\
 };\n\
 \n";
-
-static const gchar bitrate_metadata_event_field[] =
-    "      integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } %s;\n";
 
 static gboolean
 do_print_bitrate (GstPeriodicTracer * tracer)
@@ -85,15 +82,8 @@ do_print_bitrate (GstPeriodicTracer * tracer)
   GHashTableIter iter;
   gpointer key, value;
   GstBitrateHash *pad_table;
-  guint size;
-  guint64 *pad_counts;
-  guint32 pad_idx;
 
   self = GST_BITRATE_TRACER (tracer);
-
-  size = g_hash_table_size (self->bitrate_counters);
-  pad_counts = g_malloc (size * sizeof (guint64));
-  pad_idx = 0;
 
   /* Using the iterator functions to go through the Hash table and print the bitrate
      of every element stored */
@@ -102,15 +92,11 @@ do_print_bitrate (GstPeriodicTracer * tracer)
     pad_table = (GstBitrateHash *) value;
 
     gst_tracer_record_log (tr_bitrate, pad_table->fullname, pad_table->bitrate);
-
-    pad_counts[pad_idx] = pad_table->bitrate;
-    pad_idx++;
+    do_print_bitrate_event (BITRATE_EVENT_ID, pad_table->fullname,
+        pad_table->bitrate);
 
     pad_table->bitrate = 0;
   }
-  do_print_bitrate_event (BITRATE_EVENT_ID, size, pad_counts);
-
-  g_free (pad_counts);
 
   return TRUE;
 }
@@ -124,7 +110,7 @@ do_destroy_hashtable_value (gpointer data)
      it is needed to free the memory of the structure in every value */
   value = (GstBitrateHash *) data;
 
-  g_free ((gchar *) value->fullname);
+  g_free (value->fullname);
   g_free (value);
 }
 
@@ -264,34 +250,13 @@ gst_bitrate_tracer_init (GstBitrateTracer * self)
 static void
 create_metadata_event (GstPeriodicTracer * tracer)
 {
-  GstBitrateTracer *self;
-  GString *builder;
-  GHashTable *bitrate_counters;
-  GHashTableIter iter;
-  gpointer key, value;
-  gchar *cstring;
-
-  self = GST_BITRATE_TRACER (tracer);
-  bitrate_counters = self->bitrate_counters;
-
-  builder = g_string_new (NULL);
-
-  g_string_printf (builder, bitrate_metadata_event_header, BITRATE_EVENT_ID, 0);
-
-  g_hash_table_iter_init (&iter, bitrate_counters);
-  while (g_hash_table_iter_next (&iter, &key, &value)) {
-    g_string_append_printf (builder, bitrate_metadata_event_field,
-        ((GstBitrateHash *) value)->fullname);
-  }
-
-  /* Add event footer */
-  g_string_append (builder, bitrate_metadata_event_footer);
-
-  cstring = g_string_free (builder, FALSE);
+  gchar *metadata_event;
 
   /* Add event in metadata file */
-  add_metadata_event_struct (cstring);
-  g_free (cstring);
+  metadata_event =
+      g_strdup_printf (bitrate_metadata_event, BITRATE_EVENT_ID, 0);
+  add_metadata_event_struct (metadata_event);
+  g_free (metadata_event);
 }
 
 static gchar *
