@@ -75,19 +75,16 @@ struct _GstFramerateHash
   guint counter;
 };
 
-static const gchar framerate_metadata_event_header[] = "event {\n\
+static const gchar framerate_metadata_event[] = "event {\n\
     name = framerate;\n\
     id = %d;\n\
     stream_id = %d;\n\
-    fields := struct {\n";
-
-static const gchar framerate_metadata_event_footer[] = "\
+    fields := struct {\n\
+        string pad;\n\
+        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _fps;\n\
     };\n\
 };\n\
 \n";
-
-static const gchar framerate_metadata_event_field[] =
-    "      integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } %s;\n";
 
 static void
 gst_framerate_tracer_class_init (GstFramerateTracerClass * klass)
@@ -156,35 +153,13 @@ reset_counters (GstPeriodicTracer * tracer)
 static void
 create_metadata_event (GstPeriodicTracer * tracer)
 {
-  GstFramerateTracer *self;
-  GString *builder;
-  GHashTable *frame_counters;
-  GHashTableIter iter;
-  gpointer key, value;
-  gchar *cstring;
+  gchar *metadata_event;
 
-
-  self = GST_FRAMERATE_TRACER (tracer);
-  frame_counters = self->frame_counters;
-
-  builder = g_string_new (NULL);
-
-  g_string_printf (builder, framerate_metadata_event_header, FPS_EVENT_ID, 0);
-
-  g_hash_table_iter_init (&iter, frame_counters);
-  while (g_hash_table_iter_next (&iter, &key, &value)) {
-    g_string_append_printf (builder, framerate_metadata_event_field,
-        ((GstFramerateHash *) value)->fullname);
-  }
-
-  /* Add event footer */
-  g_string_append (builder, framerate_metadata_event_footer);
-
-  cstring = g_string_free (builder, FALSE);
+  metadata_event = g_strdup_printf (framerate_metadata_event, FPS_EVENT_ID, 0);
 
   /* Add event in metadata file */
-  add_metadata_event_struct (cstring);
-  g_free (cstring);
+  add_metadata_event_struct (metadata_event);
+  g_free (metadata_event);
 }
 
 static gboolean
@@ -194,15 +169,8 @@ print_framerate (GstPeriodicTracer * tracer)
   GHashTableIter iter;
   gpointer key, value;
   GstFramerateHash *pad_table;
-  guint size;
-  guint64 *pad_counts;
-  guint32 pad_idx;
 
   self = GST_FRAMERATE_TRACER (tracer);
-
-  size = g_hash_table_size (self->frame_counters);
-  pad_counts = g_malloc (size * sizeof (guint64));
-  pad_idx = 0;
 
   /* Lock the tracer to make sure no new pad is added while we are logging */
   GST_OBJECT_LOCK (self);
@@ -215,16 +183,12 @@ print_framerate (GstPeriodicTracer * tracer)
 
     gst_tracer_record_log (tr_framerate, pad_table->fullname,
         pad_table->counter);
-
-    pad_counts[pad_idx] = pad_table->counter;
-    pad_idx++;
-
+    do_print_framerate_event (FPS_EVENT_ID, pad_table->fullname,
+        pad_table->counter);
     pad_table->counter = 0;
   }
 
   GST_OBJECT_UNLOCK (self);
-  do_print_framerate_event (FPS_EVENT_ID, size, pad_counts);
-  g_free (pad_counts);
 
   return TRUE;
 }
