@@ -45,6 +45,8 @@ struct _GstDotRenderThread
 
 static void gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags);
 
+#define MAX_SUFFIX_LEN (32)
+
 void
 gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags)
 {
@@ -52,6 +54,8 @@ gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags)
   gchar *full_trace_dir = NULL;
   gchar *full_file_name = NULL;
   FILE *out;
+  gchar time_suffix[MAX_SUFFIX_LEN];
+  time_t now = time (NULL);
 
   trace_dir = get_ctf_path_name ();
 
@@ -70,8 +74,10 @@ gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags)
         full_trace_dir);
   }
 
-  full_file_name = g_strdup_printf ("%s" G_DIR_SEPARATOR_S "pipeline.dot",
-      full_trace_dir);
+  strftime (time_suffix, MAX_SUFFIX_LEN, "%F_%T", localtime (&now));
+
+  full_file_name = g_strdup_printf ("%s" G_DIR_SEPARATOR_S "%s_%s.dot",
+      full_trace_dir, GST_OBJECT_NAME (bin), time_suffix);
 
   out = g_fopen (full_file_name, "w");
   if (out != NULL) {
