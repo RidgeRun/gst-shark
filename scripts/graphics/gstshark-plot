@@ -40,8 +40,8 @@ then
 fi
 
 processing_tracer_list=("proctime" "interlatency" "framerate" "scheduling" "cpuusage")
-parser_group_list1=("proctime" "interlatency" "scheduling")
-parser_group_list2=("cpuusage" "framerate")
+parser_group_list1=("proctime" "interlatency" "scheduling" "framerate")
+parser_group_list2=("cpuusage")
 
 #
 rm -f tracer.pdf

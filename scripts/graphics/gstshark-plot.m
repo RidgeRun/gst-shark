@@ -26,7 +26,7 @@ for i = 1:nargin
             end
         case 'framerate'
             disp('Processing framerate...')
-            framerate_process
+            plot_framerate
         case 'proctime'
             disp('Processing proctime...')
             plot_proctime

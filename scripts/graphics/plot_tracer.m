@@ -79,7 +79,7 @@ function plot_tracer(tracer,savefig,format,legend_location)
         timestamp_max = max(max(tracer.framerate.timestamp_mat));
 
         figure('Name','Frame rate')
-        plot(tracer.framerate.timestamp_mat,tracer.framerate.fps_mat,'linewidth',LINEWIDTH)
+        plot(tracer.framerate.timestamp_mat',tracer.framerate.fps_mat','linewidth',LINEWIDTH)
         title('Frame rate','fontsize',FONTSIZE)
         xlabel('time (seconds)','fontsize',FONTSIZE)
         ylabel('Frame per second','fontsize',FONTSIZE)
