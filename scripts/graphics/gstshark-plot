@@ -39,8 +39,8 @@ then
     exit
 fi
 
-processing_tracer_list=("proctime" "interlatency" "framerate" "scheduling" "cpuusage")
-parser_group_list1=("proctime" "interlatency" "scheduling" "framerate")
+processing_tracer_list=("proctime" "interlatency" "framerate" "scheduling" "cpuusage" "bitrate")
+parser_group_list1=("proctime" "interlatency" "scheduling" "framerate" "bitrate")
 parser_group_list2=("cpuusage")
 
 #

@@ -36,6 +36,9 @@ for i = 1:nargin
         case 'scheduling'
             disp('Processing scheduling...')
             plot_scheduling
+        case 'bitrate'
+            disp('Processing bitrate...')
+            plot_bitrate
         case '--savefig'
             GSTSHARK_SAVEFIG = TRUE;
         case 'png'

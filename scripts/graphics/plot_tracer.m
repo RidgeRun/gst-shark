@@ -200,6 +200,39 @@ function plot_tracer(tracer,savefig,format,legend_location)
             plot_legend(tracer.scheduling.pad_name_list,'Schedule plot legend',savefig,'schedule_legend',format)
         end
     end
+
+    # Plot Bitrate
+    if (1 == isfield(tracer,'bitrate'))
+        # Calculate the greatest time value
+        timestamp_max = max(max(tracer.bitrate.timestamp_mat));
+
+        figure('Name','Bitrate')
+        plot(tracer.bitrate.timestamp_mat',tracer.bitrate.bitrate_mat','linewidth',LINEWIDTH)
+        title('Bitrate','fontsize',FONTSIZE)
+        xlabel('time (seconds)','fontsize',FONTSIZE)
+        ylabel('time (nanoseconds)','fontsize',FONTSIZE)
+        xlim([0,timestamp_max])
+        if (0 == strcmp(legend_location,'extern'))
+            legend(str2latex(tracer.bitrate.pad_name_list),'Location',legend_location)
+        end
+        # Save figure
+        if (TRUE == savefig)
+            disp('Save bitrate figure...')
+            switch format
+                case 'pdf'
+                    print tracer -dpdf -append
+                case 'png'
+                    print('bitrate','-dpng');
+                otherwise
+                    printf('octave: WARN: %s is not supported',format)
+            end
+        end
+        # Create a new figure if the legend location is extern
+        if (1 == strcmp(legend_location,'extern'))
+            plot_legend(tracer.bitrate.pad_name_list,'Bitrate plot legend',savefig,'bitrate_legend',format)
+        end
+    end
+
     
     if ((1 == isfield(tracer,'cpuusage')) && (1 == isfield(tracer,'framerate')))
         # Create legend name list 
