@@ -39,6 +39,9 @@ for i = 1:nargin
         case 'bitrate'
             disp('Processing bitrate...')
             plot_bitrate
+        case 'queuelevel'
+            disp('Processing queuelevel...')
+            plot_queuelevel
         case '--savefig'
             GSTSHARK_SAVEFIG = TRUE;
         case 'png'

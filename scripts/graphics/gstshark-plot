@@ -39,9 +39,10 @@ then
     exit
 fi
 
-processing_tracer_list=("proctime" "interlatency" "framerate" "scheduling" "cpuusage" "bitrate")
+processing_tracer_list=("proctime" "interlatency" "framerate" "scheduling" "cpuusage" "bitrate" "queuelevel")
 parser_group_list1=("proctime" "interlatency" "scheduling" "framerate" "bitrate")
 parser_group_list2=("cpuusage")
+parser_queuelevel=("queuelevel")
 
 #
 rm -f tracer.pdf
@@ -57,6 +58,18 @@ do
     grep -w ${tracer} datastream.log > ${tracer}.log
     # Get data columns
     awk '{print $1,$10,$13,$16}' ${tracer}.log > ${tracer}.mat
+    # Create plots
+done
+
+# Loop through the tracer list 1
+for tracer in "${parser_queuelevel[@]}"
+do
+    echo "Loading ${tracer} events..."
+    # Split the events in files
+    grep -w ${tracer} datastream.log > ${tracer}.log
+    # Get data columns
+    awk '{print $1,$10,$19}' ${tracer}.log > ${tracer}.tmp
+    awk '{gsub(",",""); print}' ${tracer}.tmp > ${tracer}.mat
     # Create plots
 done
 
@@ -151,6 +164,11 @@ rm -f datastream.log
 for tracer in "${parser_group_list1[@]}"
 do
     rm ${tracer}.log ${tracer}.mat -f
+done
+
+for tracer in "${parser_queuelevel[@]}"
+do
+    rm ${tracer}.log ${tracer}.tmp ${tracer}.mat -f
 done
 
 for tracer in "${parser_group_list2[@]}"

@@ -233,6 +233,38 @@ function plot_tracer(tracer,savefig,format,legend_location)
         end
     end
 
+    # Plot Queuelevel
+    if (1 == isfield(tracer,'queuelevel'))
+        # Calculate the greatest time value
+        timestamp_max = max(max(tracer.queuelevel.timestamp_mat));
+
+        figure('Name','Queuelevel')
+        plot(tracer.queuelevel.timestamp_mat',tracer.queuelevel.size_buffers_mat','linewidth',LINEWIDTH)
+        title('Queuelevel','fontsize',FONTSIZE)
+        xlabel('time (seconds)','fontsize',FONTSIZE)
+        ylabel('Number of Buffers','fontsize',FONTSIZE)
+        xlim([0,timestamp_max])
+        if (0 == strcmp(legend_location,'extern'))
+            legend(str2latex(tracer.queuelevel.element_name_list),'Location',legend_location)
+        end
+        # Save figure
+        if (TRUE == savefig)
+            disp('Save queuelevel figure...')
+            switch format
+                case 'pdf'
+                    print tracer -dpdf -append
+                case 'png'
+                    print('queuelevel','-dpng');
+                otherwise
+                    printf('octave: WARN: %s is not supported',format)
+            end
+        end
+        # Create a new figure if the legend location is extern
+        if (1 == strcmp(legend_location,'extern'))
+            plot_legend(tracer.queuelevel.element_name_list,'Queuelevel plot legend',savefig,'queuelevel_legend',format)
+        end
+    end
+
     
     if ((1 == isfield(tracer,'cpuusage')) && (1 == isfield(tracer,'framerate')))
         # Create legend name list 
