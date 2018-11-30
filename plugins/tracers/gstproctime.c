@@ -52,7 +52,7 @@ G_DEFINE_TYPE_WITH_CODE (GstProcTimeTracer, gst_proc_time_tracer,
 static GstTracerRecord *tr_proc_time;
 
 static const gchar proc_time_metadata_event[] = "event {\n\
-    name = proc_time;\n\
+    name = proctime;\n\
     id = %d;\n\
     stream_id = %d;\n\
     fields := struct {\n\
@@ -139,7 +139,7 @@ gst_proc_time_tracer_class_init (GstProcTimeTracerClass * klass)
 
   gobject_class->finalize = gst_proc_time_tracer_finalize;
 
-  tr_proc_time = gst_tracer_record_new ("proc_time.class",
+  tr_proc_time = gst_tracer_record_new ("proctime.class",
       "element", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
           "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
