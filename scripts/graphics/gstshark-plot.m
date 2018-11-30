@@ -26,7 +26,7 @@ for i = 1:nargin
             end
         case 'framerate'
             disp('Processing framerate...')
-            framerate_process
+            plot_framerate
         case 'proctime'
             disp('Processing proctime...')
             plot_proctime
@@ -36,6 +36,12 @@ for i = 1:nargin
         case 'scheduling'
             disp('Processing scheduling...')
             plot_scheduling
+        case 'bitrate'
+            disp('Processing bitrate...')
+            plot_bitrate
+        case 'queuelevel'
+            disp('Processing queuelevel...')
+            plot_queuelevel
         case '--savefig'
             GSTSHARK_SAVEFIG = TRUE;
         case 'png'
