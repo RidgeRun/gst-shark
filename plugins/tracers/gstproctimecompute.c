@@ -195,7 +195,17 @@ gst_proctime_proc_time (GstProcTime * proc_time, GstClockTime * time,
     element = g_list_nth_data (proc_time->elements, elem_idx);
     if (element->src_pad == src_pad) {
       stop_time = ts;
-      *time = stop_time - element->start_time;
+      if (stop_time > element->start_time) {
+        *time = stop_time - element->start_time;
+      } else {
+        /* FIXME: For elements storing buffers (e.g queues) there are
+           timestamps mismatches sometimes, because more than 1 buffer
+           is pushed before getting 1 at the output */
+        GST_WARNING_OBJECT (element->src_pad,
+            "Timestamps mismatch, this should not happen");
+        found = FALSE;
+        goto exit;
+      }
       found = TRUE;
     }
   }
