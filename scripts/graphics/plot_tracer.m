@@ -209,7 +209,7 @@ function plot_tracer(tracer,savefig,format,legend_location)
         timestamp_max = max(max(max(tracer.framerate.timestamp_mat)),max(tracer.cpuusage.timestamp_mat(:,1)));
 
         figure('Name','Frame rate and CPU usage')
-        [hAx,hLine1,hLine2] = plotyy(tracer.framerate.timestamp_mat,tracer.framerate.fps_mat,tracer.cpuusage.timestamp_mat(:,1),tracer.cpuusage.cpu_mat(:,1));
+        [hAx,hLine1,hLine2] = plotyy(tracer.framerate.timestamp_mat',tracer.framerate.fps_mat',tracer.cpuusage.timestamp_mat(:,1),tracer.cpuusage.cpu_mat(:,1));
          if (0 == strcmp(legend_location,'extern'))
             legend(str2latex(legend_list),'Location',legend_location)
         end
