@@ -226,8 +226,9 @@ gst_bitrate_tracer_class_init (GstBitrateTracerClass * klass)
           "type", G_TYPE_GTYPE, G_TYPE_UINT64,
           "description", G_TYPE_STRING, "Bitrate",
           "flags", GST_TYPE_TRACER_VALUE_FLAGS,
-          GST_TRACER_VALUE_FLAGS_AGGREGATED, "min", G_TYPE_UINT64, 0, "max",
-          G_TYPE_UINT64, G_MAXUINT64, NULL), NULL);
+          GST_TRACER_VALUE_FLAGS_AGGREGATED, "min", G_TYPE_UINT64,
+          G_GUINT64_CONSTANT (0), "max", G_TYPE_UINT64, G_MAXUINT64, NULL),
+      NULL);
 }
 
 static void

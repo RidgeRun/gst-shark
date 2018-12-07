@@ -81,7 +81,7 @@ gst_buffer_buffer_pre (GObject * self, GstClockTime ts, GstPad * pad,
   gchar *sduration;
   guint64 offset;
   guint64 offset_end;
-  gsize size;
+  guint64 size;
   GstBufferFlags flags;
   GValue vflags = G_VALUE_INIT;
   gchar *sflags;
@@ -164,14 +164,15 @@ gst_buffer_tracer_class_init (GstBufferTracerClass * klass)
           "description", G_TYPE_STRING, "Duration", NULL), "offset",
       GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE,
           G_TYPE_UINT64, "description", G_TYPE_STRING, "Offset", "min",
-          G_TYPE_UINT64, 0, "max", G_TYPE_UINT64, G_MAXUINT64, NULL),
-      "offset_end", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type",
-          G_TYPE_GTYPE, G_TYPE_UINT64, "description", G_TYPE_STRING,
-          "Offset End", "min", G_TYPE_UINT64, 0, "max", G_TYPE_UINT64,
-          G_MAXUINT64, NULL), "size", GST_TYPE_STRUCTURE,
+          G_TYPE_UINT64, G_GUINT64_CONSTANT (0), "max", G_TYPE_UINT64,
+          G_MAXUINT64, NULL), "offset_end", GST_TYPE_STRUCTURE,
       gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_UINT64,
-          "description", G_TYPE_STRING, "Data Size", "min", G_TYPE_UINT64, 0,
-          "max", G_TYPE_UINT64, G_MAXUINT64, NULL), "flags", GST_TYPE_STRUCTURE,
+          "description", G_TYPE_STRING, "Offset End", "min", G_TYPE_UINT64,
+          G_GUINT64_CONSTANT (0), "max", G_TYPE_UINT64, G_MAXUINT64, NULL),
+      "size", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type",
+          G_TYPE_GTYPE, G_TYPE_UINT64, "description", G_TYPE_STRING,
+          "Data Size", "min", G_TYPE_UINT64, G_GUINT64_CONSTANT (0), "max",
+          G_TYPE_UINT64, G_MAXUINT64, NULL), "flags", GST_TYPE_STRUCTURE,
       gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_STRING,
           "description", G_TYPE_STRING, "Flags", NULL), "refcount",
       GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE,
