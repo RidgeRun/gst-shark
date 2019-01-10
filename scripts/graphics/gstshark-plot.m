@@ -4,6 +4,7 @@ GSTSHARK_SAVEFIG = 0;
 GSTSHARK_SAVEFIG_FORMAT = 'pdf';
 GSTSHARK_LEGEND = 'northeast';
 TRUE = 1;
+graphics_toolkit("gnuplot");
 
 arg_list = argv ();
 
