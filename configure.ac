@@ -217,6 +217,11 @@ AG_GST_CHECK_GST([$GST_REQ_MAJMIN], [$GST_REQ_MINVER], [yes])
 AG_GST_CHECK_GST_BASE([$GST_REQ_MAJMIN], [$GST_REQ_MINVER], [yes])
 AG_GST_CHECK_GST_CHECK([$GST_REQ_MAJMIN], [$GST_REQ_MINVER], [yes])
 
+dnl Tracers require GStreamer debug support
+AG_GST_CHECK_GST_DEBUG_DISABLED([
+  AC_MSG_ERROR([Tracers require GStreamer debug support. Rebuild GStreamer core with --enable-gst-debug.])
+])
+
 GST_REQ_STABLE=1.8.1
 PKG_CHECK_MODULES(GSTREAMER, [
   gstreamer-1.0 >= $GST_REQ_STABLE
