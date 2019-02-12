@@ -44,22 +44,10 @@ struct _GstGraphicTracer
 G_DEFINE_TYPE_WITH_CODE (GstGraphicTracer, gst_graphic_tracer,
     GST_SHARK_TYPE_TRACER, _do_init);
 
-static void log_graphic (GstDebugCategory * cat, const gchar * fmt, ...);
 static void do_element_change_state_post (GstGraphicTracer * self, guint64 ts,
     GstElement * element, GstStateChange transition,
     GstStateChangeReturn result);
 static void gst_graphic_tracer_finalize (GObject * obj);
-
-static void
-log_graphic (GstDebugCategory * cat, const gchar * fmt, ...)
-{
-  va_list var_args;
-
-  va_start (var_args, fmt);
-  gst_debug_log_valist (cat, GST_LEVEL_TRACE, "", "", 0, NULL, fmt, var_args);
-  va_end (var_args);
-
-}
 
 static void
 do_element_change_state_post (GstGraphicTracer * self, guint64 ts,
@@ -72,7 +60,7 @@ do_element_change_state_post (GstGraphicTracer * self, guint64 ts,
   if (GST_IS_PIPELINE (element)
       && (transition == GST_STATE_CHANGE_PAUSED_TO_PLAYING)) {
     /* Logging the change of state in which the pipeline graphic is being done */
-    log_graphic (GST_CAT_STATES,
+    GST_CAT_TRACE (GST_CAT_STATES,
         "%" GST_TIME_FORMAT ", element=%" GST_PTR_FORMAT ", change=%d, res=%d",
         GST_TIME_ARGS (ts), element, (gint) transition, (gint) result);
 
