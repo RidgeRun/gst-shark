@@ -170,6 +170,16 @@
    </Version>
   </release>
 
+  <release>
+   <Version>
+    <revision>0.6.0</revision>
+    <branch>release/v0.6.0</branch>
+    <name></name>
+    <created>2019-02-11</created>
+    <file-release rdf:resource="" />
+   </Version>
+  </release>
+
   <maintainer>
     <foaf:Person>
       <foaf:name>Michael Gruner</foaf:name>
