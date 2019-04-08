@@ -180,6 +180,16 @@
    </Version>
   </release>
 
+  <release>
+   <Version>
+    <revision>0.6.1</revision>
+    <branch>hotfix/fix-bitrate-tracer-definition</branch>
+    <name></name>
+    <created>2019-04-05</created>
+    <file-release rdf:resource="" />
+   </Version>
+  </release>
+
   <maintainer>
     <foaf:Person>
       <foaf:name>Michael Gruner</foaf:name>
