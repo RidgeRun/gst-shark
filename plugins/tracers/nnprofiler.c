@@ -31,7 +31,7 @@ update_proctime_event (gchar * elementname, guint64 time)
 }
 
 void 
-update_cpuusage_event (gchar * elementname, guint64 fps) 
+update_framerate_event (gchar * elementname, guint64 fps) 
 {
 	//TODO: Update output with framerate
 	// input: elementname (name of the element)

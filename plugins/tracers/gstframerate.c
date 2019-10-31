@@ -29,6 +29,7 @@
 
 #include "gstframerate.h"
 #include "gstctf.h"
+#include "nnprofiler.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_framerate_debug);
 #define GST_CAT_DEFAULT gst_framerate_debug
@@ -181,10 +182,15 @@ print_framerate (GstPeriodicTracer * tracer)
   while (g_hash_table_iter_next (&iter, &key, &value)) {
     pad_table = (GstFramerateHash *) value;
 
-    gst_tracer_record_log (tr_framerate, pad_table->fullname,
-        pad_table->counter);
-    do_print_framerate_event (FPS_EVENT_ID, pad_table->fullname,
-        pad_table->counter);
+		if (!g_getenv("NNPROFILER_ENABLED")) {
+		  gst_tracer_record_log (tr_framerate, pad_table->fullname,
+				  pad_table->counter);
+      do_print_framerate_event (FPS_EVENT_ID, pad_table->fullname,
+          pad_table->counter);
+		}
+		else {
+		  update_framerate_event(pad_table->fullname, pad_table->counter);
+		}	
     pad_table->counter = 0;
   }
 

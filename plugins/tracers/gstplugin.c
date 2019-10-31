@@ -35,6 +35,7 @@
 #include "gstbitrate.h"
 #include "gstbuffer.h"
 #include "gstctf.h"
+#include "nnprofiler.h"
 
 static gboolean
 plugin_init (GstPlugin * plugin)
@@ -76,6 +77,9 @@ plugin_init (GstPlugin * plugin)
   }
   if (!gst_ctf_init ()) {
     return FALSE;
+  }
+  if (!gst_nnprofiler_init()) {
+	  return FALSE;
   }
 
   return TRUE;
