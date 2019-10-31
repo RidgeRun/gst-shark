@@ -20,6 +20,23 @@
 int ncurses_row_current=0;
 int ncurses_col_current=0;
 
+float ncurses_cpuload[NUMBER_OF_CPU];
+
+struct ncurses_NN {
+    bool used;
+    char name[20];
+    unsigned long proctime;
+    unsigned long framerate;
+
+}ncurses_NN[NUMBER_OF_NN];
+
+struct ncurses_NN_edge {
+    bool used; 
+    char sname[20];
+    char dname[20];
+    unsigned long latency;
+}ncurses_NN_edge[NUMBER_OF_EDGE];
+
 int gst_nnprofiler_init(void);
 void *curses_loop(void* arg);
 
@@ -31,11 +48,11 @@ void milsleep(int ms) {
 }
 
 void ncurses_row_shift(int i) {
-    ncurses_row_current = row_current + i;
+    ncurses_row_current = ncurses_row_current + i;
     return;
 }
 void ncurses_col_shift(int i) {
-    ncurses_col_current = col_current + i;
+    ncurses_col_current = ncurses_col_current + i;
     return;
 }
 
@@ -49,98 +66,80 @@ void ncurses_initialize() {
 // int main() {
 // 	gst_nnprofiler_init();
 // }
-float ncurses_cpuload[NUMBER_OF_CPU]
-
-struct ncurses_NN {
-	bool used;
-	char name[20];
-	unsigned long proctime;
-	unsigned long framerate;
-
-}ncurses_NN[NUMBER_OF_NN];
-
-struct ncurses_NN_edge {
-	bool used; 
-	char sname[20];
-	char dname[20];
-	unsigned long latency;
-}ncurses_NN_edge[NUMBER_OF_EDGE];
-
 void* curses_loop(void *arg){
-	ncurses_initialize();
+    ncurses_initialize();
 
-	int key_in;
-	int iter = 0;
-	while(1) {
-		ncurses_row_current = 0;
-		ncurses_col_current = 0;
-		timeout(TIMESCALE);
-		key_in = getch();
-		if (key_in == 'q' || key_in == 'Q' || iter >= 1000/TIMESCALE * 60 * RUNTIME_MINUTE) break;
-		clear();
+    int key_in;
+    int iter = 0;
+    while(1) {
+        ncurses_row_current = 0;
+        ncurses_col_current = 0;
+        timeout(TIMESCALE);
+        key_in = getch();
+        if (key_in == 'q' || key_in == 'Q' || iter >= 1000/TIMESCALE * 60 * RUNTIME_MINUTE) break;
+        clear();
 
-		// draw
-		mvprintw(ncurses_row_current++, ncurses_col_current, "Press 'q' or 'Q' to quit");
-		mvprintw(ncurses_row_current++, ncurses_col_current, "--------------------------------------------------------------------");
-		//CPU Usage
-		mvprintw(ncurses_row_current++, ncurses_col_current, "CPU Usage : ");
-		mvprintw(ncurses_row_current, ncurses_col_current, "CPU                |");
-		ncurses_col_current += COL_SCALE;
-		int i=0;
-		while(i<NUMBER_OF_CPU && ncurses_col_current<COL_MAX) {
-			ncurses_col_current += COL_SCALE;
-			mvprintw(ncurses_row_current, ncurses_col_current, "%20d|", i++);
-			mvprintw(ncurses_row_current+1, ncurses_col_current, "%19lu%%|", ncurses_cpuload[i]);
-		}
-		ncurses_row_current += 2;
-		ncurses_col_current = 0;
-		mvprintw(ncurses_row_current++, ncurses_col_current, "--------------------------------------------------------------------");
+        // draw
+        mvprintw(ncurses_row_current++, ncurses_col_current, "Press 'q' or 'Q' to quit");
+        mvprintw(ncurses_row_current++, ncurses_col_current, "--------------------------------------------------------------------");
+        //CPU Usage
+        mvprintw(ncurses_row_current++, ncurses_col_current, "CPU Usage : ");
+        mvprintw(ncurses_row_current, ncurses_col_current, "CPU                |");
+        mvprintw(ncurses_row_current+1, ncurses_col_current, "CPU Usage          |");
+        int i=0;
+        while(i<NUMBER_OF_CPU && ncurses_col_current<COL_MAX) {
+            ncurses_col_current += COL_SCALE;
+            mvprintw(ncurses_row_current, ncurses_col_current, "%20d|", i++);
+            mvprintw(ncurses_row_current+1, ncurses_col_current, "%19lu%%|", ncurses_cpuload[i]);
+        }
+        ncurses_row_current += 2;
+        ncurses_col_current = 0;
+        mvprintw(ncurses_row_current++, ncurses_col_current, "--------------------------------------------------------------------");
 
-		//Proctime&Framerate
-		mvprintw(ncurses_row_current++, ncurses_col_current, "Proctime&Framerate : ");
-		mvprintw(ncurses_row_current, ncurses_col_current, "NeuralNetwork      |");
-		mvprintw(ncurses_row_current+1, ncurses_col_current, "Proctime           |");
-		mvprintw(ncurses_row_current+2, ncurses_col_current, "Framerate          |");
-		ncurses_col_current += COL_SCALE;
-		int i=0;
-		while(i<NUMBER_OF_NN && ncurses_col_current<COL_MAX) {
-			ncurses_col_current += COL_SCALE;
-			if(ncurses_NN[i].used) {
-				mvprintw(ncurses_row_current, ncurses_col_current, "%20s|", ncurses_NN[i].name);
-				mvprintw(ncurses_row_current+1, ncurses_col_current, "%18lums|", ncurses_NN[i].proctime);
-				mvprintw(ncurses_row_current+2, ncurses_col_current, "%17lufps|", nncurses_NN[i].framerate);
-			}
-		}
-		ncurses_row_current += 3;
-		ncurses_col_current = 0;
-		mvprintw(ncurses_row_current++, ncurses_col_current, "--------------------------------------------------------------------");
-		
-		//Interlatency
-		mvprintw(ncurses_row_current++, ncurses_col_current, "Interlatency : ");
-		mvprintw(ncurses_row_current, ncurses_col_current, "Source             |");
-		mvprintw(ncurses_row_current+1, ncurses_col_current, "Destination        |");
-		mvprintw(ncurses_row_current+2, ncurses_col_current, "latency            |");
-		ncurses_col_current += COL_SCALE;
-		int i=0;
-		while(i<NUMBER_OF_NN_EDGE && ncurses_col_current<COL_MAX) {
-			ncurses_col_current += COL_SCALE;
-			if(ncurses_NN[i].used) {
-				mvprintw(ncurses_row_current, ncurses_col_current, "%20s|", ncurses_NN_edge[i].sname);
-				mvprintw(ncurses_row_current+1, ncurses_col_current, "%18lums|", ncurses_NN_edge[i].dname);
-				mvprintw(ncurses_row_current+2, ncurses_col_current, "%17lufps|", nncurses_NN_edge[i].latency);
-			}
-		}
-		ncurses_row_current += 3;
-		ncurses_col_current = 0;
-		mvprintw(ncurses_row_current++, ncurses_col_current, "--------------------------------------------------------------------");
+        //Proctime&Framerate
+        mvprintw(ncurses_row_current++, ncurses_col_current, "Proctime&Framerate : ");
+        mvprintw(ncurses_row_current, ncurses_col_current, "NeuralNetwork      |");
+        mvprintw(ncurses_row_current+1, ncurses_col_current, "Proctime           |");
+        mvprintw(ncurses_row_current+2, ncurses_col_current, "Framerate          |");
+        i=0;
+        while(i<NUMBER_OF_NN && ncurses_col_current<COL_MAX) {
+            ncurses_col_current += COL_SCALE;
+            if(ncurses_NN[i].used) {
+                mvprintw(ncurses_row_current, ncurses_col_current, "%20s|", ncurses_NN[i].name);
+                mvprintw(ncurses_row_current+1, ncurses_col_current, "%18lums|", ncurses_NN[i].proctime);
+                mvprintw(ncurses_row_current+2, ncurses_col_current, "%17lufps|", ncurses_NN[i].framerate);
+            }
+            i++;
+        }
+        ncurses_row_current += 3;
+        ncurses_col_current = 0;
+        mvprintw(ncurses_row_current++, ncurses_col_current, "--------------------------------------------------------------------");
+        
+        //Interlatency
+        mvprintw(ncurses_row_current++, ncurses_col_current, "Interlatency : ");
+        mvprintw(ncurses_row_current, ncurses_col_current, "Source             |");
+        mvprintw(ncurses_row_current+1, ncurses_col_current, "Destination        |");
+        mvprintw(ncurses_row_current+2, ncurses_col_current, "latency            |");
+        i=0;
+        while(i<NUMBER_OF_EDGE && ncurses_col_current<COL_MAX) {
+            ncurses_col_current += COL_SCALE;
+            if(ncurses_NN[i].used) {
+                mvprintw(ncurses_row_current, ncurses_col_current, "%20s|", ncurses_NN_edge[i].sname);
+                mvprintw(ncurses_row_current+1, ncurses_col_current, "%20s|", ncurses_NN_edge[i].dname);
+                mvprintw(ncurses_row_current+2, ncurses_col_current, "%18lums|", ncurses_NN_edge[i].latency);
+            }
+            i++;
+        }
+        ncurses_row_current += 3;
+        ncurses_col_current = 0;
+        mvprintw(ncurses_row_current++, ncurses_col_current, "--------------------------------------------------------------------");
 
-		iter++;
-		refresh();
-		milsleep(TIMESCALE);
-	}
+        iter++;
+        refresh();
+        milsleep(TIMESCALE);
+    }
 
-	endwin();
-	return;
+    endwin();
 }
 
 
