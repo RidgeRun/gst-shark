@@ -121,7 +121,7 @@ void* curses_loop(void *arg){
             while(i<max_element && ncurses_col_current<COL_MAX && ncurses_NN[i].used) {
                 ncurses_col_current += COL_SCALE;
                 mvprintw(ncurses_row_current+1, ncurses_col_current, "%20s|", ncurses_NN[i].name);
-                mvprintw(ncurses_row_current+2, ncurses_col_current, "%18lums|", ncurses_NN[i].proctime);
+                mvprintw(ncurses_row_current+2, ncurses_col_current, "%18luns|", ncurses_NN[i].proctime);
                 mvprintw(ncurses_row_current+3, ncurses_col_current, "%17lufps|", ncurses_NN[i].framerate);
                 i++;
             }  
