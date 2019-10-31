@@ -27,6 +27,7 @@
 #include "gstproctimecompute.h"
 #include "gstproctime.h"
 #include "gstctf.h"
+#include "nnprofiler.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_proc_time_debug);
 #define GST_CAT_DEFAULT gst_proc_time_debug
@@ -94,9 +95,13 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   if (should_log) {
     time_string = g_strdup_printf ("%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
-    gst_tracer_record_log (tr_proc_time, name, time_string);
-
-    do_print_proctime_event (PROCTIME_EVENT_ID, name, time);
+		if(!g_getenv("NNPROFILER_ENABLED")) {
+		  gst_tracer_record_log (tr_proc_time, name, time_string);
+      do_print_proctime_event (PROCTIME_EVENT_ID, name, time);
+		}
+		else {
+		  update_proctime_event(name, time);
+		}
 
     g_free (time_string);
   }
