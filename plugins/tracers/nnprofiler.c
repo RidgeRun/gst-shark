@@ -37,7 +37,6 @@ struct ncurses_NN_edge {
     unsigned long latency;
 }ncurses_NN_edge[NUMBER_OF_EDGE];
 
-int gst_nnprofiler_init(void);
 void *curses_loop(void* arg);
 
 void milsleep(int ms) {
@@ -56,7 +55,7 @@ void ncurses_col_shift(int i) {
     return;
 }
 
-void ncurses_initialize() {
+void ncurses_initialize(void) {
 	initscr();
 	raw();
 	keypad(stdscr, TRUE);
@@ -205,7 +204,7 @@ void
 update_proctime_event (gchar * elementname, guint64 time) 
 {
 	for(int i=0; i<NUMBER_OF_NN; i++) {
-		if(strcmp(ncurses_NN[i], (char*)elementname)) {
+		if(strcmp(ncurses_NN[i].name, (char*)elementname)) {
 			ncurses_NN[i].used = true;
 			ncurses_NN[i].proctime = (unsigned long)time;
 			break;
@@ -220,7 +219,7 @@ void
 update_framerate_event (gchar * elementname, guint64 fps) 
 {
 	for(int i=0; i<NUMBER_OF_NN; i++) {
-		if(strcmp(ncurses_NN[i], (char*)elementname)) {
+		if(strcmp(ncurses_NN[i].name, (char*)elementname)) {
 			ncurses_NN[i].used = true;
 			ncurses_NN[i].framerate = (unsigned long)fps;
 			break;
@@ -239,8 +238,8 @@ update_interlatency_event (gchar * originpad,
 	// input: originpad (name of the pad buffer started)
 	//        destinationpad (name of the pad buffer arrived)
 	//        time (interlatency between two pads)
-	for(int i=0; i<NUMBER_OF_NN_EDGE; i++) {
-		if(strcmp(ncurses_NN_edge.sname, (char*)originpad) && strcmp(ncurese_NN_edge.dname, (char*)destinationpad) ) {
+	for(int i=0; i<NUMBER_OF_EDGE; i++) {
+		if(strcmp(ncurses_NN_edge[i].sname, (char*)originpad) && strcmp(ncurses_NN_edge[i].dname, (char*)destinationpad) ) {
 			ncurses_NN_edge[i].used = true;
 			ncurses_NN_edge[i].latency = (unsigned long)time;
 			break;

@@ -1,5 +1,9 @@
 #include <gst/gst.h>
 
+void milsleep(int ms);
+void ncurses_row_shift(int i);
+void ncurses_col_shift(int i);
+void ncurses_initialize(void);
 gboolean gst_nnprofiler_init (void);
 
 void update_cpuusage_event (guint32 cpunum, gfloat * cpuload);
