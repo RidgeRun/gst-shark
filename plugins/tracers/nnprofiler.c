@@ -148,7 +148,7 @@ void* curses_loop(void *arg){
                 ncurses_col_current += COL_SCALE;
                 mvprintw(ncurses_row_current+1, ncurses_col_current, "%20s|", ncurses_NN_edge[i].sname);
                 mvprintw(ncurses_row_current+2, ncurses_col_current, "%20s|", ncurses_NN_edge[i].dname);
-                mvprintw(ncurses_row_current+3, ncurses_col_current, "%18lums|", ncurses_NN_edge[i].latency);
+                mvprintw(ncurses_row_current+3, ncurses_col_current, "%18luns|", ncurses_NN_edge[i].latency);
                 i++;
             }
             ncurses_row_current += 4;
