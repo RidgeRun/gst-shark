@@ -81,58 +81,87 @@ void* curses_loop(void *arg){
 
         // draw
         mvprintw(ncurses_row_current++, ncurses_col_current, "Press 'q' or 'Q' to quit");
-        mvprintw(ncurses_row_current++, ncurses_col_current, "--------------------------------------------------------------------");
+        int i=0;
+        while(i<=5) {
+            mvprintw(ncurses_row_current, ncurses_col_current+COL_SCALE*i, "---------------------");
+            i++;
+        }
+        ncurses_row_current++;
+
         //CPU Usage
         mvprintw(ncurses_row_current++, ncurses_col_current, "CPU Usage : ");
-        mvprintw(ncurses_row_current, ncurses_col_current, "CPU                |");
-        mvprintw(ncurses_row_current+1, ncurses_col_current, "CPU Usage          |");
-        int i=0;
-        while(i<NUMBER_OF_CPU && ncurses_col_current<COL_MAX) {
-            ncurses_col_current += COL_SCALE;
-            mvprintw(ncurses_row_current, ncurses_col_current, "%20d|", i++);
-            mvprintw(ncurses_row_current+1, ncurses_col_current, "%19lu%%|", ncurses_cpuload[i]);
+        i=0;
+        while(i<NUMBER_OF_CPU) {
+            mvprintw(ncurses_row_current+1, ncurses_col_current, "CPU                |");
+            mvprintw(ncurses_row_current+2, ncurses_col_current, "CPU Usage          |");
+            while(i<NUMBER_OF_CPU && ncurses_col_current<COL_MAX) {
+                ncurses_col_current += COL_SCALE;
+                mvprintw(ncurses_row_current+1, ncurses_col_current, "%20d|", i);
+                mvprintw(ncurses_row_current+2, ncurses_col_current, "%19f%%|", ncurses_cpuload[i]);
+                i++;
+            }
+            ncurses_row_current += 3;
+            ncurses_col_current = 0;            
         }
-        ncurses_row_current += 2;
-        ncurses_col_current = 0;
-        mvprintw(ncurses_row_current++, ncurses_col_current, "--------------------------------------------------------------------");
+
+        i=0;
+        while(i<=5) {
+            mvprintw(ncurses_row_current, ncurses_col_current+COL_SCALE*i, "---------------------");
+            i++;
+        }
+        ncurses_row_current++;
 
         //Proctime&Framerate
         mvprintw(ncurses_row_current++, ncurses_col_current, "Proctime&Framerate : ");
-        mvprintw(ncurses_row_current, ncurses_col_current, "NeuralNetwork      |");
-        mvprintw(ncurses_row_current+1, ncurses_col_current, "Proctime           |");
-        mvprintw(ncurses_row_current+2, ncurses_col_current, "Framerate          |");
         i=0;
-        while(i<NUMBER_OF_NN && ncurses_col_current<COL_MAX) {
-            ncurses_col_current += COL_SCALE;
-            if(ncurses_NN[i].used) {
-                mvprintw(ncurses_row_current, ncurses_col_current, "%20s|", ncurses_NN[i].name);
-                mvprintw(ncurses_row_current+1, ncurses_col_current, "%18lums|", ncurses_NN[i].proctime);
-                mvprintw(ncurses_row_current+2, ncurses_col_current, "%17lufps|", ncurses_NN[i].framerate);
-            }
+
+        while(i<NUMBER_OF_NN && ncurses_NN[i].used ) {
+            mvprintw(ncurses_row_current+1, ncurses_col_current, "NeuralNetwork      |");
+            mvprintw(ncurses_row_current+2, ncurses_col_current, "Proctime           |");
+            mvprintw(ncurses_row_current+3, ncurses_col_current, "Framerate          |");
+            while(i<NUMBER_OF_NN && ncurses_col_current<COL_MAX && ncurses_NN[i].used) {
+                ncurses_col_current += COL_SCALE;
+                mvprintw(ncurses_row_current+1, ncurses_col_current, "%20s|", ncurses_NN[i].name);
+                mvprintw(ncurses_row_current+2, ncurses_col_current, "%18lums|", ncurses_NN[i].proctime);
+                mvprintw(ncurses_row_current+3, ncurses_col_current, "%17lufps|", ncurses_NN[i].framerate);
+                i++;
+            }  
+            ncurses_row_current += 4;
+            ncurses_col_current = 0;         
+        }
+
+
+        i=0;
+        while(i<=5) {
+            mvprintw(ncurses_row_current, ncurses_col_current+COL_SCALE*i, "---------------------");
             i++;
         }
-        ncurses_row_current += 3;
-        ncurses_col_current = 0;
-        mvprintw(ncurses_row_current++, ncurses_col_current, "--------------------------------------------------------------------");
+        ncurses_row_current++;
         
         //Interlatency
         mvprintw(ncurses_row_current++, ncurses_col_current, "Interlatency : ");
-        mvprintw(ncurses_row_current, ncurses_col_current, "Source             |");
-        mvprintw(ncurses_row_current+1, ncurses_col_current, "Destination        |");
-        mvprintw(ncurses_row_current+2, ncurses_col_current, "latency            |");
         i=0;
-        while(i<NUMBER_OF_EDGE && ncurses_col_current<COL_MAX) {
-            ncurses_col_current += COL_SCALE;
-            if(ncurses_NN[i].used) {
-                mvprintw(ncurses_row_current, ncurses_col_current, "%20s|", ncurses_NN_edge[i].sname);
-                mvprintw(ncurses_row_current+1, ncurses_col_current, "%20s|", ncurses_NN_edge[i].dname);
-                mvprintw(ncurses_row_current+2, ncurses_col_current, "%18lums|", ncurses_NN_edge[i].latency);
+        while(i<NUMBER_OF_EDGE && ncurses_NN_edge[i].used) {
+            mvprintw(ncurses_row_current+1, ncurses_col_current, "Source             |");
+            mvprintw(ncurses_row_current+2, ncurses_col_current, "Destination        |");
+            mvprintw(ncurses_row_current+3, ncurses_col_current, "latency            |");
+            while(i<NUMBER_OF_EDGE && ncurses_col_current<COL_MAX && ncurses_NN_edge[i].used) {
+                ncurses_col_current += COL_SCALE;
+                mvprintw(ncurses_row_current+1, ncurses_col_current, "%20s|", ncurses_NN_edge[i].sname);
+                mvprintw(ncurses_row_current+2, ncurses_col_current, "%20s|", ncurses_NN_edge[i].dname);
+                mvprintw(ncurses_row_current+3, ncurses_col_current, "%18lums|", ncurses_NN_edge[i].latency);
+                i++;
             }
+            ncurses_row_current += 4;
+            ncurses_col_current = 0;                
+        }
+
+        i=0;
+        while(i<=5) {
+            mvprintw(ncurses_row_current, ncurses_col_current+COL_SCALE*i, "---------------------");
             i++;
         }
-        ncurses_row_current += 3;
-        ncurses_col_current = 0;
-        mvprintw(ncurses_row_current++, ncurses_col_current, "--------------------------------------------------------------------");
+        ncurses_row_current++;
 
         iter++;
         refresh();
