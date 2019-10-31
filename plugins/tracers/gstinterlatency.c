@@ -43,6 +43,7 @@
 
 #include "gstinterlatency.h"
 #include "gstctf.h"
+#include "nnprofiler.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_interlatency_debug);
 #define GST_CAT_DEFAULT gst_interlatency_debug
@@ -135,16 +136,21 @@ log_latency (GstInterLatencyTracer * interlatency_tracer,
   time_string = g_string_new ("");
   g_string_printf (time_string, "%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
+	if (!g_getenv("NNPROFILER_ENABLED")) {
 #ifdef GST_STABLE_RELEASE
-  gst_tracer_record_log (tr_interlatency, src, sink, time_string->str);
+		gst_tracer_record_log (tr_interlatency, src, sink, time_string->str);
 #else
-  /* TODO(ensonic): report format is still unstable */
-  gst_tracer_log_trace (gst_structure_new ("interlatency",
-          "from_pad", G_TYPE_STRING, src,
-          "to_pad", G_TYPE_STRING, sink,
-          "time", G_TYPE_STRING, time_string->str, NULL));
+		/* TODO(ensonic): report format is still unstable */
+		gst_tracer_log_trace (gst_structure_new ("interlatency",
+						"from_pad", G_TYPE_STRING, src,
+						"to_pad", G_TYPE_STRING, sink,
+						"time", G_TYPE_STRING, time_string->str, NULL));
 #endif
-  do_print_interlatency_event (INTERLATENCY_EVENT_ID, src, sink, time);
+		do_print_interlatency_event (INTERLATENCY_EVENT_ID, src, sink, time);
+	}
+	else {
+		update_interlatency_event (src, sink, time);
+	}
 
   g_string_free (time_string, TRUE);
   g_free (src);

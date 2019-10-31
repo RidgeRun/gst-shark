@@ -31,6 +31,7 @@
 #include "gstcpuusage.h"
 #include "gstcpuusagecompute.h"
 #include "gstctf.h"
+#include "nnprofiler.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_cpu_usage_debug);
 #define GST_CAT_DEFAULT gst_cpu_usage_debug
@@ -105,10 +106,15 @@ cpu_usage_thread_func (GstPeriodicTracer * tracer)
 
   gst_cpu_usage_compute (cpu_usage);
 
-  for (cpu_id = 0; cpu_id < cpu_load_len; ++cpu_id) {
-    gst_tracer_record_log (tr_cpuusage, cpu_id, cpu_load[cpu_id]);
+  if(!g_getenv("NNPROFILER_ENABLED")) {
+	for (cpu_id = 0; cpu_id < cpu_load_len; ++cpu_id) {
+	  gst_tracer_record_log (tr_cpuusage, cpu_id, cpu_load[cpu_id]);
+	}
+	do_print_cpuusage_event (CPUUSAGE_EVENT_ID, cpu_load_len, cpu_load);
   }
-  do_print_cpuusage_event (CPUUSAGE_EVENT_ID, cpu_load_len, cpu_load);
+	else {
+	  update_cpuusage_event(cpu_load_len, cpu_load);
+	}
 
   return TRUE;
 }
