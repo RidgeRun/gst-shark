@@ -170,9 +170,7 @@ void* curses_loop(void *arg){
     endwin();
 }
 
-
-
-int
+gboolean
 gst_nnprofiler_init (void) 
 {
 	//TODO: Initialize visual form for nnprofiler
@@ -182,9 +180,8 @@ gst_nnprofiler_init (void)
 	pthread_t thread;
 	pthread_create(&thread, NULL, curses_loop, NULL);
 	pthread_detach(thread);
-	while(1);
 
-	return 0;
+	return TRUE;
 }
 
 
