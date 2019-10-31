@@ -73,7 +73,7 @@ void* curses_loop(void *arg){
     while(1) {
         ncurses_row_current = 0;
         ncurses_col_current = 0;
-        timeout(TIMESCALE);
+        timeout(0);
         key_in = getch();
         if (key_in == 'q' || key_in == 'Q' || iter >= 1000/TIMESCALE * 60 * RUNTIME_MINUTE) break;
         clear();
@@ -207,9 +207,18 @@ update_proctime_event (gchar * elementname, guint64 time)
 		if(strcmp(ncurses_NN[i].name, (char*)elementname)) {
 			ncurses_NN[i].used = true;
 			ncurses_NN[i].proctime = (unsigned long)time;
-			break;
+			return;
 		}
 	}
+	for(int i=0; i<NUMBER_OF_NN; i++) {
+		if(!ncurses_NN[i].used) {
+			ncurses_NN[i].used = true;
+			strcpy(ncurses_NN[i].name, (char*)elementname);
+			ncurses_NN[i].proctime= (unsigned long)time;
+			ncurses_NN[i].framerate= (unsigned long)0;
+		}
+	}
+	return;
 	//TODO: Update output with proctime
 	// input: elementname (name of the element)
 	//        time (tiem consumed in element)
@@ -222,9 +231,18 @@ update_framerate_event (gchar * elementname, guint64 fps)
 		if(strcmp(ncurses_NN[i].name, (char*)elementname)) {
 			ncurses_NN[i].used = true;
 			ncurses_NN[i].framerate = (unsigned long)fps;
-			break;
+			return;
 		}
 	}
+	for(int i=0; i<NUMBER_OF_NN; i++) {
+		if(!ncurses_NN[i].used) {
+			ncurses_NN[i].used = true;
+			strcpy(ncurses_NN[i].name, (char*)elementname);
+			ncurses_NN[i].proctime= (unsigned long)0;
+			ncurses_NN[i].framerate= (unsigned long)fps;
+		}
+	}
+	return;
 	//TODO: Update output with framerate
 	// input: elementname (name of the element)
 	//        fps (framerate of element)
@@ -242,7 +260,16 @@ update_interlatency_event (gchar * originpad,
 		if(strcmp(ncurses_NN_edge[i].sname, (char*)originpad) && strcmp(ncurses_NN_edge[i].dname, (char*)destinationpad) ) {
 			ncurses_NN_edge[i].used = true;
 			ncurses_NN_edge[i].latency = (unsigned long)time;
-			break;
+			return;
 		}
 	}
+	for(int i=0; i<NUMBER_OF_EDGE; i++) {
+		if(!ncurses_NN_edge[i].used) {
+			ncurses_NN_edge[i].used=true;
+			strcpy(ncurses_NN_edge[i].sname, (char*)originpad);
+			strcpy(ncurses_NN_edge[i].dname, (char*)destinationpad);
+			ncurses_NN_edge[i].latency = (unsigned long)time;
+		}
+	}
+	return;
 }
