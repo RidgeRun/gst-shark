@@ -29,7 +29,7 @@
 
 #include "gstframerate.h"
 #include "gstctf.h"
-#include "nnstreamer.h"
+#include "nnprofiler.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_framerate_debug);
 #define GST_CAT_DEFAULT gst_framerate_debug
