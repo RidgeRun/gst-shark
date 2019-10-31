@@ -112,9 +112,9 @@ cpu_usage_thread_func (GstPeriodicTracer * tracer)
 	}
 	do_print_cpuusage_event (CPUUSAGE_EVENT_ID, cpu_load_len, cpu_load);
   }
-	else {
-	  update_cpuusage_event(cpu_load_len, cpu_load);
-	}
+  else {
+	update_cpuusage_event(cpu_load_len, cpu_load);
+  }
 
   return TRUE;
 }
