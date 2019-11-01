@@ -19,9 +19,9 @@ For other environment, visit GstShark wiki
 
 
 ## How To Use NNProfiler
-Set environment variable GST_DEBUG, GST_TRACERS to tracers to use
+Set environment variable GST_DEBUG, GST_TRACERS to tracers to use and NNPROFILER_ENABLED to TRUE
 ```
-$ GST_DEBUG="GST_TRACER:7" GST_TRACERS="cpuusage;proctime;interlatency;framerate"\
+$ NNPROFILER_ENABLED=TRUE GST_DEBUG="GST_TRACER:7" GST_TRACERS="cpuusage;proctime;interlatency;framerate"\
      gst-launch-1.0 videotestsrc ! videorate max-rate=15 ! fakesink
 ```
 
