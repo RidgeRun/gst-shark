@@ -9,11 +9,13 @@ https://github.com/RidgeRun/gst-shark
 https://developer.ridgerun.com/wiki/index.php?title=GstShark
 
 ## How To Install
+- On Ubuntu x64
 ```
-$ ./autogen_ubuntux64.sh //on ubuntu x64, for other environment visit wiki
+$ ./autogen_ubuntux64.sh
 $ ./make
 $ ./sudo make install
 ```
+For other environment, visit GstShark wiki
 
 
 ## How To Use NNProfiler
