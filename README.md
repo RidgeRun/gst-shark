@@ -11,6 +11,7 @@ https://developer.ridgerun.com/wiki/index.php?title=GstShark
 ## How To Install
 - On Ubuntu x64
 ```
+$ sudo apt get gtk-doc* libgraphviz-dev
 $ ./autogen_ubuntux64.sh
 $ ./make
 $ ./sudo make install
