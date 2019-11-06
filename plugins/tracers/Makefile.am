@@ -20,7 +20,9 @@ libgstshark_la_LIBADD = \
 	$(GST_SHARK_OBJ_LIBS) \
 	$(GST_LIBS) \
 	$(GVC_LIBS) \
-	$(GIO_LIBS)
+	$(GIO_LIBS) \
+	-lpthread \
+	-lncurses
 
 plugin_LTLIBRARIES = libgstsharktracers.la
 

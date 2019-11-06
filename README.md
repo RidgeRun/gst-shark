@@ -1,20 +1,29 @@
-# GstShark 
+# NNProfiler
+Gstreamer real-time profiler plugin for nnstreamer
 
-> A Front End for GstTracer
+## Open Source License
+- GstShark
+https://github.com/RidgeRun/gst-shark
 
-## Description
+- For further information visit
+https://developer.ridgerun.com/wiki/index.php?title=GstShark
 
-GstShark leverages GStreamers newest instrumentation subsystem by
-installing a set of custom hooks to the trace points. A variety of
-data analytics are extracted and presented to the user in a graphical,
-friendly way.
+## How To Install
+- On Ubuntu x64
+```
+$ sudo apt get gtk-doc* libgraphviz-dev libncurses5-dev libncursesw5-dev
+$ ./autogen_ubuntux64.sh
+$ ./make
+$ ./sudo make install
+```
+For other environment, visit GstShark wiki
 
-The complete, official documentation is held at RidgeRun's Developer's
-Wiki pages.
 
-* [GstShark User Guide](http://developer.ridgerun.com/wiki/index.php?title=GstShark)
-* [GstShark Examples](http://developer.ridgerun.com/wiki/index.php?title=GstShark_Examples)
-
-
+## How To Use NNProfiler
+Set environment variable GST_DEBUG, GST_TRACERS to tracers to use and NNPROFILER_ENABLED to TRUE
+```
+$ NNPROFILER_ENABLED=TRUE GST_DEBUG="GST_TRACER:7" GST_TRACERS="cpuusage;proctime;interlatency;framerate"\
+     gst-launch-1.0 videotestsrc ! videorate max-rate=15 ! fakesink
+```
 
 
