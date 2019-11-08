@@ -4,57 +4,79 @@
 #include <time.h>
 #include <pthread.h>
 #include <string.h>
-
+#include <sys/sysinfo.h>
 #include "nnprofiler.h"
 
-#define ROW_MAX 100
-#define COL_MAX 100
 #define TIMESCALE 400
-#define RUNTIME_MINUTE 1
-#define NUMBER_OF_CPU 4
-#define NUMBER_OF_NN 20
-#define NUMBER_OF_EDGE 30*2
 #define COL_SCALE 21
+#define ELEMENT_NAME_MAX 20
 
-//global_variables
+#define NN_CPU_NUM _cpu_num
+#define NN_CPU_LOAD _cpu_load
+#define NN_ELEMENTS _prof_elements
+#define NN_CONNECTIONS _prof_connections
+
+#define NN_CPU_LOAD_SET(src) \
+	memcpy (_cpu_load, src, _cpu_num * sizeof(gfloat))
+
+#define NN_GET_ELEMENT(name) \
+	g_hash_table_lookup(_prof_elements, name)
+#define NN_PUT_ELEMENT(name, element) \
+	g_hash_table_insert(_prof_elements, name, element);
+#define NN_MODIFY_PROCTIME(element, value) \
+	element->proctime = value
+#define NN_MODIFY_FRAMERATE(element, value) \
+	element->framerate = value
+
+#define NN_GET_CONNECTION(key) \
+	g_hash_table_lookup(_prof_connections, key)
+#define NN_PUT_CONNECTION(key, data) \
+	g_hash_table_insert(_prof_connections, key, data);
+#define NN_MODIFY_INTERLATENCY(connection, value) \
+	connection->interlatency = value
+
+
+// NCurses location
 int ncurses_row_current=0;
 int ncurses_col_current=0;
 
-float ncurses_cpuload[NUMBER_OF_CPU];
+// Iterator for Hashtable
+void print_element(gpointer key, gpointer value, gpointer user_data) {
+	char * name = (char *) key;
+	ProfilerElement * data = (ProfilerElement *) value;
+	
+	mvprintw(ncurses_row_current, 0, "%s", name);
+	mvprintw(ncurses_row_current, ELEMENT_NAME_MAX,
+			"%18dns %17dfps", data->proctime, data->framerate);
+	ncurses_row_current++;
+}
 
-struct ncurses_NN {
-    gboolean used;
-    gchar name[30];
-    guint64 proctime;
-    guint64 framerate;
+void print_connection(gpointer key, gpointer value, gpointer user_data) {
+	char * connection_key = strdup((char *) key);
+	char * sname = strtok(connection_key, " ");
+	char * dname = strtok(NULL, " ");
+	ProfilerConnection * data = (ProfilerConnection *) value;
 
-}ncurses_NN[NUMBER_OF_NN];
-int max_element = 0;
 
-struct ncurses_NN_edge {
-    gboolean used; 
-    gchar sname[30];
-    gchar dname[30];
-    guint64 latency;
-}ncurses_NN_edge[NUMBER_OF_EDGE];
-int max_edge = 0;
+	mvprintw(ncurses_row_current, 0, "%s", sname);
+	mvprintw(ncurses_row_current, ELEMENT_NAME_MAX, "%s", dname);
+	mvprintw(ncurses_row_current, ELEMENT_NAME_MAX * 2,
+			"%18dns", data->interlatency);
+	ncurses_row_current++;
+}
 
-void *curses_loop(void* arg);
+
+// Plugin Data
+gint _cpu_num;
+gfloat * _cpu_load;
+GHashTable * _prof_elements;
+GHashTable * _prof_connections;
 
 void milsleep(int ms) {
     struct timespec ts;
     ts.tv_sec = ms/1000;
     ts.tv_nsec = (ms % 1000) * 1000000;
     nanosleep(&ts, NULL);
-}
-
-void ncurses_row_shift(int i) {
-    ncurses_row_current = ncurses_row_current + i;
-    return;
-}
-void ncurses_col_shift(int i) {
-    ncurses_col_current = ncurses_col_current + i;
-    return;
 }
 
 void ncurses_initialize(void) {
@@ -90,13 +112,13 @@ void* curses_loop(void *arg){
         //CPU Usage
         mvprintw(ncurses_row_current++, ncurses_col_current, "CPU Usage : ");
         i=0;
-        while(i<NUMBER_OF_CPU) {
+        while(i<NN_CPU_NUM) {
             mvprintw(ncurses_row_current+1, ncurses_col_current, "CPU                |");
             mvprintw(ncurses_row_current+2, ncurses_col_current, "CPU Usage          |");
-            while(i<NUMBER_OF_CPU && ncurses_col_current<COL_MAX) {
+            while(i<NN_CPU_NUM && ncurses_col_current<COL_MAX) {
                 ncurses_col_current += COL_SCALE;
                 mvprintw(ncurses_row_current+1, ncurses_col_current, "%20d|", i);
-                mvprintw(ncurses_row_current+2, ncurses_col_current, "%19f%%|", ncurses_cpuload[i]);
+                mvprintw(ncurses_row_current+2, ncurses_col_current, "%19f%%|", NN_CPU_LOAD[i]);
                 i++;
             }
             ncurses_row_current += 3;
@@ -110,61 +132,25 @@ void* curses_loop(void *arg){
         }
         ncurses_row_current++;
 
-        //Proctime&Framerate
-        mvprintw(ncurses_row_current++, ncurses_col_current, "Proctime&Framerate : ");
-        i=0;
+		// Proctime & Framerate
+		mvprintw(ncurses_row_current, 0, "ElementName");
+		mvprintw(ncurses_row_current++, ELEMENT_NAME_MAX,
+			   "%20s %20s", "Proctime", "Framerate");	
 
-        while(i<max_element && ncurses_NN[i].used ) {
-            mvprintw(ncurses_row_current+1, ncurses_col_current, "NeuralNetwork      |");
-            mvprintw(ncurses_row_current+2, ncurses_col_current, "Proctime           |");
-            mvprintw(ncurses_row_current+3, ncurses_col_current, "Framerate          |");
-            while(i<max_element && ncurses_col_current<COL_MAX && ncurses_NN[i].used) {
-                ncurses_col_current += COL_SCALE;
-                mvprintw(ncurses_row_current+1, ncurses_col_current, "%20s|", ncurses_NN[i].name);
-                mvprintw(ncurses_row_current+2, ncurses_col_current, "%18luns|", ncurses_NN[i].proctime);
-                mvprintw(ncurses_row_current+3, ncurses_col_current, "%17lufps|", ncurses_NN[i].framerate);
-                i++;
-            }  
-            ncurses_row_current += 4;
-            ncurses_col_current = 0;         
-        }
+		g_hash_table_foreach(NN_ELEMENTS, (GHFunc) print_element, NULL);
 
+		// Interlatency
+		mvprintw(ncurses_row_current, 0, "Source");
+		mvprintw(ncurses_row_current, ELEMENT_NAME_MAX, "Destination");
+		mvprintw(ncurses_row_current++, ELEMENT_NAME_MAX * 2, 
+				"%20s", "Interlatency");
 
-        i=0;
-        while(i<=5) {
-            mvprintw(ncurses_row_current, ncurses_col_current+COL_SCALE*i, "---------------------");
-            i++;
-        }
-        ncurses_row_current++;
-        
-        //Interlatency
-        mvprintw(ncurses_row_current++, ncurses_col_current, "Interlatency : ");
-        i=0;
-        while(i<max_edge && ncurses_NN_edge[i].used) {
-            mvprintw(ncurses_row_current+1, ncurses_col_current, "Source             |");
-            mvprintw(ncurses_row_current+2, ncurses_col_current, "Destination        |");
-            mvprintw(ncurses_row_current+3, ncurses_col_current, "latency            |");
-            while(i < max_edge && ncurses_col_current<COL_MAX && ncurses_NN_edge[i].used) {
-                ncurses_col_current += COL_SCALE;
-                mvprintw(ncurses_row_current+1, ncurses_col_current, "%20s|", ncurses_NN_edge[i].sname);
-                mvprintw(ncurses_row_current+2, ncurses_col_current, "%20s|", ncurses_NN_edge[i].dname);
-                mvprintw(ncurses_row_current+3, ncurses_col_current, "%18luns|", ncurses_NN_edge[i].latency);
-                i++;
-            }
-            ncurses_row_current += 4;
-            ncurses_col_current = 0;                
-        }
-
-        i=0;
-        while(i<=5) {
-            mvprintw(ncurses_row_current, ncurses_col_current+COL_SCALE*i, "---------------------");
-            i++;
-        }
-        ncurses_row_current++;
+		g_hash_table_foreach(NN_CONNECTIONS, (GHFunc) print_connection, NULL);
 
         iter++;
         refresh();
         milsleep(TIMESCALE);
+		
     }
 
     endwin();
@@ -173,10 +159,16 @@ void* curses_loop(void *arg){
 gboolean
 gst_nnprofiler_init (void) 
 {
-	//TODO: Initialize visual form for nnprofiler
-	// input: none
-	// output: TRUE if successfully initialized,
-	//         FALSE if failed initializing
+	// Allocating global variable for CPU load
+	NN_CPU_NUM = get_nprocs();
+	NN_CPU_LOAD = g_malloc0 (sizeof(gfloat) * NN_CPU_NUM);
+	g_return_val_if_fail(NN_CPU_LOAD, FALSE);
+
+	// Allocating global variable for each element
+	NN_ELEMENTS = g_hash_table_new (g_str_hash, g_str_equal);
+	NN_CONNECTIONS = g_hash_table_new (g_str_hash, g_str_equal);
+
+	// Create thread for NCurses
 	pthread_t thread;
 	pthread_create(&thread, NULL, curses_loop, NULL);
 	pthread_detach(thread);
@@ -184,83 +176,79 @@ gst_nnprofiler_init (void)
 	return TRUE;
 }
 
-
-
 void 
 update_cpuusage_event (guint32 cpunum, gfloat * cpuload) 
-{	
-	for(int i=0; i<cpunum; i++) {
-		ncurses_cpuload[i] = cpuload[i];
-	}
-	//TODO: Update output with cpuusage
-	// input: cpunum (number of cpu)
-	//        cpuload (array of load of each cpu)
+{
+	NN_CPU_LOAD_SET(cpuload);
 }
 
 void 
 update_proctime_event (gchar * elementname, guint64 time) 
 {
-	for(int i=0; i<max_element; i++) {
-		if(strcmp(ncurses_NN[i].name, elementname) == 0) {
-			ncurses_NN[i].used = TRUE;
-			ncurses_NN[i].proctime = time;
-			return;
-		}
+	gchar * key = strdup(elementname);
+	ProfilerElement * pElement, *pTemp;
+
+	pElement = NN_GET_ELEMENT(key);
+	if (pElement == NULL)
+	{
+		pTemp = malloc (sizeof(ProfilerElement));
+		pTemp->proctime = time;
+		pTemp->framerate = 0;
+		NN_PUT_ELEMENT(key, pTemp);
 	}
-	strcpy(ncurses_NN[max_element].name, elementname);
-	ncurses_NN[max_element].used = TRUE;
-	ncurses_NN[max_element].proctime = time;
-	ncurses_NN[max_element].framerate = 0;
-	max_element += 1;
-	
+	else
+	{
+		NN_MODIFY_PROCTIME(pElement, time);
+	}
+
 	return;
-	//TODO: Update output with proctime
-	// input: elementname (name of the element)
-	//        time (tiem consumed in element)
 }
 
 void 
 update_framerate_event (gchar * elementname, guint64 fps) 
 {
-	for(int i=0; i<max_element; i++) {
-		if(strcmp(ncurses_NN[i].name, elementname) == 0) {
-			ncurses_NN[i].used = TRUE;
-			ncurses_NN[i].framerate = fps;
-			return;
-		}
+	gchar * key = strdup(elementname);
+	ProfilerElement * pElement, *pTemp;
+
+	pElement = NN_GET_ELEMENT(key);
+	if (pElement == NULL)
+	{
+		pTemp = malloc (sizeof(ProfilerElement));
+		pTemp->proctime = 0;
+		pTemp->framerate = fps;
+		NN_PUT_ELEMENT(key, pTemp);
 	}
-	ncurses_NN[max_element].used = TRUE;
-	strcpy(ncurses_NN[max_element].name, elementname);
-	ncurses_NN[max_element].proctime = 0;
-	ncurses_NN[max_element].framerate = fps;
-	max_element += 1;
+	else
+	{
+		NN_MODIFY_FRAMERATE(pElement, fps);
+	}
 
 	return;
-	//TODO: Update output with framerate
-	// input: elementname (name of the element)
-	//        fps (framerate of element)
 }
 
 void 
 update_interlatency_event (gchar * originpad, 
 		gchar * destinationpad, guint64 time) 
 {
-	//TODO: Update output with interlatency
-	// input: originpad (name of the pad buffer started)
-	//        destinationpad (name of the pad buffer arrived)
-	//        time (interlatency between two pads)
-	for(int i=0; i < max_edge; i++) {
-		if((strcmp(ncurses_NN_edge[i].sname, originpad) == 0) && (strcmp(ncurses_NN_edge[i].dname, destinationpad) == 0)) {
-			ncurses_NN_edge[i].used = TRUE;
-			ncurses_NN_edge[i].latency = time;
-			return;
-		}
-	}
-	ncurses_NN_edge[max_edge].used = TRUE;
-	strcpy(ncurses_NN_edge[max_edge].sname, originpad);
-	strcpy(ncurses_NN_edge[max_edge].dname, destinationpad);
-	ncurses_NN_edge[max_edge].latency = time;
-	max_edge += 1;
+	char generated_key[60];
+	char * key;
+	ProfilerConnection * pElement, * pTemp;
 
+	strcpy(generated_key, originpad);
+	strcat(generated_key, " ");
+	strcat(generated_key, destinationpad);
+	key = strdup(generated_key);
+	
+	pElement = NN_GET_CONNECTION(key);
+	if(pElement == NULL)
+	{
+		pTemp = malloc (sizeof(ProfilerConnection));
+		pTemp->interlatency = time;
+		NN_PUT_CONNECTION(key, pTemp);
+	}
+	else
+	{
+		NN_MODIFY_INTERLATENCY(pElement, time);
+	}
 	return;
 }
