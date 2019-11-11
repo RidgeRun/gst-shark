@@ -20,7 +20,9 @@ then
     echo "                                 over each graphic generated"
     echo "                                 extern: display the legend over an external window"
     echo "                                 (default: inside)"
-    echo " -f, --filter [descriptor]       Filter events that have the word provided. For example"
+    echo " -f, --filter [pattern]          Filter events that contains a match to the given pattern. The pattern is interpreted"
+    echo "                                 as an extended regular expression."
+    echo "                                 For example:"
     echo "                                 Select one element information: $0 gstshark_filtered -p --filter x264enc"
     echo "                                 Select more the one element:    $0 gstshark_filtered -p --filter \"x264enc|udpsink\""
     echo
