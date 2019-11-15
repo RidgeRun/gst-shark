@@ -5,7 +5,8 @@
 #include <pthread.h>
 #include <string.h>
 #include <sys/sysinfo.h>
-#include "nnprofiler.h"
+
+#include "gstliveprofiler.h"
 
 #define TIMESCALE 400
 #define COL_SCALE 21
@@ -157,7 +158,7 @@ void* curses_loop(void *arg){
 }
 
 gboolean
-gst_nnprofiler_init (void) 
+gst_liveprofiler_init (void) 
 {
 	// Allocating global variable for CPU load
 	NN_CPU_NUM = get_nprocs();

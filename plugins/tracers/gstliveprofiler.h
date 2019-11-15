@@ -4,7 +4,7 @@ void milsleep(int ms);
 void ncurses_row_shift(int i);
 void ncurses_col_shift(int i);
 void ncurses_initialize(void);
-gboolean gst_nnprofiler_init (void);
+gboolean gst_liveprofiler_init (void);
 
 void print_element(gpointer key, gpointer value, gpointer user_data);
 void print_connection(gpointer key, gpointer value, gpointer user_data);
