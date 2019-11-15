@@ -1,4 +1,5 @@
 #include <ncurses.h>
+#include <string.h>
 
 #include "visualizeutil.h"
 #include "gstliveprofiler.h"
