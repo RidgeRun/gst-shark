@@ -116,7 +116,7 @@ void* curses_loop(void *arg){
         while(i<NN_CPU_NUM) {
             mvprintw(ncurses_row_current+1, ncurses_col_current, "CPU                |");
             mvprintw(ncurses_row_current+2, ncurses_col_current, "CPU Usage          |");
-            while(i<NN_CPU_NUM && ncurses_col_current<COL_MAX) {
+            while(i<NN_CPU_NUM) {
                 ncurses_col_current += COL_SCALE;
                 mvprintw(ncurses_row_current+1, ncurses_col_current, "%20d|", i);
                 mvprintw(ncurses_row_current+2, ncurses_col_current, "%19f%%|", NN_CPU_LOAD[i]);
