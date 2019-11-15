@@ -7,10 +7,7 @@
 #include <sys/sysinfo.h>
 
 #include "gstliveprofiler.h"
-
-#define TIMESCALE 400
-#define COL_SCALE 21
-#define ELEMENT_NAME_MAX 20
+#include "visualizeutil.h"
 
 #define NN_CPU_NUM _cpu_num
 #define NN_CPU_LOAD _cpu_load
@@ -36,37 +33,6 @@
 #define NN_MODIFY_INTERLATENCY(connection, value) \
 	connection->interlatency = value
 
-
-// NCurses location
-int ncurses_row_current=0;
-int ncurses_col_current=0;
-
-// Iterator for Hashtable
-void print_element(gpointer key, gpointer value, gpointer user_data) {
-	char * name = (char *) key;
-	ProfilerElement * data = (ProfilerElement *) value;
-	
-	mvprintw(ncurses_row_current, 0, "%s", name);
-	mvprintw(ncurses_row_current, ELEMENT_NAME_MAX,
-			"%18dns %17dfps", data->proctime, data->framerate);
-	ncurses_row_current++;
-}
-
-void print_connection(gpointer key, gpointer value, gpointer user_data) {
-	char * connection_key = strdup((char *) key);
-	char * sname = strtok(connection_key, " ");
-	char * dname = strtok(NULL, " ");
-	ProfilerConnection * data = (ProfilerConnection *) value;
-
-
-	mvprintw(ncurses_row_current, 0, "%s", sname);
-	mvprintw(ncurses_row_current, ELEMENT_NAME_MAX, "%s", dname);
-	mvprintw(ncurses_row_current, ELEMENT_NAME_MAX * 2,
-			"%18dns", data->interlatency);
-	ncurses_row_current++;
-}
-
-
 // Plugin Data
 gint _cpu_num;
 gfloat * _cpu_load;
@@ -78,83 +44,6 @@ void milsleep(int ms) {
     ts.tv_sec = ms/1000;
     ts.tv_nsec = (ms % 1000) * 1000000;
     nanosleep(&ts, NULL);
-}
-
-void ncurses_initialize(void) {
-	initscr();
-	raw();
-	keypad(stdscr, TRUE);
-	curs_set(0);
-	noecho();
-}
-
-void* curses_loop(void *arg){
-    ncurses_initialize();
-
-    int key_in;
-    int iter = 0;
-    while(1) {
-        ncurses_row_current = 0;
-        ncurses_col_current = 0;
-        timeout(0);
-        key_in = getch();
-        if (key_in == 'q' || key_in == 'Q') break;
-        clear();
-
-        // draw
-        mvprintw(ncurses_row_current++, ncurses_col_current, "Press 'q' or 'Q' to quit");
-        int i=0;
-        while(i<=5) {
-            mvprintw(ncurses_row_current, ncurses_col_current+COL_SCALE*i, "---------------------");
-            i++;
-        }
-        ncurses_row_current++;
-
-        //CPU Usage
-        mvprintw(ncurses_row_current++, ncurses_col_current, "CPU Usage : ");
-        i=0;
-        while(i<NN_CPU_NUM) {
-            mvprintw(ncurses_row_current+1, ncurses_col_current, "CPU                |");
-            mvprintw(ncurses_row_current+2, ncurses_col_current, "CPU Usage          |");
-            while(i<NN_CPU_NUM) {
-                ncurses_col_current += COL_SCALE;
-                mvprintw(ncurses_row_current+1, ncurses_col_current, "%20d|", i);
-                mvprintw(ncurses_row_current+2, ncurses_col_current, "%19f%%|", NN_CPU_LOAD[i]);
-                i++;
-            }
-            ncurses_row_current += 3;
-            ncurses_col_current = 0;            
-        }
-
-        i=0;
-        while(i<=5) {
-            mvprintw(ncurses_row_current, ncurses_col_current+COL_SCALE*i, "---------------------");
-            i++;
-        }
-        ncurses_row_current++;
-
-		// Proctime & Framerate
-		mvprintw(ncurses_row_current, 0, "ElementName");
-		mvprintw(ncurses_row_current++, ELEMENT_NAME_MAX,
-			   "%20s %20s", "Proctime", "Framerate");	
-
-		g_hash_table_foreach(NN_ELEMENTS, (GHFunc) print_element, NULL);
-
-		// Interlatency
-		mvprintw(ncurses_row_current, 0, "Source");
-		mvprintw(ncurses_row_current, ELEMENT_NAME_MAX, "Destination");
-		mvprintw(ncurses_row_current++, ELEMENT_NAME_MAX * 2, 
-				"%20s", "Interlatency");
-
-		g_hash_table_foreach(NN_CONNECTIONS, (GHFunc) print_connection, NULL);
-
-        iter++;
-        refresh();
-        milsleep(TIMESCALE);
-		
-    }
-
-    endwin();
 }
 
 gboolean
@@ -170,8 +59,14 @@ gst_liveprofiler_init (void)
 	NN_CONNECTIONS = g_hash_table_new (g_str_hash, g_str_equal);
 
 	// Create thread for NCurses
+	Packet * packet = malloc (sizeof(Packet));
+	packet->cpu_num = _cpu_num;
+	packet->cpu_load = _cpu_load;
+	packet->elements = _prof_elements;
+	packet->connections = _prof_connections;
+
 	pthread_t thread;
-	pthread_create(&thread, NULL, curses_loop, NULL);
+	pthread_create(&thread, NULL, curses_loop, packet);
 	pthread_detach(thread);
 
 	return TRUE;
