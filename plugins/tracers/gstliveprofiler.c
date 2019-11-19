@@ -38,13 +38,7 @@ gint _cpu_num;
 gfloat * _cpu_load;
 GHashTable * _prof_elements;
 GHashTable * _prof_connections;
-
-void milsleep(int ms) {
-    struct timespec ts;
-    ts.tv_sec = ms/1000;
-    ts.tv_nsec = (ms % 1000) * 1000000;
-    nanosleep(&ts, NULL);
-}
+GSList ** _elements_list_p;
 
 gboolean
 gst_liveprofiler_init (void) 
@@ -58,12 +52,17 @@ gst_liveprofiler_init (void)
 	NN_ELEMENTS = g_hash_table_new (g_str_hash, g_str_equal);
 	NN_CONNECTIONS = g_hash_table_new (g_str_hash, g_str_equal);
 
+	// Check coe
+	_elements_list_p = g_malloc0 (sizeof(GSList *));
+	*(_elements_list_p) = NULL;
+
 	// Create thread for NCurses
 	Packet * packet = malloc (sizeof(Packet));
 	packet->cpu_num = _cpu_num;
 	packet->cpu_load = _cpu_load;
-	packet->elements = _prof_elements;
-	packet->connections = _prof_connections;
+	packet->prof_elements = _prof_elements;
+	packet->prof_connections = _prof_connections;
+	packet->elements = _elements_list_p;
 
 	pthread_t thread;
 	pthread_create(&thread, NULL, curses_loop, packet);
@@ -147,4 +146,11 @@ update_interlatency_event (gchar * originpad,
 		NN_MODIFY_INTERLATENCY(pElement, time);
 	}
 	return;
+}
+
+void
+update_new_element_event (gchar * elementname, GstClockTime ts) 
+{
+	printf("[%s]\n", elementname);
+	*(_elements_list_p) = g_slist_append(*(_elements_list_p), elementname);
 }

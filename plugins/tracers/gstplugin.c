@@ -36,6 +36,7 @@
 #include "gstbuffer.h"
 #include "gstctf.h"
 #include "gstliveprofiler.h"
+#include "gstlive.h"
 
 static gboolean
 plugin_init (GstPlugin * plugin)
@@ -74,6 +75,9 @@ plugin_init (GstPlugin * plugin)
   }
   if (!gst_tracer_register (plugin, "buffer", gst_buffer_tracer_get_type ())) {
     return FALSE;
+  }
+  if (!gst_tracer_register (plugin, "live", gst_live_tracer_get_type ())) {
+	  return FALSE;
   }
   if (!gst_ctf_init ()) {
     return FALSE;

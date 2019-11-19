@@ -1,4 +1,7 @@
 #include <gst/gst.h>
+#include <time.h>
+
+void milsleep(int ms);
 
 G_BEGIN_DECLS
 
@@ -11,9 +14,11 @@ G_BEGIN_DECLS
 #define CPU_LOAD(packet) \
 	(packet->cpu_load)
 #define ELEMENTS(packet) \
-	(packet->elements)
+	(packet->prof_elements)
 #define CONNECTIONS(packet) \
-	(packet->connections)
+	(packet->prof_connections)
+#define ELEMENTS_LIST(packet) \
+	(*(packet->elements))
 
 typedef struct _Packet Packet;
 
@@ -21,8 +26,9 @@ struct _Packet
 {
 	gint cpu_num;
 	gfloat * cpu_load;
-	GHashTable * elements;
-	GHashTable * connections;
+	GHashTable * prof_elements;
+	GHashTable * prof_connections;
+	GSList ** elements;
 };
 
 G_END_DECLS

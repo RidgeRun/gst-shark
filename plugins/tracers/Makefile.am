@@ -39,7 +39,8 @@ libgstsharktracers_la_SOURCES = \
 	gstqueuelevel.c \
 	gstbitrate.c \
 	gstbuffer.c \
-	gstperiodictracer.c
+	gstperiodictracer.c \
+	gstlive.c
 
 libgstsharktracers_la_CFLAGS = \
 	$(GST_SHARK_OBJ_CFLAGS) \
@@ -75,7 +76,8 @@ noinst_HEADERS = \
 	gstsharktracer.h \
 	gstperiodictracer.h \
 	gstliveprofiler.h \
-	visualizeutil.h
+	visualizeutil.h \
+	gstlive.h
 
 CLEANFILES = *.gcno *.gcda *.gcov *.gcov.out
 

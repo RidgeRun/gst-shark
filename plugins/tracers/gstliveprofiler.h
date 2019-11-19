@@ -1,6 +1,5 @@
 #include <gst/gst.h>
 
-void milsleep(int ms);
 void ncurses_row_shift(int i);
 void ncurses_col_shift(int i);
 void ncurses_initialize(void);
@@ -16,7 +15,7 @@ void update_proctime_event (gchar * elementname, guint64 time);
 void update_framerate_event (gchar * elementname, guint64 fps);
 void update_interlatency_event (gchar * originpad, 
 		gchar * destinationpad, guint64 time);
-
+void update_new_element_event (gchar * elementname, GstClockTime ts);
 
 G_BEGIN_DECLS
 

@@ -1,8 +1,14 @@
 #include <ncurses.h>
-#include <string.h>
 
 #include "visualizeutil.h"
 #include "gstliveprofiler.h"
+
+void milsleep(int ms) {
+    struct timespec ts;
+    ts.tv_sec = ms/1000;
+    ts.tv_nsec = (ms % 1000) * 1000000;
+    nanosleep(&ts, NULL);
+}
 
 // NCurses location
 int ncurses_row_current=0;
@@ -30,6 +36,10 @@ void print_connection(gpointer key, gpointer value, gpointer user_data) {
 	mvprintw(ncurses_row_current, ELEMENT_NAME_MAX * 2,
 			"%18dns", data->interlatency);
 	ncurses_row_current++;
+}
+
+void print_elements_list (gchar * name) {
+	mvprintw(ncurses_row_current++, 0, "[%s]", name);
 }
 
 void ncurses_initialize(void) 
@@ -87,6 +97,12 @@ void* curses_loop(void *arg)
             ncurses_row_current += 3;
             ncurses_col_current = 0; 
         }
+
+		print_line(&ncurses_row_current, &ncurses_col_current);
+
+		g_slist_foreach(ELEMENTS_LIST(packet), 
+				(GFunc) print_elements_list, 
+				NULL);
 
 		print_line(&ncurses_row_current, &ncurses_col_current);
 
