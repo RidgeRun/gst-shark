@@ -45,11 +45,15 @@ struct _GstLiveTracer
 G_DEFINE_TYPE_WITH_CODE (GstLiveTracer, gst_live_tracer,
     GST_SHARK_TYPE_TRACER, _do_init);
 
-
-static void 
-do_element_new (GObject * self, GstClockTime ts, GstElement * element)
+static void
+do_element_change_state_post (GObject * self, guint64 ts,
+		GstElement * element, GstStateChange transition,
+		GstStateChangeReturn result)
 {
-	update_new_element_event(GST_OBJECT_NAME (element), ts);
+	if(GST_IS_PIPELINE (element)
+			&& (transition == GST_STATE_CHANGE_PAUSED_TO_PLAYING)) {
+		update_pipeline_init ((GstPipeline *) element);
+	}
 }
 
 static void gst_live_tracer_finalize (GObject * obj);
@@ -75,6 +79,6 @@ static void
 gst_live_tracer_init (GstLiveTracer * self)
 {
   GstTracer *tracer = GST_TRACER (self);
-  gst_tracing_register_hook (tracer, "element-new",
-      G_CALLBACK (do_element_new));
+  gst_tracing_register_hook (tracer, "element-change-state-post",
+		  G_CALLBACK (do_element_change_state_post));
 }

@@ -73,6 +73,8 @@ typedef struct _GstFramerateHash GstFramerateHash;
 struct _GstFramerateHash
 {
   gchar *fullname;
+  gchar *elementname;
+  gchar *padname;
   guint counter;
 };
 
@@ -189,7 +191,8 @@ print_framerate (GstPeriodicTracer * tracer)
           pad_table->counter);
 		}
 		else {
-		  update_framerate_event(pad_table->fullname, pad_table->counter);
+		  update_framerate_event(pad_table->elementname, 
+				  pad_table->padname, pad_table->counter);
 		}	
     pad_table->counter = 0;
   }
@@ -238,6 +241,8 @@ consider_frames (GstFramerateTracer * self, GstPad * pad, guint amount)
 
     pad_frames = g_malloc (sizeof (GstFramerateHash));
     pad_frames->fullname = fullname;
+	pad_frames->padname = GST_OBJECT_NAME(pad);
+	pad_frames->elementname = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
     pad_frames->counter = amount;
 
     GST_OBJECT_LOCK (self);
