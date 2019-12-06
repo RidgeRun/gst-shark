@@ -57,6 +57,7 @@ void print_element(gpointer key, gpointer value, gpointer user_data) {
 			data->proctime->avg,
 			data->queue_level,
 			data->max_queue_level);
+
 	row_current++;
 	
 	g_hash_table_foreach(data->pad, (GHFunc) print_pad, NULL);	
