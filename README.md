@@ -21,10 +21,12 @@ $ sudo make install
 For other environment, visit GstShark wiki
 
 
-## How To Use NNProfiler
-Set environment variable GST_DEBUG, GST_TRACERS to tracers to use and NNPROFILER_ENABLED to TRUE
+## How To Use Live Profiler
+Set environment variable as below.
+- GST_DEBUG = "GST_TRACER:7"
+- GST_TRACERS = "live;" + (tracers to use)
 ```console
-$ NNPROFILER_ENABLED=TRUE GST_DEBUG="GST_TRACER:7" GST_TRACERS="cpuusage;proctime;interlatency;framerate"\
+$ GST_DEBUG="GST_TRACER:7" GST_TRACERS="live;cpuusage;proctime;interlatency;framerate"\
      gst-launch-1.0 videotestsrc ! videorate max-rate=15 ! fakesink
 ```
 
