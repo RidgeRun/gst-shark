@@ -11,10 +11,10 @@ https://developer.ridgerun.com/wiki/index.php?title=GstShark
 ## How To Install
 - On Ubuntu x64
 ```console
-$ sudo apt install gtk-doc* libgraphviz-dev libncurses5-dev libncursesw5-dev
+$ sudo apt install gtk-doc-tools libgraphviz-dev libncurses5-dev libncursesw5-dev
 $ ./autogen_ubuntux64.sh
-$ ./make
-$ ./sudo make install
+$ make
+$ sudo make install
 ```
 For other environment, visit GstShark wiki
 
