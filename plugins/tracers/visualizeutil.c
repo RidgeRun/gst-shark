@@ -25,10 +25,13 @@ int row_offset=0; //for scrolling
 // NCurses color scheme
 #define INVERT_PAIR	1
 #define TITLE_PAIR	2
+#define SELECT_PAIR 3
 
 // View Mode
 char currentModeText[14];
 int currentMode=0; //0-list, 1-matrix, 2-graph
+
+GList * keyIterator=NULL;
 
 // Iterator for Hashtable
 void print_pad(gpointer key, gpointer value, gpointer user_data) {
@@ -48,8 +51,14 @@ void print_element(gpointer key, gpointer value, gpointer user_data) {
 	ElementUnit * data = (ElementUnit *) value;
 	
 	attron(A_BOLD);
+	g_return_if_fail(keyIterator);
+	if(keyIterator && strcmp(key, keyIterator->data) == 0)
+		attron(COLOR_PAIR(SELECT_PAIR));
 	mvprintw(row_offset+row_current, 0, "%s", name);
+	if(keyIterator && strcmp(key, keyIterator->data) == 0)
+		attroff(COLOR_PAIR(SELECT_PAIR));
 	attroff(A_BOLD);
+
 
 	mvprintw(row_offset+row_current, ELEMENT_NAME_MAX,
 			"%20ld %20f %17d/%2d", 
@@ -57,7 +66,6 @@ void print_element(gpointer key, gpointer value, gpointer user_data) {
 			data->proctime->avg,
 			data->queue_level,
 			data->max_queue_level);
-
 	row_current++;
 	
 	g_hash_table_foreach(data->pad, (GHFunc) print_pad, NULL);	
@@ -90,6 +98,7 @@ void initialize(void)
 	start_color();
 	init_pair(INVERT_PAIR, COLOR_BLACK, COLOR_WHITE);
 	init_pair(TITLE_PAIR, COLOR_BLUE, COLOR_BLACK);
+	init_pair(SELECT_PAIR, COLOR_RED, COLOR_BLACK);
 	keypad(stdscr, TRUE);
 	curs_set(0);
 	noecho();
@@ -119,10 +128,18 @@ void * curses_loop(void *arg)
     int key_in;
     int iter = 0;
     int i;
+	GList * element_key=NULL;
 
+	printf("DONE INITIALIZE\n");
     initialize();
 
     while(1) {
+		if(element_key == NULL) {
+			element_key = g_hash_table_get_keys(packet->elements);
+			keyIterator = g_list_first(element_key);
+		}
+			
+
         row_current = 0;
         col_current = 0;
 
@@ -155,6 +172,14 @@ void * curses_loop(void *arg)
 				strcpy(currentModeText, "graph");
 				row_offset = 0; //reset offset
 			}
+			break;
+		case 260: //arrow right
+			if(g_list_next(keyIterator))
+				keyIterator = g_list_next(keyIterator);
+			break;
+		case 261: //arrow left
+			if(g_list_previous(keyIterator))
+				keyIterator = g_list_previous(keyIterator);
 			break;
 		case 259: //arrow up
 			if (row_offset < 0) row_offset++;
