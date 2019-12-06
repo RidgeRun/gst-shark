@@ -1,11 +1,11 @@
-# NNProfiler
-Gstreamer real-time profiler plugin for nnstreamer
+# Live Profiler for Gstreamer
+Real-time profiler plugin for Gstreamer
 
 ## Open Source License
 - GstShark
 https://github.com/RidgeRun/gst-shark
 
-- For further information visit
+- For further information, visit GstShark wiki
 https://developer.ridgerun.com/wiki/index.php?title=GstShark
 
 ## How To Install
