@@ -1,4 +1,7 @@
 #include <gst/gst.h>
+#include <time.h>
+
+void milsleep(int ms);
 
 G_BEGIN_DECLS
 
@@ -6,14 +9,14 @@ G_BEGIN_DECLS
 #define TIMESCALE 400
 #define ELEMENT_NAME_MAX 20
 
-#define CPU_NUM(packet) \
-	(packet->cpu_num)
-#define CPU_LOAD(packet) \
-	(packet->cpu_load)
-#define ELEMENTS(packet) \
-	(packet->elements)
-#define CONNECTIONS(packet) \
-	(packet->connections)
+#define packet_set_cpu_num(packet, val) \
+	packet->cpu_num = val
+#define packet_set_cpu_load(packet, val) \
+	packet->cpu_load = val
+#define packet_set_elements(packet, val) \
+	packet->elements = val;
+#define packet_set_connections(packet, val) \
+	packet->connections = val;
 
 typedef struct _Packet Packet;
 
