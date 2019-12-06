@@ -7,6 +7,7 @@
 #include <sys/sysinfo.h>
 
 #include "gstliveprofiler.h"
+#include "gstliveunit.h"
 #include "visualizeutil.h"
 
 // Plugin Data
@@ -32,7 +33,7 @@ add_children_recursively (GstElement * element, GHashTable * table)
 		}
 	}
 	else {
-		eUnit = g_malloc0 (sizeof(ElementUnit));
+		eUnit = element_unit_new();
 		eUnit->element = element;
 		eUnit->pad = g_hash_table_new (g_str_hash, g_str_equal);
 
@@ -95,7 +96,7 @@ update_proctime_event (gchar * elementname, guint64 time)
 	pElement = g_hash_table_lookup(elements, key);
 	g_return_if_fail(pElement);
 
-	pElement->proctime = time;
+	avg_update_value(pElement->proctime, time);
 }
 
 void 

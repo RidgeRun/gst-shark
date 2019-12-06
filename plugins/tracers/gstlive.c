@@ -20,7 +20,7 @@
 
 /**
  * SECTION:gstlive
- * @short_description: display pipeline live
+ * @short_description: display live profiler
  *
  * A tracing module that uses the DOT libraries in order to show the pipeline executed liveally
  */
@@ -64,14 +64,17 @@ static void gst_live_tracer_finalize (GObject * obj);
 static void
 gst_live_tracer_finalize (GObject * obj)
 {
+  g_unsetenv("LIVEPROFILER_ENABLED");
   G_OBJECT_CLASS (gst_live_tracer_parent_class)->finalize (obj);
+
 }
 
 static void
 gst_live_tracer_class_init (GstLiveTracerClass * klass)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
-
+  gst_liveprofiler_init();
+  g_setenv("LIVEPROFILER_ENABLED", "TRUE", TRUE);
   gobject_class->finalize = gst_live_tracer_finalize;
 }
 

@@ -136,7 +136,7 @@ log_latency (GstInterLatencyTracer * interlatency_tracer,
   time_string = g_string_new ("");
   g_string_printf (time_string, "%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
-	if (!g_getenv("NNPROFILER_ENABLED")) {
+	if (!g_getenv("LIVEPROFILER_ENABLED")) {
 #ifdef GST_STABLE_RELEASE
 		gst_tracer_record_log (tr_interlatency, src, sink, time_string->str);
 #else

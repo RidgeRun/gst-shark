@@ -184,7 +184,7 @@ print_framerate (GstPeriodicTracer * tracer)
   while (g_hash_table_iter_next (&iter, &key, &value)) {
     pad_table = (GstFramerateHash *) value;
 
-		if (!g_getenv("NNPROFILER_ENABLED")) {
+		if (!g_getenv("LIVEPROFILER_ENABLED")) {
 		  gst_tracer_record_log (tr_framerate, pad_table->fullname,
 				  pad_table->counter);
       do_print_framerate_event (FPS_EVENT_ID, pad_table->fullname,

@@ -95,7 +95,7 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   if (should_log) {
     time_string = g_strdup_printf ("%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
-		if(!g_getenv("NNPROFILER_ENABLED")) {
+		if(!g_getenv("LIVEPROFILER_ENABLED")) {
 		  gst_tracer_record_log (tr_proc_time, name, time_string);
       do_print_proctime_event (PROCTIME_EVENT_ID, name, time);
 		}

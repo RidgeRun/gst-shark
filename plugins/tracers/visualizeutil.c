@@ -2,6 +2,7 @@
 
 #include "visualizeutil.h"
 #include "gstliveprofiler.h"
+#include "gstliveunit.h"
 
 void print_pad(gpointer key, gpointer value, gpointer user_data);
 void print_elements(gpointer key, gpointer value, gpointer user_data);
@@ -33,12 +34,16 @@ void print_element(gpointer key, gpointer value, gpointer user_data) {
 	
 	mvprintw(ncurses_row_current, 0, "%s", name);
 	mvprintw(ncurses_row_current, ELEMENT_NAME_MAX,
-			"%20d", data->proctime);
+			"%8ld(%8.2f)", 
+			data->proctime->value, 
+			data->proctime->avg);
 	ncurses_row_current++;
+	
 	g_hash_table_foreach(data->pad, (GHFunc) print_pad, NULL);	
 }
 
 void print_connection(gpointer key, gpointer value, gpointer user_data) {
+	/*
 	char * connection_key = strdup((char *) key);
 	char * sname = strtok(connection_key, " ");
 	char * dname = strtok(NULL, " ");
@@ -49,6 +54,7 @@ void print_connection(gpointer key, gpointer value, gpointer user_data) {
 	mvprintw(ncurses_row_current, ELEMENT_NAME_MAX * 2,
 			"%18dns", data->interlatency);
 	ncurses_row_current++;
+	*/
 }
 
 void ncurses_initialize(void) 
@@ -128,7 +134,7 @@ void * curses_loop(void *arg)
 */
         iter++;
         refresh();
-        milsleep(TIMESCALE);
+        milsleep(TIMESCALE / 4);
 		
     }
     endwin();

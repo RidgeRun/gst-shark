@@ -16,47 +16,6 @@ void update_framerate_event (gchar * elementname, gchar * padname,  guint64 fps)
 void update_interlatency_event (gchar * originpad, 
 		gchar * destinationpad, guint64 time);
 void update_pipeline_init (GstPipeline * element);
-
+	
 G_BEGIN_DECLS
-
-typedef struct _ProfilerElement ProfilerElement;
-typedef struct _ProfilerConnection ProfilerConnection;
-typedef struct _ElementUnit ElementUnit;
-typedef struct _PadUnit PadUnit;
-typedef struct _ConnectionUnit ConnectionUnit;
-
-struct _ProfilerElement 
-{
-	guint64 proctime;
-	guint64 framerate;
-};
-
-struct _ProfilerConnection
-{
-	guint64 interlatency;
-};
-
-struct _ElementUnit 
-{
-	GstElement * element;
-	GHashTable * pad;
-
-	guint64 proctime;
-	guint64 memuse;
-	guint64 queuelevel;
-};
-
-struct _PadUnit
-{
-	GstElement * element;
-
-	guint64 framerate;	
-};
-
-struct _ConnectionUnit
-{
-	GstElement * src;
-	GstElement * dest;
-};
-
 G_END_DECLS

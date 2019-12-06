@@ -6,6 +6,7 @@ libgstshark_la_SOURCES = \
 	gstproctimecompute.c \
 	gstctf.c \
 	gstparser.c \
+	gstliveunit.c \
 	gstliveprofiler.c \
 	visualizeutil.c
 
@@ -75,9 +76,10 @@ noinst_HEADERS = \
 	gstbuffer.h \
 	gstsharktracer.h \
 	gstperiodictracer.h \
+	gstliveunit.h \
 	gstliveprofiler.h \
-	visualizeutil.h \
-	gstlive.h
+	gstlive.h \
+	visualizeutil.h
 
 CLEANFILES = *.gcno *.gcda *.gcov *.gcov.out
 

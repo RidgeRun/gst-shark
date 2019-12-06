@@ -82,11 +82,6 @@ plugin_init (GstPlugin * plugin)
   if (!gst_ctf_init ()) {
     return FALSE;
   }
-  if(g_getenv("NNPROFILER_ENABLED")) {
-	  if (!gst_liveprofiler_init()) {
-		  return FALSE;
-	}
-  }
 
   return TRUE;
 }
