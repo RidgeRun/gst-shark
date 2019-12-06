@@ -25,6 +25,7 @@
  */
 
 #include "gstqueuelevel.h"
+#include "gstliveprofiler.h"
 #include "gstctf.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_queue_level_debug);
@@ -120,15 +121,21 @@ do_queue_level (GstTracer * self, guint64 ts, GstPad * pad)
 
   max_size_time_string =
       g_strdup_printf ("%" GST_TIME_FORMAT, GST_TIME_ARGS (max_size_time));
-
-  gst_tracer_record_log (tr_qlevel, element_name, size_bytes, max_size_bytes,
-      size_buffers, max_size_buffers, size_time_string, max_size_time_string);
-
+  if(!g_getenv("LIVEPROFILER_ENABLED")) {
+	gst_tracer_record_log (tr_qlevel, element_name, size_bytes, max_size_bytes,
+		size_buffers, max_size_buffers, size_time_string, max_size_time_string);
+  }
   g_free (size_time_string);
   g_free (max_size_time_string);
 
-  do_print_queue_level_event (QUEUE_LEVEL_EVENT_ID, element_name, size_bytes,
-      max_size_bytes, size_buffers, max_size_buffers, size_time, max_size_time);
+  if(!g_getenv("LIVEPROFILER_ENABLED")) {
+	do_print_queue_level_event (QUEUE_LEVEL_EVENT_ID, element_name, size_bytes,
+		max_size_bytes, size_buffers, max_size_buffers, size_time, max_size_time);
+  }
+  else
+  {
+	update_queue_level_event(element_name, size_buffers, max_size_buffers);
+  }
 
 out:
   {

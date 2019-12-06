@@ -15,6 +15,8 @@ void update_proctime_event (gchar * elementname, guint64 time);
 void update_framerate_event (gchar * elementname, gchar * padname,  guint64 fps);
 void update_interlatency_event (gchar * originpad, 
 		gchar * destinationpad, guint64 time);
+void update_queue_level_event(const gchar * elementname, 
+		guint32 size_buffer, guint32 max_size_buffer);
 void update_pipeline_init (GstPipeline * element);
 	
 G_BEGIN_DECLS

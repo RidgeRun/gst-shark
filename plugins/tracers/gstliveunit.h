@@ -25,7 +25,8 @@ struct _ElementUnit
 	AvgUnit * proctime;
 
 	guint64 memuse;
-	guint64 queuelevel;
+	guint32 queue_level;
+	guint32 max_queue_level;
 };
 
 struct _PadUnit

@@ -104,14 +104,38 @@ update_framerate_event (gchar * elementname, gchar *padname, guint64 fps)
 {
 	GHashTable * elements = packet->elements;
 	ElementUnit * pElement;
+	gchar * peerName;
 	PadUnit * pPad;
+	PadUnit * peerPad;
 
 	pElement = g_hash_table_lookup(elements, elementname);
 	g_return_if_fail(pElement);
 	pPad = g_hash_table_lookup(pElement->pad, padname);
 	g_return_if_fail(pPad);
 
-	pPad->framerate = fps;		
+	pPad->framerate = fps;
+
+	peerPad = gst_pad_get_peer((GstPad *) (pPad->element));
+	peerName = GST_OBJECT_NAME ( GST_OBJECT_PARENT (peerPad));
+	pElement = g_hash_table_lookup(elements, peerName);
+	g_return_if_fail(pElement);
+	pPad = g_hash_table_lookup(pElement->pad, GST_OBJECT_NAME (peerPad));
+	g_return_if_fail(pPad);
+
+	pPad->framerate = fps;
+}
+
+void
+update_queue_level_event (const gchar * elementname, guint size_buffer,
+		guint max_size_buffer)
+{
+	GHashTable * elements = packet->elements;
+	ElementUnit * pElement;
+	
+	pElement = g_hash_table_lookup(elements, elementname);
+	g_return_if_fail(pElement);
+	pElement->queue_level = size_buffer;
+	pElement->max_queue_level = max_size_buffer;
 }
 
 void 
