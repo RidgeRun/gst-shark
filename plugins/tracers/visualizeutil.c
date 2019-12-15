@@ -79,8 +79,8 @@ print_pad (gpointer key, gpointer value, gpointer user_data)
     mvprintw (row_offset + row_current, 4, "%s", name);
   }
 
-  // mvprintw(row_offset+row_current, ELEMENT_NAME_MAX * 4 + 2, 
-  //              "%20.2f%20ld", data->datarate, data->buffer_size->value);
+  mvprintw (row_offset + row_current, ELEMENT_NAME_MAX * 4 + 2,
+      "%20.2f", data->datarate);
   row_current++;
 }
 
@@ -240,7 +240,7 @@ draw_pad (gpointer key, gpointer value, gpointer user_data)
     draw_arrow (row_pad_src, 165 + 1, 20);
     mvprintw (row_pad_src + 1, 165 + 1, "to %s",
         GST_OBJECT_NAME (GST_OBJECT_PARENT (gst_pad_get_peer (data->element))));
-    mvprintw (row_pad_src + 2, 165 + 1, "framerate: %10.2f", data->datarate);
+    mvprintw (row_pad_src + 2, 165 + 1, "bufrate: %10.2f", data->datarate);
     mvprintw (row_pad_src + 3, 165 + 1, "bufsize: %10ld",
         data->buffer_size->value);
     row_pad_src += 4;
@@ -248,7 +248,7 @@ draw_pad (gpointer key, gpointer value, gpointer user_data)
     draw_arrow (row_pad_sink, 115 - 1, 20);
     mvprintw (row_pad_sink + 1, 115 - 1, "from %s",
         GST_OBJECT_NAME (GST_OBJECT_PARENT (gst_pad_get_peer (data->element))));
-    mvprintw (row_pad_sink + 2, 115 - 1, "framerate: %10.2f", data->datarate);
+    mvprintw (row_pad_sink + 2, 115 - 1, "bufrate: %10.2f", data->datarate);
     mvprintw (row_pad_sink + 3, 115 - 1, "bufsize: %10ld",
         data->buffer_size->value);
     row_pad_sink += 4;
@@ -428,13 +428,13 @@ curses_loop (void *arg)
 
     print_line (&row_current, &col_current);
 
-    // Proctime & Framerate
+    // Proctime & Bufferrate
     attron (A_BOLD);
     attron (COLOR_PAIR (TITLE_PAIR));
     mvprintw (row_offset + row_current, 0, "ElementName");
     mvprintw (row_offset + row_current++, ELEMENT_NAME_MAX,
         "%20s %20s %20s %20s", "Proctime(ns)", "Avg_proctime(ns)", "queuelevel",
-        "Framerate(fps)");
+        "Bufferrate(bps)");
     attroff (COLOR_PAIR (TITLE_PAIR));
     attroff (A_BOLD);
 
