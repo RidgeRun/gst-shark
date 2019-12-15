@@ -27,7 +27,6 @@ struct _ElementUnit
 	AvgUnit * proctime;
 	
 	gboolean is_filter;
-	guint64 memuse;
 	guint32 queue_level;
 	guint32 max_queue_level;
 };
@@ -39,10 +38,9 @@ struct _PadUnit
 	GQueue * time_log;
 	guint64 time;
 	
+	AvgUnit * buffer_size;
 	gdouble datarate;
-	guint32 num;
-
-	guint64 framerate;	
+	guint32 num;	
 };
 
 struct _ConnectionUnit

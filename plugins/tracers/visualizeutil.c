@@ -27,9 +27,15 @@ int row_offset=0; //for scrolling
 #define TITLE_PAIR	2
 #define SELECT_ELEMENT_PAIR 3
 #define SELECT_PAD_PAIR 4
+#define SELECT_PEER_PAD_PAIR 5
 
 // View Mode
-char currentModeText[14];
+#define PAD_SELECTION 1
+#define ELEMENT_SELECTION 0
+
+#define NONE_SELECTED 0
+#define PEER_SELECTED 1
+#define SELF_SELECTED 2
 
 GList * elementIterator = NULL;
 GList * padIterator = NULL;
@@ -40,22 +46,29 @@ gchar * pairElement = NULL;
 void print_pad(gpointer key, gpointer value, gpointer user_data) {
 	gchar * name = (gchar *) key;
 	PadUnit * data = (PadUnit *) value;
-	gboolean * selected = (gboolean *) user_data;
+	gint8 * selected = (gint8 *) user_data;
+	GstPad * pair;
 
-	if(padIterator && *selected && strcmp(key, padIterator->data) == 0) {
+	if(padIterator && *selected == SELF_SELECTED && strcmp(key, padIterator->data) == 0) {
 		attron(A_BOLD); attron(COLOR_PAIR(SELECT_PAD_PAIR));
 		mvprintw(row_offset+row_current, 4, "%s", name);
 		attroff(A_BOLD); attroff(COLOR_PAIR(SELECT_PAD_PAIR));
 		
-		pairElement = GST_OBJECT_NAME (GST_OBJECT_PARENT (data->element));
-		pairPad = GST_OBJECT_NAME (data->element);
+		pair = gst_pad_get_peer((GstPad *) data->element);
+		pairElement = GST_OBJECT_NAME (GST_OBJECT_PARENT (pair));
+		pairPad = GST_OBJECT_NAME (pair);
+	}
+	else if(padIterator && *selected == PEER_SELECTED && strcmp(key, pairPad) == 0) {
+		attron(A_BOLD); attron(COLOR_PAIR(SELECT_PEER_PAD_PAIR));
+		mvprintw(row_offset+row_current, 4, "%s", name);
+		attroff(A_BOLD); attroff(COLOR_PAIR(SELECT_PEER_PAD_PAIR));	
 	}
 	else {
 		mvprintw(row_offset+row_current, 4, "%s", name);
 	}
 
 	mvprintw(row_offset+row_current, ELEMENT_NAME_MAX * 4 + 2, 
-			"%20f", data->datarate);
+			"%20.2f%20ld", data->datarate, data->buffer_size->value);
 	row_current++;
 }
 
@@ -63,23 +76,27 @@ void print_pad(gpointer key, gpointer value, gpointer user_data) {
 void print_element(gpointer key, gpointer value, gpointer user_data) {
 	gchar * name = (gchar *) key;
 	ElementUnit * data = (ElementUnit *) value;
-	gboolean * selected = g_malloc(sizeof(gboolean *));
+	gint8 * selected = g_malloc(sizeof(gboolean *));
 
 	attron(A_BOLD);
 	if(elementIterator && strcmp(key, elementIterator->data) == 0) {
 		attron(COLOR_PAIR(SELECT_ELEMENT_PAIR));
 		mvprintw(row_offset+row_current, 0, "%s", name);
 		attroff(COLOR_PAIR(SELECT_ELEMENT_PAIR));
-		*selected = TRUE;
+		*selected = SELF_SELECTED;
+	}
+	else if(pairElement && strcmp(key, pairElement) == 0) {
+		mvprintw(row_offset+row_current, 0, "%s", name);
+		*selected = PEER_SELECTED;
 	}
 	else {
 		mvprintw(row_offset+row_current, 0, "%s", name);
-		*selected = FALSE;
+		*selected = NONE_SELECTED;
 	}	
 	attroff(A_BOLD);
 
 	mvprintw(row_offset+row_current, ELEMENT_NAME_MAX,
-			"%20ld %20f %17d/%2d", 
+			"%20ld %20.3f %17d/%2d", 
 			data->proctime->value, 
 			data->proctime->avg,
 			data->queue_level,
@@ -96,7 +113,6 @@ void initialize(void)
 	row_current = 0;
 	col_current = 0;
 	row_offset = 0; //for scrolling
-	strcpy(currentModeText, "list");
 	initscr();
 	raw();
 	start_color();
@@ -104,6 +120,7 @@ void initialize(void)
 	init_pair(TITLE_PAIR, COLOR_BLUE, COLOR_BLACK);
 	init_pair(SELECT_ELEMENT_PAIR, COLOR_RED, COLOR_BLACK);
 	init_pair(SELECT_PAD_PAIR, COLOR_YELLOW, COLOR_BLACK);
+	init_pair(SELECT_PEER_PAD_PAIR, COLOR_CYAN, COLOR_BLACK);
 	keypad(stdscr, TRUE);
 	curs_set(0);
 	noecho();
@@ -133,6 +150,7 @@ void * curses_loop(void *arg)
     int key_in;
     int iter = 0;
     int i;
+	gboolean selection_mode = ELEMENT_SELECTION;
 	ElementUnit * element = NULL;
 	GList * element_key = NULL;
 	GList * pad_key = NULL;
@@ -145,12 +163,6 @@ void * curses_loop(void *arg)
 			element_key = g_hash_table_get_keys(packet->elements);
 			elementIterator = g_list_last(element_key);
 		}
-		else if(pad_key == NULL) {
-			element = g_hash_table_lookup(packet->elements, elementIterator->data);
-			pad_key = g_hash_table_get_keys(element->pad);
-			padIterator = g_list_last(pad_key);		
-		}
-
         row_current = 0;
         col_current = 0;
 
@@ -160,41 +172,66 @@ void * curses_loop(void *arg)
         if (key_in == 'q' || key_in == 'Q') break;
 	
 	switch(key_in) {//key value
-		case 'w': //arrow right
-			if(g_list_next(elementIterator)) {
-				elementIterator = g_list_next(elementIterator);
-				element = g_hash_table_lookup(packet->elements, elementIterator->data);
-				pad_key = g_hash_table_get_keys(element->pad);
-				padIterator = g_list_last(pad_key);
+		case 259: //arrow right
+			if(selection_mode == PAD_SELECTION) {
+				if(g_list_next(padIterator)) {
+					padIterator = g_list_next(padIterator);
+				}
+			}
+			else if(selection_mode == ELEMENT_SELECTION) {
+				if(g_list_next(elementIterator)) {
+					elementIterator = g_list_next(elementIterator);
+					element = g_hash_table_lookup(packet->elements, elementIterator->data);
+				}			
+			}
+		
+			break;
+		case 258: //arrow left
+			if (selection_mode == PAD_SELECTION) {
+				if(g_list_previous(padIterator)) {
+					padIterator = g_list_previous(padIterator);
+				}		
+			}
+			else if (selection_mode == ELEMENT_SELECTION) {
+				if(g_list_previous(elementIterator)) {
+					elementIterator = g_list_previous(elementIterator);
+					element = g_hash_table_lookup(packet->elements, elementIterator->data);
+				}
 			}
 			break;
-		case 's': //arrow left
-			if(g_list_previous(elementIterator)) {
-				elementIterator = g_list_previous(elementIterator);
-				element = g_hash_table_lookup(packet->elements, elementIterator->data);
-				pad_key = g_hash_table_get_keys(element->pad);
-				padIterator = g_list_last(pad_key);
-			}
+		case 261: //arrow right
+			selection_mode = PAD_SELECTION;
+			element = g_hash_table_lookup(packet->elements, elementIterator->data);
+			pad_key = g_hash_table_get_keys(element->pad);
+			padIterator = g_list_last(pad_key);
 			break;
-		case 'a':
-			if(g_list_next(padIterator)) {
-				padIterator = g_list_next(padIterator);
-			}
-			break;
-		case 'd':
-			if(g_list_previous(padIterator)) {
-				padIterator = g_list_previous(padIterator);
-			}
+		case 260: //arrow left
+			selection_mode = ELEMENT_SELECTION;
+			pad_key = NULL;
+			padIterator = NULL;
+			pairPad = NULL;
+			pairElement = NULL;
 			break;
 		case 32:
 			if(element_key && pad_key) {
 				elementIterator = g_list_first(element_key);
+				while(g_list_next(elementIterator)) {
+					if(strcmp(elementIterator->data, pairElement) == 0) break;
+					elementIterator = g_list_next(elementIterator);
+				}
+				element = g_hash_table_lookup(packet->elements, elementIterator->data);
+				pad_key = g_hash_table_get_keys(element->pad);
+				padIterator = g_list_first(pad_key);
+				while(g_list_next(padIterator)) {
+					if(strcmp(padIterator->data, pairPad) == 0) break;
+					padIterator = g_list_next(padIterator);
+				}
 			}
 			break;
-		case 259: //arrow up
+		case '[': //arrow up
 			if (row_offset < 0) row_offset++;
 			break;
-		case 258: //arrow down
+		case ']': //arrow down
 			row_offset--; 
 			break;
 		default:

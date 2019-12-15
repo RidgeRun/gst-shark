@@ -57,11 +57,11 @@ do_element_change_state_post (GObject * self, guint64 ts,
 }
 
 static void
-do_pad_push_pre (GstTracer * self, guint64 ts, GstPad * pad) 
+do_pad_push_pre (GstTracer * self, guint64 ts, GstPad * pad, GstBuffer * buffer) 
 {
 	gchar * element_name = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
 	gchar * pad_name = GST_OBJECT_NAME (pad);
-	element_push_buffer_pre (element_name, pad_name, ts);
+	element_push_buffer_pre (element_name, pad_name, ts, gst_buffer_get_size(buffer));
 }
 
 static void

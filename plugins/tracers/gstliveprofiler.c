@@ -115,41 +115,6 @@ update_cpuusage_event (guint32 cpunum, gfloat * cpuload)
 	memcpy (cpu_load, cpuload, cpu_num * sizeof(gfloat));
 }
 
-void 
-update_proctime_event (gchar * elementname, guint64 time) 
-{
-	/*
-	GHashTable * elements = packet->elements;
-	gchar * key = strdup(elementname);
-	ElementUnit * pElement;
-
-	pElement = g_hash_table_lookup(elements, key);
-	g_return_if_fail(pElement);
-
-	avg_update_value(pElement->proctime, time);
-	*/
-}
-
-void 
-update_framerate_event (gchar * elementname, gchar *padname, guint64 fps) 
-{
-	GHashTable * elements = packet->elements;
-	ElementUnit * pElement;
-	PadUnit * pPad;
-	PadUnit * peerPad;
-
-	pElement = g_hash_table_lookup(elements, elementname);
-	g_return_if_fail(pElement);
-	pPad = g_hash_table_lookup(pElement->pad, padname);
-	g_return_if_fail(pPad);
-
-	pPad->framerate = fps;
-
-	peerPad = pad_unit_peer(elements, pPad);
-	g_return_if_fail(pElement);
-	peerPad->framerate = fps;
-}
-
 void
 update_queue_level_event (const gchar * elementname, guint size_buffer,
 		guint max_size_buffer)
@@ -163,37 +128,8 @@ update_queue_level_event (const gchar * elementname, guint size_buffer,
 	pElement->max_queue_level = max_size_buffer;
 }
 
-void 
-update_interlatency_event (gchar * originpad, 
-		gchar * destinationpad, guint64 time) 
-{
-	/*
-	char generated_key[60];
-	char * key;
-	ProfilerConnection * pElement, * pTemp;
-
-	strcpy(generated_key, originpad);
-	strcat(generated_key, " ");
-	strcat(generated_key, destinationpad);
-	key = strdup(generated_key);
-	
-	pElement = LIVE_GET_CONNECTION(key);
-	if(pElement == NULL)
-	{
-		pTemp = malloc (sizeof(ProfilerConnection));
-		pTemp->interlatency = time;
-		LIVE_PUT_CONNECTION(key, pTemp);
-	}
-	else
-	{
-		LIVE_MODIFY_INTERLATENCY(pElement, time);
-	}
-	*/
-	return;
-}
-
 void
-element_push_buffer_pre (gchar * elementname, gchar * padname, guint64 ts) 
+element_push_buffer_pre (gchar * elementname, gchar * padname, guint64 ts, guint64 buffer_size) 
 {
 	//printf("[%ld]%s-%s pre\n", ts, elementname, padname);
 	GHashTable * elements = packet->elements;
@@ -244,6 +180,9 @@ element_push_buffer_pre (gchar * elementname, gchar * padname, guint64 ts)
 		*pTime = ts;
 	}
 	g_queue_push_head(pPad->time_log, pTime);
+
+	avg_update_value(pPad->buffer_size, buffer_size);
+	avg_update_value(pPeerPad->buffer_size, buffer_size);
 }
 
 void

@@ -29,7 +29,6 @@
 
 #include "gstframerate.h"
 #include "gstctf.h"
-#include "gstliveprofiler.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_framerate_debug);
 #define GST_CAT_DEFAULT gst_framerate_debug
@@ -73,8 +72,6 @@ typedef struct _GstFramerateHash GstFramerateHash;
 struct _GstFramerateHash
 {
   gchar *fullname;
-  gchar *elementname;
-  gchar *padname;
   guint counter;
 };
 
@@ -184,16 +181,10 @@ print_framerate (GstPeriodicTracer * tracer)
   while (g_hash_table_iter_next (&iter, &key, &value)) {
     pad_table = (GstFramerateHash *) value;
 
-		if (!g_getenv("LIVEPROFILER_ENABLED")) {
-		  gst_tracer_record_log (tr_framerate, pad_table->fullname,
-				  pad_table->counter);
-      do_print_framerate_event (FPS_EVENT_ID, pad_table->fullname,
-          pad_table->counter);
-		}
-		else {
-		  update_framerate_event(pad_table->elementname, 
-				  pad_table->padname, pad_table->counter);
-		}	
+    gst_tracer_record_log (tr_framerate, pad_table->fullname,
+        pad_table->counter);
+    do_print_framerate_event (FPS_EVENT_ID, pad_table->fullname,
+        pad_table->counter);
     pad_table->counter = 0;
   }
 
@@ -241,8 +232,6 @@ consider_frames (GstFramerateTracer * self, GstPad * pad, guint amount)
 
     pad_frames = g_malloc (sizeof (GstFramerateHash));
     pad_frames->fullname = fullname;
-	pad_frames->padname = GST_OBJECT_NAME(pad);
-	pad_frames->elementname = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
     pad_frames->counter = amount;
 
     GST_OBJECT_LOCK (self);

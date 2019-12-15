@@ -29,6 +29,7 @@ PadUnit * pad_unit_new(void)
 	PadUnit * p = g_malloc0 (sizeof(PadUnit));
 	p->time = 0;
 	p->time_log = g_queue_new();
+	p->buffer_size = avg_unit_new();
 	p->datarate = 0;
 	p->num = 0;
 	return p;
