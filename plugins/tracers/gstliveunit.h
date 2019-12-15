@@ -21,9 +21,12 @@ struct _ElementUnit
 {
 	GstElement * element;
 	GHashTable * pad;
+	
+	guint64 time;
 
 	AvgUnit * proctime;
-
+	
+	gboolean is_filter;
 	guint64 memuse;
 	guint32 queue_level;
 	guint32 max_queue_level;
@@ -32,6 +35,12 @@ struct _ElementUnit
 struct _PadUnit
 {
 	GstElement * element;
+
+	GQueue * time_log;
+	guint64 time;
+	
+	gdouble datarate;
+	guint32 num;
 
 	guint64 framerate;	
 };
@@ -42,10 +51,13 @@ struct _ConnectionUnit
 	GstElement * dest;
 };
 
-
 void avg_update_value (AvgUnit * unit, guint64 value);
 AvgUnit * avg_unit_new(void);
-ElementUnit * element_unit_new(void);typedef struct _AvgUnit AvgUnit;
+ElementUnit * element_unit_new(void);
+
+PadUnit * pad_unit_new(void);
+PadUnit * pad_unit_peer(GHashTable * elements, PadUnit * target);
+ElementUnit * pad_unit_parent(GHashTable * elements, PadUnit * target);
 
 G_END_DECLS
 

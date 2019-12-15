@@ -18,6 +18,16 @@ void update_interlatency_event (gchar * originpad,
 void update_queue_level_event(const gchar * elementname, 
 		guint32 size_buffer, guint32 max_size_buffer);
 void update_pipeline_init (GstPipeline * element);
-	
+
+void element_push_buffer_pre (gchar * elementname, gchar * padname, guint64 ts);
+void element_push_buffer_post (gchar * elementname, gchar * padname, guint64 ts);
+void element_push_buffer_list_pre (gchar * elementname, gchar * padname, 
+		guint64 ts);
+void element_push_buffer_list_post (gchar * elementname, gchar * padname, 
+		guint64 ts);
+void element_pull_range_pre (gchar * elementname, gchar * padname, guint64 ts);
+void element_pull_range_post (gchar * elementname, gchar * padname, guint64 ts);
+
+
 G_BEGIN_DECLS
 G_END_DECLS

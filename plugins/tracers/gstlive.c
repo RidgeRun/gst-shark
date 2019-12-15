@@ -56,6 +56,54 @@ do_element_change_state_post (GObject * self, guint64 ts,
 	}
 }
 
+static void
+do_pad_push_pre (GstTracer * self, guint64 ts, GstPad * pad) 
+{
+	gchar * element_name = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
+	gchar * pad_name = GST_OBJECT_NAME (pad);
+	element_push_buffer_pre (element_name, pad_name, ts);
+}
+
+static void
+do_pad_push_post (GstTracer * self, guint64 ts, GstPad * pad)
+{
+	gchar * element_name = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
+	gchar * pad_name = GST_OBJECT_NAME (pad);
+	element_push_buffer_post (element_name, pad_name, ts);
+}
+
+static void
+do_pad_push_list_pre (GstTracer * self, guint64 ts, GstPad * pad)
+{
+	gchar * element_name = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
+	gchar * pad_name = GST_OBJECT_NAME (pad);
+	element_push_buffer_list_pre (element_name, pad_name, ts);
+}
+
+static void
+do_pad_push_list_post (GstTracer * self, guint64 ts, GstPad * pad)
+{
+	gchar * element_name = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
+	gchar * pad_name = GST_OBJECT_NAME (pad);
+	element_push_buffer_list_post (element_name, pad_name, ts);
+}
+
+static void
+do_pad_pull_range_pre (GstTracer * self, guint64 ts, GstPad * pad)
+{
+	gchar * element_name = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
+	gchar * pad_name = GST_OBJECT_NAME (pad);
+	element_pull_range_pre (element_name, pad_name, ts);
+}
+
+static void
+do_pad_pull_range_post (GstTracer * self, guint64 ts, GstPad * pad)
+{
+	gchar * element_name = GST_OBJECT_NAME (GST_OBJECT_PARENT (pad));
+	gchar * pad_name = GST_OBJECT_NAME (pad);
+	element_pull_range_post (element_name, pad_name, ts);
+}
+
 static void gst_live_tracer_finalize (GObject * obj);
 
 
@@ -66,7 +114,6 @@ gst_live_tracer_finalize (GObject * obj)
 {
   g_unsetenv("LIVEPROFILER_ENABLED");
   G_OBJECT_CLASS (gst_live_tracer_parent_class)->finalize (obj);
-
 }
 
 static void
@@ -84,4 +131,18 @@ gst_live_tracer_init (GstLiveTracer * self)
   GstTracer *tracer = GST_TRACER (self);
   gst_tracing_register_hook (tracer, "element-change-state-post",
 		  G_CALLBACK (do_element_change_state_post));
+  gst_tracing_register_hook (tracer, "pad-push-pre",
+		  G_CALLBACK (do_pad_push_pre));
+  gst_tracing_register_hook (tracer, "pad-push-post",
+		  G_CALLBACK (do_pad_push_post));
+  gst_tracing_register_hook (tracer, "pad-push-list-pre",
+		  G_CALLBACK (do_pad_push_list_pre));
+  gst_tracing_register_hook (tracer, "pad-push-list-post",
+		  G_CALLBACK (do_pad_push_list_post));
+  gst_tracing_register_hook (tracer, "pad-pull-range-pre",
+		  G_CALLBACK (do_pad_pull_range_pre));
+  gst_tracing_register_hook (tracer, "pad-pull-range-post",
+		  G_CALLBACK (do_pad_pull_range_post));
+
+
 }
