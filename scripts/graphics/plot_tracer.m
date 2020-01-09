@@ -309,4 +309,38 @@ function plot_tracer(tracer,savefig,format,legend_location)
             plot_legend(legend_list,'Frame rate and CPU usage legend',savefig,'cpuusage_framerate_legend',format)
         end
     end
+
+    # Plot Buffer time
+    if (1 == isfield(tracer,'buffer'))
+        # Calculate the greatest time value
+        timestamp_max = max(max(tracer.buffer.timestamp_mat));
+        timestamp_min = min(min(tracer.buffer.timestamp_mat));
+
+        figure('Name','Buffer time')
+        plot(tracer.buffer.timestamp_mat',tracer.buffer.buffer_mat','linewidth',LINEWIDTH)
+        title('Processing time','fontsize',FONTSIZE)
+        xlabel('time (seconds)','fontsize',FONTSIZE)
+        ylabel('time (nanoseconds)','fontsize',FONTSIZE)
+        xlim([timestamp_min,timestamp_max])
+        if (0 == strcmp(legend_location,'extern'))
+            legend(str2latex(tracer.buffer.element_name_list),'Location',legend_location)
+        end
+
+        if (TRUE == savefig)
+            disp('Save buffer figure...')
+            switch format
+                case 'pdf'
+                    print tracer -dpdf -append
+                case 'png'
+                    print('buffer','-dpng');
+                otherwise
+                    printf('octave: WARN: %s is not supported',format)
+            end
+        end
+        # Create a new figure if the legend location is extern
+        if (1 == strcmp(legend_location,'extern'))
+            plot_legend(tracer.buffer.element_name_list,'Buffer plot legend',savefig,'buffer_legend',format)
+        end
+    end
+
 end
