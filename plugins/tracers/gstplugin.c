@@ -29,6 +29,7 @@
 #include "gstcpuusage.h"
 #include "gstproctime.h"
 #include "gstinterlatency.h"
+#include "gstinterlatencyaverage.h"
 #include "gstscheduletime.h"
 #include "gstframerate.h"
 #include "gstqueuelevel.h"
@@ -54,6 +55,10 @@ plugin_init (GstPlugin * plugin)
   }
   if (!gst_tracer_register (plugin, "interlatency",
           gst_interlatency_tracer_get_type ())) {
+    return FALSE;
+  }
+  if (!gst_tracer_register (plugin, "interlatencyaverage",
+          gst_interlatencyaverage_tracer_get_type ())) {
     return FALSE;
   }
   if (!gst_tracer_register (plugin, "scheduletime",
