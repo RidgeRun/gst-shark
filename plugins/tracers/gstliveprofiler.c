@@ -7,10 +7,39 @@
 #include <sys/sysinfo.h>
 
 #include "gstliveprofiler.h"
+#include "gstliveunit.h"
 #include "visualizeutil.h"
 
 // Plugin Data
 Packet * packet;
+
+gboolean
+is_filter (GstElement * element)
+{
+	GList * pads;
+	GList * iterator;
+	GstPad * pPad;
+	gint sink = 0;
+	gint src = 0;
+
+	pads = GST_ELEMENT_PADS (element);
+	iterator = g_list_first (pads);
+	while(iterator != NULL) {
+		pPad = iterator->data;
+		if(gst_pad_get_direction(pPad) == GST_PAD_SRC) 
+			src++;
+		if(gst_pad_get_direction(pPad) == GST_PAD_SINK)
+			sink++;
+		if(src > 1 || sink > 1)
+			return FALSE;
+
+		iterator = g_list_next(iterator);
+	}
+	if(src == 1 && sink == 1)
+		return TRUE;
+	else
+		return FALSE;
+}
 
 /*
  * Adds children of element recursively to the Hashtable.
@@ -32,15 +61,16 @@ add_children_recursively (GstElement * element, GHashTable * table)
 		}
 	}
 	else {
-		eUnit = g_malloc0 (sizeof(ElementUnit));
+		eUnit = element_unit_new();
 		eUnit->element = element;
 		eUnit->pad = g_hash_table_new (g_str_hash, g_str_equal);
+		eUnit->is_filter = is_filter(element);
 
 		children = GST_ELEMENT_PADS (element);
 		iter = g_list_first (children);
 
 		while(iter != NULL) {
-			pUnit = g_malloc0 (sizeof(PadUnit));
+			pUnit = pad_unit_new();
 			pUnit->element = iter->data;
 			g_hash_table_insert(eUnit->pad, GST_OBJECT_NAME (iter->data), pUnit);
 			
@@ -85,62 +115,105 @@ update_cpuusage_event (guint32 cpunum, gfloat * cpuload)
 	memcpy (cpu_load, cpuload, cpu_num * sizeof(gfloat));
 }
 
-void 
-update_proctime_event (gchar * elementname, guint64 time) 
-{
-	GHashTable * elements = packet->elements;
-	gchar * key = strdup(elementname);
-	ElementUnit * pElement;
-
-	pElement = g_hash_table_lookup(elements, key);
-	g_return_if_fail(pElement);
-
-	pElement->proctime = time;
-}
-
-void 
-update_framerate_event (gchar * elementname, gchar *padname, guint64 fps) 
+void
+update_queue_level_event (const gchar * elementname, guint size_buffer,
+		guint max_size_buffer)
 {
 	GHashTable * elements = packet->elements;
 	ElementUnit * pElement;
-	PadUnit * pPad;
-
+	
 	pElement = g_hash_table_lookup(elements, elementname);
 	g_return_if_fail(pElement);
-	pPad = g_hash_table_lookup(pElement->pad, padname);
-	g_return_if_fail(pPad);
-
-	pPad->framerate = fps;		
+	pElement->queue_level = size_buffer;
+	pElement->max_queue_level = max_size_buffer;
 }
 
-void 
-update_interlatency_event (gchar * originpad, 
-		gchar * destinationpad, guint64 time) 
+void
+element_push_buffer_pre (gchar * elementname, gchar * padname, guint64 ts, guint64 buffer_size) 
 {
-	/*
-	char generated_key[60];
-	char * key;
-	ProfilerConnection * pElement, * pTemp;
+	//printf("[%ld]%s-%s pre\n", ts, elementname, padname);
+	GHashTable * elements = packet->elements;
+	ElementUnit * pElement, * pPeerElement;
+	PadUnit * pPad, * pPeerPad;
+	gdouble datarate;
+	guint length;
+	guint64 * pTime;
 
-	strcpy(generated_key, originpad);
-	strcat(generated_key, " ");
-	strcat(generated_key, destinationpad);
-	key = strdup(generated_key);
+	pElement = g_hash_table_lookup (elements, elementname);
+	g_return_if_fail (pElement);
+	pPad = g_hash_table_lookup (pElement->pad, padname);
+	g_return_if_fail (pPad);
+	pPeerPad = pad_unit_peer(elements, pPad);
+	g_return_if_fail (pPeerPad);
+	pPeerElement = pad_unit_parent(elements, pPeerPad);
+	g_return_if_fail (pPeerElement);
+
+	if(pPeerElement->is_filter) {
+		pPeerElement->time = ts;
+	}	
 	
-	pElement = LIVE_GET_CONNECTION(key);
-	if(pElement == NULL)
-	{
-		pTemp = malloc (sizeof(ProfilerConnection));
-		pTemp->interlatency = time;
-		LIVE_PUT_CONNECTION(key, pTemp);
+	if(pElement->is_filter) {
+		if(ts - pElement->time > 0) {
+			avg_update_value(pElement->proctime, ts - pElement->time);
+		}
 	}
-	else
-	{
-		LIVE_MODIFY_INTERLATENCY(pElement, time);
+
+	length = g_queue_get_length(pPad->time_log);
+
+	if(length == 0) {
+		pTime = g_malloc(sizeof(gdouble));
+		*pTime = ts;
 	}
-	*/
-	return;
+	else {
+		if(length > 10) {
+			pTime = (guint64 *) g_queue_pop_tail(pPad->time_log);
+		}
+		else {
+			pTime = (guint64 *) g_queue_peek_tail(pPad->time_log);
+		}
+		
+		datarate = 1e9 * length /  (ts - *pTime);
+		pPad->datarate = datarate;
+		pPeerPad->datarate = datarate;
+		
+		pTime = g_malloc(sizeof(gdouble));
+		*pTime = ts;
+	}
+	g_queue_push_head(pPad->time_log, pTime);
+
+	avg_update_value(pPad->buffer_size, buffer_size);
+	avg_update_value(pPeerPad->buffer_size, buffer_size);
 }
+
+void
+element_push_buffer_post (gchar * elementname, gchar * padname, guint64 ts)
+{
+	//printf("[%ld]%s-%s post\n", ts, elementname, padname);
+}
+
+void
+element_push_buffer_list_pre (gchar * elementname, gchar * padname, guint64 ts)
+{
+	//printf("[%ld]%s-%s pre list\n", ts, elementname, padname);
+}
+void
+element_push_buffer_list_post (gchar * elementname, gchar * padname, guint64 ts)
+{
+	//printf("[%ld]%s-%s post list\n", ts, elementname, padname);
+}
+void
+element_pull_range_pre (gchar * elementname, gchar * padname, guint64 ts)
+{
+	//printf("[%ld]%s-%s pre pull\n", ts, elementname, padname);
+}
+
+void
+element_pull_range_post (gchar * elementname, gchar * padname, guint64 ts)
+{
+	//printf("[%ld]%s-%s post pull\n", ts, elementname, padname);
+}
+
+
 
 void
 update_pipeline_init (GstPipeline * element) 

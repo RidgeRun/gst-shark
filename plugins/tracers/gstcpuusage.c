@@ -106,7 +106,7 @@ cpu_usage_thread_func (GstPeriodicTracer * tracer)
 
   gst_cpu_usage_compute (cpu_usage);
 
-  if(!g_getenv("NNPROFILER_ENABLED")) {
+  if(!g_getenv("LIVEPROFILER_ENABLED")) {
 	for (cpu_id = 0; cpu_id < cpu_load_len; ++cpu_id) {
 	  gst_tracer_record_log (tr_cpuusage, cpu_id, cpu_load[cpu_id]);
 	}
