@@ -105,9 +105,10 @@ do
     esac
 done
 
-processing_tracer_list=("proctime" "interlatency" "framerate" "scheduling" "cpuusage" "bitrate" "queuelevel")
+processing_tracer_list=("proctime" "interlatency" "framerate" "scheduling" "cpuusage" "bitrate" "queuelevel" "buffer")
 parser_group_list1=("proctime" "interlatency" "scheduling" "framerate" "bitrate")
 parser_group_list2=("cpuusage")
+parser_group_list3=("buffer")
 parser_queuelevel=("queuelevel")
 
 #
@@ -172,6 +173,17 @@ do
     awk "$AWK_PARAM_FIELD_VALUE" ${tracer}.log > ${tracer}_values.mat
 done
 
+# Loop through the tracer list 3
+for tracer in "${parser_group_list3[@]}"
+do
+    echo "Loading ${tracer} events..."
+    # Split the events in files
+    grep -w ${tracer} datastream.log > ${tracer}.log
+    # Get data columns
+    awk '{print $1,$10,$13}' ${tracer}.log > ${tracer}.tmp
+    awk '{gsub(",",""); print}' ${tracer}.tmp > ${tracer}.mat
+done
+
 # Create plots
 octave -qf ${PERSIST} ./gstshark-plot.m "${processing_tracer_list[@]}" "${SAVEFIG}" "${FORMAT}" "${LEGEND}"
 
@@ -195,4 +207,7 @@ do
     rm ${tracer}_values.log ${tracer}_values.mat -f
 done
 
-
+for tracer in "${parser_group_list3[@]}"
+do
+    rm ${tracer}.log ${tracer}.mat ${tracer}.tmp -f
+done

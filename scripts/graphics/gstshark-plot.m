@@ -43,6 +43,9 @@ for i = 1:nargin
         case 'queuelevel'
             disp('Processing queuelevel...')
             plot_queuelevel
+        case 'buffer'
+	    disp('Processing buffer...')
+	    plot_buffer
         case '--savefig'
             GSTSHARK_SAVEFIG = TRUE;
         case 'png'
