@@ -9,6 +9,7 @@ typedef struct _AvgUnit AvgUnit;
 typedef struct _ElementUnit ElementUnit;
 typedef struct _PadUnit PadUnit;
 typedef struct _ConnectionUnit ConnectionUnit;
+typedef struct _LogUnit LogUnit;
 
 struct _AvgUnit
 {
@@ -21,7 +22,9 @@ struct _ElementUnit
 {
 	GstElement * element;
 	GHashTable * pad;
-	
+
+	guint32 idx; // for log metadata
+
 	guint64 time;
 
 	AvgUnit * proctime;
@@ -37,6 +40,8 @@ struct _PadUnit
 
 	GQueue * time_log;
 	guint64 time;
+
+	guint32 idx; // for log metadata
 	
 	AvgUnit * buffer_size;
 	gdouble datarate;
@@ -47,6 +52,14 @@ struct _ConnectionUnit
 {
 	GstElement * src;
 	GstElement * dest;
+};
+
+struct _LogUnit
+{
+	guint64 proctime;
+	guint32 queue_level;
+	guint32 max_queue_level;
+	gdouble bufrate;
 };
 
 void avg_update_value (AvgUnit * unit, guint64 value);
