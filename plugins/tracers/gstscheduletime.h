@@ -24,9 +24,10 @@
 #include "gstsharktracer.h"
 
 G_BEGIN_DECLS
+
 #define GST_TYPE_SCHEDULETIME_TRACER (gst_scheduletime_tracer_get_type ())
-G_DECLARE_FINAL_TYPE (GstScheduletimeTracer, gst_scheduletime_tracer, GST,
-    SCHEDULETIME_TRACER, GstSharkTracer)
+G_DECLARE_FINAL_TYPE (GstScheduletimeTracer, gst_scheduletime_tracer, GST, SCHEDULETIME_TRACER, GstSharkTracer)
 
 G_END_DECLS
-#endif                          /* __GST_SCHEDULETIME_TRACER_H__ */
+
+#endif /* __GST_SCHEDULETIME_TRACER_H__ */

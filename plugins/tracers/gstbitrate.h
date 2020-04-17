@@ -24,9 +24,10 @@
 #include "gstperiodictracer.h"
 
 G_BEGIN_DECLS
+
 #define GST_TYPE_BITRATE_TRACER (gst_bitrate_tracer_get_type ())
-G_DECLARE_FINAL_TYPE (GstBitrateTracer, gst_bitrate_tracer, GST, BITRATE_TRACER,
-    GstPeriodicTracer)
+G_DECLARE_FINAL_TYPE (GstBitrateTracer, gst_bitrate_tracer, GST, BITRATE_TRACER, GstPeriodicTracer)
 
 G_END_DECLS
-#endif                          /* __GST_BITRATE_TRACER_H__ */
+
+#endif /* __GST_BITRATE_TRACER_H__ */
