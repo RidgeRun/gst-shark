@@ -24,10 +24,9 @@
 #include "gstsharktracer.h"
 
 G_BEGIN_DECLS
-
 #define GST_TYPE_GRAPHIC_TRACER (gst_graphic_tracer_get_type())
-G_DECLARE_FINAL_TYPE (GstGraphicTracer, gst_graphic_tracer, GST, GRAPHIC_TRACER, GstSharkTracer)
+G_DECLARE_FINAL_TYPE (GstGraphicTracer, gst_graphic_tracer, GST, GRAPHIC_TRACER,
+    GstSharkTracer)
 
 G_END_DECLS
-
-#endif /* __GST_GRAPHIC_TRACER_H__ */
+#endif                          /* __GST_GRAPHIC_TRACER_H__ */

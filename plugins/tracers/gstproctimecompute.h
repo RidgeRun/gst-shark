@@ -23,9 +23,7 @@
 
 #include <gst/gst.h>
 
-G_BEGIN_DECLS
-
-typedef struct _GstProcTime GstProcTime;
+G_BEGIN_DECLS typedef struct _GstProcTime GstProcTime;
 
 GstProcTime *gst_proctime_new (void);
 
@@ -39,5 +37,4 @@ gboolean gst_proctime_proc_time (GstProcTime * proc_time,
 void gst_proctime_free (GstProcTime * proc_time);
 
 G_END_DECLS
-
 #endif //__GST_PROC_CTIME_COMPUTE_H__

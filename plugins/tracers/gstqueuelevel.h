@@ -24,10 +24,9 @@
 #include "gstsharktracer.h"
 
 G_BEGIN_DECLS
-
 #define GST_TYPE_QUEUE_LEVEL_TRACER (gst_queue_level_tracer_get_type ())
-G_DECLARE_FINAL_TYPE (GstQueueLevelTracer, gst_queue_level_tracer, GST, QUEUE_LEVEL_TRACER, GstSharkTracer)
+G_DECLARE_FINAL_TYPE (GstQueueLevelTracer, gst_queue_level_tracer, GST,
+    QUEUE_LEVEL_TRACER, GstSharkTracer)
 
 G_END_DECLS
-
-#endif /* __GST_QUEUE_LEVEL_TRACER_H__ */
+#endif                          /* __GST_QUEUE_LEVEL_TRACER_H__ */

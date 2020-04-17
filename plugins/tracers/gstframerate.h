@@ -24,10 +24,9 @@
 #include "gstperiodictracer.h"
 
 G_BEGIN_DECLS
-
 #define GST_TYPE_FRAMERATE_TRACER (gst_framerate_tracer_get_type ())
-G_DECLARE_FINAL_TYPE (GstFramerateTracer, gst_framerate_tracer, GST, FRAMERATE_TRACER, GstPeriodicTracer)
+G_DECLARE_FINAL_TYPE (GstFramerateTracer, gst_framerate_tracer, GST,
+    FRAMERATE_TRACER, GstPeriodicTracer)
 
 G_END_DECLS
-
-#endif /* __GST_FRAMERATE_TRACER_H__ */
+#endif                          /* __GST_FRAMERATE_TRACER_H__ */

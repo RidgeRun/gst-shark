@@ -25,20 +25,20 @@
 #include <gst/gsttracer.h>
 
 G_BEGIN_DECLS
-
 #define GST_SHARK_TYPE_TRACER (gst_shark_tracer_get_type())
-G_DECLARE_DERIVABLE_TYPE (GstSharkTracer, gst_shark_tracer, GST_SHARK, TRACER, GstTracer)
+G_DECLARE_DERIVABLE_TYPE (GstSharkTracer, gst_shark_tracer, GST_SHARK, TRACER,
+    GstTracer)
 
-struct _GstSharkTracerClass
-{
-  GstTracerClass parent_class;
-};
+     struct _GstSharkTracerClass
+     {
+       GstTracerClass parent_class;
+     };
 
-gboolean gst_shark_tracer_element_is_filtered (GstSharkTracer *self, const gchar *regex);
+     gboolean gst_shark_tracer_element_is_filtered (GstSharkTracer * self,
+    const gchar * regex);
 
-void gst_shark_tracer_register_hook (GstSharkTracer *self, const gchar *detail,
-    GCallback func);
+     void gst_shark_tracer_register_hook (GstSharkTracer * self,
+    const gchar * detail, GCallback func);
 
 G_END_DECLS
-
 #endif /* __GST_SHARK_TRACER_H__ */

@@ -24,29 +24,26 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 
-G_BEGIN_DECLS 
-
-typedef struct _GstCTFParser GstCTFParser;
+G_BEGIN_DECLS typedef struct _GstCTFParser GstCTFParser;
 
 typedef void (*parser_handler_function) (gchar * location);
 
-typedef struct {
-    const char* location;
-    parser_handler_function  parser_handler;
+typedef struct
+{
+  const char *location;
+  parser_handler_function parser_handler;
 } parser_handler_desc;
 
 
-GstCTFParser * parser_init(void);
+GstCTFParser *parser_init (void);
 
-void parser_register_callbacks(
-    GstCTFParser * parser,
+void parser_register_callbacks (GstCTFParser * parser,
     const parser_handler_desc * parser_handler_desc_list,
-    guint list_len,
-    parser_handler_function no_match_handler);
+    guint list_len, parser_handler_function no_match_handler);
 
-void parser_line(GstCTFParser * parser, gchar * option);
+void parser_line (GstCTFParser * parser, gchar * option);
 
-void parser_finalize(GstCTFParser * parser);
+void parser_finalize (GstCTFParser * parser);
 
 G_END_DECLS
 #endif /* __GST_PARSER_H__ */

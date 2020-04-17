@@ -1,44 +1,63 @@
 #include <gst/gst.h>
-#include <ncurses.h>
+// #include <ncurses.h>
 #include <stdlib.h>
-#include <time.h>
+// #include <time.h>
 #include <pthread.h>
 #include <string.h>
-#include <sys/sysinfo.h>
+#include <unistd.h>
 
 #include "gstliveprofiler.h"
 #include "gstliveunit.h"
 #include "visualizeutil.h"
 
+// #define _DEBUG_TRUE
+
 // Plugin Data
-Packet * packet;
+Packet *packet;
 
 gboolean
 is_filter (GstElement * element)
 {
-	GList * pads;
-	GList * iterator;
-	GstPad * pPad;
-	gint sink = 0;
-	gint src = 0;
+  GList *pads;
+  GList *iterator;
+  GstPad *pPad;
+  gint sink = 0;
+  gint src = 0;
 
-	pads = GST_ELEMENT_PADS (element);
-	iterator = g_list_first (pads);
-	while(iterator != NULL) {
-		pPad = iterator->data;
-		if(gst_pad_get_direction(pPad) == GST_PAD_SRC) 
-			src++;
-		if(gst_pad_get_direction(pPad) == GST_PAD_SINK)
-			sink++;
-		if(src > 1 || sink > 1)
-			return FALSE;
+  pads = GST_ELEMENT_PADS (element);
+  iterator = g_list_first (pads);
+  while (iterator != NULL) {
+    pPad = iterator->data;
+    if (gst_pad_get_direction (pPad) == GST_PAD_SRC)
+      src++;
+    if (gst_pad_get_direction (pPad) == GST_PAD_SINK)
+      sink++;
+    if (src > 1 || sink > 1)
+      return FALSE;
 
-		iterator = g_list_next(iterator);
-	}
-	if(src == 1 && sink == 1)
-		return TRUE;
-	else
-		return FALSE;
+    iterator = g_list_next (iterator);
+  }
+  if (src == 1 && sink == 1)
+    return TRUE;
+  else
+    return FALSE;
+}
+
+static gboolean
+is_queue (GstElement * element)
+{
+  static GstElementFactory *qfactory = NULL;
+  GstElementFactory *efactory;
+
+  g_return_val_if_fail (element, FALSE);
+
+  if (NULL == qfactory) {
+    qfactory = gst_element_factory_find ("queue");
+  }
+
+  efactory = gst_element_get_factory (element);
+
+  return efactory == qfactory;
 }
 
 /*
@@ -47,176 +66,212 @@ is_filter (GstElement * element)
 void
 add_children_recursively (GstElement * element, GHashTable * table)
 {
-	GList * children, * iter;
-	ElementUnit * eUnit;
-	PadUnit * pUnit;
+  GList *children, *iter;
+  ElementUnit *eUnit;
+  PadUnit *pUnit;
 
-	if (GST_IS_BIN (element)) {
-		children = GST_BIN_CHILDREN (element);
-		iter = g_list_first (children);
-		
-		while(iter != NULL) {
-			add_children_recursively ((GstElement *) iter->data, table);
-			iter = g_list_next (iter);
-		}
-	}
-	else {
-		eUnit = element_unit_new();
-		eUnit->element = element;
-		eUnit->pad = g_hash_table_new (g_str_hash, g_str_equal);
-		eUnit->is_filter = is_filter(element);
+  if (GST_IS_BIN (element)) {
+    children = GST_BIN_CHILDREN (element);
+    iter = g_list_first (children);
 
-		children = GST_ELEMENT_PADS (element);
-		iter = g_list_first (children);
+    while (iter != NULL) {
+      add_children_recursively ((GstElement *) iter->data, table);
+      iter = g_list_next (iter);
+    }
+  } else {
+    eUnit = element_unit_new ();
+    eUnit->element = element;
+    eUnit->pad = g_hash_table_new (g_str_hash, g_str_equal);
+    eUnit->is_filter = is_filter (element);
 
-		while(iter != NULL) {
-			pUnit = pad_unit_new();
-			pUnit->element = iter->data;
-			g_hash_table_insert(eUnit->pad, GST_OBJECT_NAME (iter->data), pUnit);
-			
-			iter = g_list_next (iter);
-		}
-		g_hash_table_insert(table, GST_OBJECT_NAME (element), eUnit);
-	}
+    children = GST_ELEMENT_PADS (element);
+    iter = g_list_first (children);
+
+    while (iter != NULL) {
+      pUnit = pad_unit_new ();
+      pUnit->element = iter->data;
+      g_hash_table_insert (eUnit->pad, GST_OBJECT_NAME (iter->data), pUnit);
+
+      iter = g_list_next (iter);
+    }
+    g_hash_table_insert (table, GST_OBJECT_NAME (element), eUnit);
+  }
 }
 
 gboolean
-gst_liveprofiler_init (void) 
+gst_liveprofiler_init (void)
 {
-	gint cpu_num;
-	gfloat * cpu_load;
-	GHashTable * elements;
-	GHashTable * connections;
-	
-	cpu_num = get_nprocs();
-	cpu_load = g_malloc0 (sizeof(gfloat) * cpu_num);
-	elements = g_hash_table_new (g_str_hash, g_str_equal);
-	connections = g_hash_table_new (g_str_hash, g_str_equal);
+  gint cpu_num;
+  gfloat *cpu_load;
+  GHashTable *elements;
+  GHashTable *connections;
 
-	packet = g_malloc0 (sizeof(Packet));
-	packet_set_cpu_num (packet, cpu_num);
-	packet_set_cpu_load (packet, cpu_load);
-	packet_set_elements (packet, elements);
-	packet_set_connections (packet, connections);
+  if ((cpu_num = sysconf (_SC_NPROCESSORS_CONF)) == -1) {
+    GST_WARNING ("Failed to get numbers of cpus");
+    cpu_num = 1;
+  }
 
-	pthread_t thread;
-	pthread_create(&thread, NULL, curses_loop, packet);
-	pthread_detach(thread);
+  cpu_load = g_malloc0 (sizeof (gfloat) * cpu_num);
+  elements = g_hash_table_new (g_str_hash, g_str_equal);
+  connections = g_hash_table_new (g_str_hash, g_str_equal);
 
-	return TRUE;
-}
+  packet = g_malloc0 (sizeof (Packet));
+  packet_set_cpu_num (packet, cpu_num);
+  packet_set_cpu_load (packet, cpu_load);
+  packet_set_elements (packet, elements);
+  packet_set_connections (packet, connections);
 
-void 
-update_cpuusage_event (guint32 cpunum, gfloat * cpuload) 
-{
-	gint cpu_num = packet->cpu_num;
-	gfloat * cpu_load = packet->cpu_load;
+#ifndef _DEBUG_TRUE
+  pthread_t thread;
+  pthread_create (&thread, NULL, curses_loop, packet);
+  pthread_detach (thread);
+#endif
 
-	memcpy (cpu_load, cpuload, cpu_num * sizeof(gfloat));
+  return TRUE;
 }
 
 void
-update_queue_level_event (const gchar * elementname, guint size_buffer,
-		guint max_size_buffer)
+update_cpuusage_event (guint32 cpunum, gfloat * cpuload)
 {
-	GHashTable * elements = packet->elements;
-	ElementUnit * pElement;
-	
-	pElement = g_hash_table_lookup(elements, elementname);
-	g_return_if_fail(pElement);
-	pElement->queue_level = size_buffer;
-	pElement->max_queue_level = max_size_buffer;
+  gint cpu_num = packet->cpu_num;
+  gfloat *cpu_load = packet->cpu_load;
+
+  memcpy (cpu_load, cpuload, cpu_num * sizeof (gfloat));
 }
 
 void
-element_push_buffer_pre (gchar * elementname, gchar * padname, guint64 ts, guint64 buffer_size) 
+update_proctime (ElementUnit * element, ElementUnit * peerElement, guint64 ts)
 {
-	//printf("[%ld]%s-%s pre\n", ts, elementname, padname);
-	GHashTable * elements = packet->elements;
-	ElementUnit * pElement, * pPeerElement;
-	PadUnit * pPad, * pPeerPad;
-	gdouble datarate;
-	guint length;
-	guint64 * pTime;
+  if (peerElement->is_filter) {
+    peerElement->time = ts;
+  }
 
-	pElement = g_hash_table_lookup (elements, elementname);
-	g_return_if_fail (pElement);
-	pPad = g_hash_table_lookup (pElement->pad, padname);
-	g_return_if_fail (pPad);
-	pPeerPad = pad_unit_peer(elements, pPad);
-	g_return_if_fail (pPeerPad);
-	pPeerElement = pad_unit_parent(elements, pPeerPad);
-	g_return_if_fail (pPeerElement);
+  if (element->is_filter) {
+    if (ts - element->time > 0) {
+      avg_update_value (element->proctime, ts - element->time);
+    }
+  }
+}
 
-	if(pPeerElement->is_filter) {
-		pPeerElement->time = ts;
-	}	
-	
-	if(pElement->is_filter) {
-		if(ts - pElement->time > 0) {
-			avg_update_value(pElement->proctime, ts - pElement->time);
-		}
-	}
+void
+update_datatrate (PadUnit * pad, PadUnit * peerPad, guint64 ts)
+{
+  guint length = g_queue_get_length (pad->time_log);
+  gdouble datarate;
+  guint64 *pTime;
 
-	length = g_queue_get_length(pPad->time_log);
+  if (length == 0) {
+    pTime = g_malloc (sizeof (gdouble));
+    *pTime = ts;
+  } else {
+    if (length > 10) {
+      pTime = (guint64 *) g_queue_pop_tail (pad->time_log);
+    } else {
+      pTime = (guint64 *) g_queue_peek_tail (pad->time_log);
+    }
 
-	if(length == 0) {
-		pTime = g_malloc(sizeof(gdouble));
-		*pTime = ts;
-	}
-	else {
-		if(length > 10) {
-			pTime = (guint64 *) g_queue_pop_tail(pPad->time_log);
-		}
-		else {
-			pTime = (guint64 *) g_queue_peek_tail(pPad->time_log);
-		}
-		
-		datarate = 1e9 * length /  (ts - *pTime);
-		pPad->datarate = datarate;
-		pPeerPad->datarate = datarate;
-		
-		pTime = g_malloc(sizeof(gdouble));
-		*pTime = ts;
-	}
-	g_queue_push_head(pPad->time_log, pTime);
+    datarate = 1e9 * length / (ts - *pTime);
+    pad->datarate = datarate;
+    peerPad->datarate = datarate;
 
-	avg_update_value(pPad->buffer_size, buffer_size);
-	avg_update_value(pPeerPad->buffer_size, buffer_size);
+    pTime = g_malloc (sizeof (gdouble));
+    *pTime = ts;
+  }
+  g_queue_push_head (pad->time_log, pTime);
+}
+
+void
+update_buffer_size (PadUnit * pad, PadUnit * peerPad, guint64 size)
+{
+  avg_update_value (pad->buffer_size, size);
+  avg_update_value (peerPad->buffer_size, size);
+}
+
+void
+update_queue_level (ElementUnit * element)
+{
+  GstElement *pElement = element->element;
+  guint32 size_buffers;
+  guint32 max_size_buffers;
+  if (!is_queue (pElement)) {
+    return;
+  }
+
+  g_object_get (pElement, "current-level-buffers", &size_buffers,
+      "max-size-buffers", &max_size_buffers, NULL);
+
+  element->queue_level = size_buffers;
+  element->max_queue_level = max_size_buffers;
+}
+
+void
+element_push_buffer_pre (gchar * elementname, gchar * padname, guint64 ts,
+    guint64 buffer_size)
+{
+  GHashTable *elements = packet->elements;
+  ElementUnit *pElement, *pPeerElement;
+  PadUnit *pPad, *pPeerPad;
+#ifdef _DEBUG_TRUE
+  printf ("[%ld]%s-%s pre\n", ts, elementname, padname);
+#endif
+
+  pElement = g_hash_table_lookup (elements, elementname);
+  g_return_if_fail (pElement);
+  pPad = g_hash_table_lookup (pElement->pad, padname);
+  g_return_if_fail (pPad);
+  pPeerPad = pad_unit_peer (elements, pPad);
+  g_return_if_fail (pPeerPad);
+  pPeerElement = pad_unit_parent (elements, pPeerPad);
+  g_return_if_fail (pPeerElement);
+
+  update_proctime (pElement, pPeerElement, ts);
+  update_datatrate (pPad, pPeerPad, ts);
+  update_buffer_size (pPad, pPeerPad, buffer_size);
+  update_queue_level (pElement);
 }
 
 void
 element_push_buffer_post (gchar * elementname, gchar * padname, guint64 ts)
 {
-	//printf("[%ld]%s-%s post\n", ts, elementname, padname);
+#ifdef _DEBUG_TRUE
+  printf ("[%ld]%s-%s post\n", ts, elementname, padname);
+#endif
 }
 
 void
 element_push_buffer_list_pre (gchar * elementname, gchar * padname, guint64 ts)
 {
-	//printf("[%ld]%s-%s pre list\n", ts, elementname, padname);
+#ifdef _DEBUG_TRUE
+  printf ("[%ld]%s-%s pre list\n", ts, elementname, padname);
+#endif
 }
+
 void
 element_push_buffer_list_post (gchar * elementname, gchar * padname, guint64 ts)
 {
-	//printf("[%ld]%s-%s post list\n", ts, elementname, padname);
+#ifdef _DEBUG_TRUE
+  printf ("[%ld]%s-%s post list\n", ts, elementname, padname);
+#endif
 }
+
 void
 element_pull_range_pre (gchar * elementname, gchar * padname, guint64 ts)
 {
-	//printf("[%ld]%s-%s pre pull\n", ts, elementname, padname);
+#ifdef _DEBUG_TRUE
+  printf ("[%ld]%s-%s pre pull\n", ts, elementname, padname);
+#endif
 }
 
 void
 element_pull_range_post (gchar * elementname, gchar * padname, guint64 ts)
 {
-	//printf("[%ld]%s-%s post pull\n", ts, elementname, padname);
+#ifdef _DEBUG_TRUE
+  printf ("[%ld]%s-%s post pull\n", ts, elementname, padname);
+#endif
 }
 
-
-
 void
-update_pipeline_init (GstPipeline * element) 
+update_pipeline_init (GstPipeline * element)
 {
-	add_children_recursively ((GstElement *) element, packet->elements);
+  add_children_recursively ((GstElement *) element, packet->elements);
 }
