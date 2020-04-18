@@ -77,7 +77,7 @@ plugin_init (GstPlugin * plugin)
     return FALSE;
   }
   if (!gst_tracer_register (plugin, "live", gst_live_tracer_get_type ())) {
-	  return FALSE;
+    return FALSE;
   }
   if (!gst_ctf_init ()) {
     return FALSE;
