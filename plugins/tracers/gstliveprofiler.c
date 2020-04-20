@@ -9,11 +9,14 @@
 #include "gstliveprofiler.h"
 #include "gstliveunit.h"
 #include "visualizeutil.h"
+#include "gstctf.h"
 
 // #define _DEBUG_TRUE
 
 // Plugin Data
 Packet *packet;
+int log_idx = 0;
+int metadata_writed = 0;
 
 gboolean
 is_filter (GstElement * element)
@@ -60,8 +63,33 @@ is_queue (GstElement * element)
   return efactory == qfactory;
 }
 
+void
+generate_meta_data_pad (gpointer key, gpointer value, gpointer user_data)
+{
+  gchar *pad_name = (gchar *) key;
+  gchar *element_name = (gchar *) user_data;
+
+  char text[50];
+  sprintf (text, "%d %s-%s", log_idx++, element_name, pad_name);
+  do_print_log ("log_metadata", text);
+}
+
+void
+generate_meta_data (gpointer key, gpointer value, gpointer user_data)
+{
+  gchar *name = (gchar *) key;
+  ElementUnit *data = (ElementUnit *) value;
+
+  char text[50];
+  sprintf (text, "%d %s", log_idx++, name);
+  do_print_log ("log_metadata", text);
+
+  g_hash_table_foreach (data->pad, (GHFunc) generate_meta_data_pad, name);
+}
+
 /*
  * Adds children of element recursively to the Hashtable.
+ * Write log metadata file when LOG_ENABLE is true
  */
 void
 add_children_recursively (GstElement * element, GHashTable * table)
@@ -274,4 +302,8 @@ void
 update_pipeline_init (GstPipeline * element)
 {
   add_children_recursively ((GstElement *) element, packet->elements);
+  if (g_getenv ("LOG_ENABLED") && !metadata_writed) {
+    g_hash_table_foreach (packet->elements, (GHFunc) generate_meta_data, NULL);
+    metadata_writed = log_idx;
+  }
 }

@@ -55,5 +55,7 @@ void do_print_buffer_event (event_id id, const gchar * pad, GstClockTime pts,
     guint64 offset_end, guint64 size, GstBufferFlags flags,
     guint32 refcount);
 void do_print_ctf_init (event_id id);
+void do_print_log(const char* filename, const char* text);
+
 G_END_DECLS
 #endif /*__GST_CTF_H__*/
