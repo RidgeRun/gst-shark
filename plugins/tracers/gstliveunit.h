@@ -34,12 +34,6 @@ struct _ElementUnit
 struct _PadUnit
 {
   GstElement *element;
-
-	GQueue * time_log;
-	guint64 time;
-
-	guint32 idx; // for log metadata
-
   GQueue *time_log;
   guint64 time;
 

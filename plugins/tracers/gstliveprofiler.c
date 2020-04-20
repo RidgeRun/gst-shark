@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #include "gstliveprofiler.h"
 #include "gstliveunit.h"
