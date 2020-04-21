@@ -20,11 +20,11 @@ struct _ElementUnit
   GstElement *element;
   GHashTable *pad;
 
-	guint32 idx; // for log metadata
-
 	guint64 time;
 
 	AvgUnit * proctime;
+
+  guint32 elem_idx; // for log metadata
 	
 	gboolean is_filter;
 	guint32 queue_level;
@@ -36,6 +36,8 @@ struct _PadUnit
   GstElement *element;
   GQueue *time_log;
   guint64 time;
+
+  guint32 elem_idx; // for log metadata
 
   AvgUnit *buffer_size;
   gdouble datarate;

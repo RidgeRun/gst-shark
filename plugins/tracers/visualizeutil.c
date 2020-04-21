@@ -113,6 +113,39 @@ print_element (gpointer key, gpointer value, gpointer user_data)
   }
   attroff (A_BOLD);
 
+  // check value for each element is changed
+  if (g_getenv ("LOG_ENABLED") && element_log) {
+
+    char element_log_text[100];
+    char *buf = &element_log_text[0];
+    if (element_log[data->elem_idx].proctime != data->proctime->value) {
+      buf +=
+          sprintf (buf, "%ld ",
+          data->proctime->value - element_log[data->elem_idx].proctime);
+      element_log[data->elem_idx].proctime = data->proctime->value;
+    } else
+      buf += sprintf (buf, ". ");
+
+    if (element_log[data->elem_idx].queue_level != data->queue_level) {
+      buf += sprintf (buf, "%d ", data->queue_level);
+      element_log[data->elem_idx].queue_level = data->queue_level;
+    } else
+      buf += sprintf (buf, ". ");
+
+    if (element_log[data->elem_idx].max_queue_level != data->max_queue_level) {
+      buf += sprintf (buf, "%d", data->max_queue_level);
+      element_log[data->elem_idx].max_queue_level = data->max_queue_level;
+    } else
+      buf += sprintf (buf, ".");
+
+    if (strcmp (element_log_text, ". . .")) {
+      char changed_data[100];
+      sprintf (changed_data, "%d %s", data->elem_idx, element_log_text);
+
+      do_print_log ("log", changed_data);
+    }
+  }
+
   mvprintw (row_offset + row_current, ELEMENT_NAME_MAX,
       "%20ld %20.3f %17d/%2d",
       data->proctime->value,
