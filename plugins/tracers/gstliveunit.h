@@ -49,7 +49,7 @@ struct _LogUnit
 	guint64 proctime;
 	guint32 queue_level;
 	guint32 max_queue_level;
-	gdouble bufrate;
+	guint32 bufrate;
 };
 
 void avg_update_value (AvgUnit * unit, guint64 value);

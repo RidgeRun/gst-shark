@@ -85,8 +85,30 @@ print_pad (gpointer key, gpointer value, gpointer user_data)
     mvprintw (row_offset + row_current, 4, "%s", name);
   }
 
-  mvprintw (row_offset + row_current, ELEMENT_NAME_MAX * 4 + 2,
-      "%20.2f", data->datarate);
+  // check value for each element is changed
+  if (g_getenv ("LOG_ENABLED") && element_log) {
+    char element_log_text[100];
+    char *buf = &element_log_text[0];
+    int new_datarate = (int) (data->datarate * 100);
+    if (element_log[row_current - 13].bufrate != new_datarate) {
+      buf +=
+          sprintf (buf, "%d",
+          (int) (data->datarate * 100) - element_log[row_current - 13].bufrate);
+      element_log[row_current - 13].bufrate = (int) (data->datarate * 100);
+    }
+
+    if (strlen (element_log_text) != 0) {
+      char changed_data[100];
+      // sprintf (changed_data, "p %d %s", row_current-13, element_log_text);
+
+      // mvprintw (row_offset + row_current, ELEMENT_NAME_MAX * 4 + 2,
+      // "%d", new_datarate);
+
+      // do_print_log ("log", changed_data);
+    }
+  }
+  // mvprintw (row_offset + row_current, ELEMENT_NAME_MAX * 4 + 2,
+  //     "%20.2f", data->datarate);
   row_current++;
 }
 
@@ -118,29 +140,32 @@ print_element (gpointer key, gpointer value, gpointer user_data)
 
     char element_log_text[100];
     char *buf = &element_log_text[0];
-    if (element_log[data->elem_idx].proctime != data->proctime->value) {
+    if (element_log[row_current - 13].proctime != data->proctime->value) {
       buf +=
           sprintf (buf, "%ld ",
-          data->proctime->value - element_log[data->elem_idx].proctime);
-      element_log[data->elem_idx].proctime = data->proctime->value;
+          data->proctime->value - element_log[row_current - 13].proctime);
+      element_log[row_current - 13].proctime = data->proctime->value;
     } else
       buf += sprintf (buf, ". ");
 
-    if (element_log[data->elem_idx].queue_level != data->queue_level) {
+    if (element_log[row_current - 13].queue_level != data->queue_level) {
       buf += sprintf (buf, "%d ", data->queue_level);
-      element_log[data->elem_idx].queue_level = data->queue_level;
+      element_log[row_current - 13].queue_level = data->queue_level;
     } else
       buf += sprintf (buf, ". ");
 
-    if (element_log[data->elem_idx].max_queue_level != data->max_queue_level) {
+    if (element_log[row_current - 13].max_queue_level != data->max_queue_level) {
       buf += sprintf (buf, "%d", data->max_queue_level);
-      element_log[data->elem_idx].max_queue_level = data->max_queue_level;
+      element_log[row_current - 13].max_queue_level = data->max_queue_level;
     } else
       buf += sprintf (buf, ".");
 
+    // mvprintw (row_offset + row_current, ELEMENT_NAME_MAX,
+    //   "%10d %10d", row_current, data->elem_idx);
+
     if (strcmp (element_log_text, ". . .")) {
       char changed_data[100];
-      sprintf (changed_data, "%d %s", data->elem_idx, element_log_text);
+      sprintf (changed_data, "%d %s", row_current - 13, element_log_text);
 
       do_print_log ("log", changed_data);
     }
