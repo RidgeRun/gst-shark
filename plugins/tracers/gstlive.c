@@ -154,7 +154,6 @@ static void
 gst_live_tracer_class_init (GstLiveTracerClass * klass)
 {
   GObjectClass *g_obj_class = G_OBJECT_CLASS (klass);
-  printf ("BAAAAAAAM\n");
 
   gst_liveprofiler_init ();
   g_setenv ("LIVEPROFILER_ENABLED", "TRUE", TRUE);
