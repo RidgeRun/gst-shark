@@ -175,7 +175,7 @@ gst_live_tracer_init (GstLiveTracer * self)
   cpu_usage = &self->cpu_usage;
   gst_cpu_usage_init (cpu_usage);
   cpu_usage->cpu_array_sel = FALSE;
-  self->event_running = 0;
+  self->event_running = FALSE;
 
   gst_tracing_register_hook (tracer, "element-change-state-post",
       G_CALLBACK (do_element_change_state_post));
