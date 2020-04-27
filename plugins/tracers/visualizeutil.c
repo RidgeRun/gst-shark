@@ -1,6 +1,7 @@
 #include <ncurses.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 #include "visualizeutil.h"
 #include "gstliveprofiler.h"
@@ -88,27 +89,18 @@ print_pad (gpointer key, gpointer value, gpointer user_data)
   // check value for each element is changed
   if (g_getenv ("LOG_ENABLED") && element_log) {
     char element_log_text[100];
-    char *buf = &element_log_text[0];
     int new_datarate = (int) (data->datarate * 100);
-    if (element_log[row_current - 13].bufrate != new_datarate) {
-      buf +=
-          sprintf (buf, "%d",
-          (int) (data->datarate * 100) - element_log[row_current - 13].bufrate);
-      element_log[row_current - 13].bufrate = (int) (data->datarate * 100);
-    }
+    int changed = new_datarate - element_log[row_current - 13].bufrate;
 
-    if (strlen (element_log_text) != 0) {
-      char changed_data[100];
-      // sprintf (changed_data, "p %d %s", row_current-13, element_log_text);
-
-      // mvprintw (row_offset + row_current, ELEMENT_NAME_MAX * 4 + 2,
-      // "%d", new_datarate);
-
-      // do_print_log ("log", changed_data);
+    if (changed != 0) {
+      sprintf (element_log_text, "p %d %d", row_current - 13, changed);
+      do_print_log ("log", element_log_text);
+      element_log[row_current - 13].bufrate = new_datarate;
     }
   }
-  // mvprintw (row_offset + row_current, ELEMENT_NAME_MAX * 4 + 2,
-  //     "%20.2f", data->datarate);
+
+  mvprintw (row_offset + row_current, ELEMENT_NAME_MAX * 4 + 2,
+      "%20.2f", data->datarate);
   row_current++;
 }
 
