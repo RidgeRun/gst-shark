@@ -1,10 +1,12 @@
 #include <ncurses.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 #include "visualizeutil.h"
 #include "gstliveprofiler.h"
 #include "gstliveunit.h"
+#include "gstctf.h"
 
 void initialize (void);
 void print_pad (gpointer key, gpointer value, gpointer user_data);
@@ -48,6 +50,11 @@ GList *padIterator = NULL;
 gchar *pairPad = NULL;
 gchar *pairElement = NULL;
 
+// For log
+extern int metadata_writed;
+int *cpu_log = NULL;
+LogUnit *element_log = NULL;
+
 // Iterator for Hashtable
 void
 print_pad (gpointer key, gpointer value, gpointer user_data)
@@ -79,6 +86,19 @@ print_pad (gpointer key, gpointer value, gpointer user_data)
     mvprintw (row_offset + row_current, 4, "%s", name);
   }
 
+  // check value for each element is changed
+  if (g_getenv ("LOG_ENABLED") && element_log) {
+    char element_log_text[100];
+    int new_datarate = (int) (data->datarate * 100);
+    int changed = new_datarate - element_log[row_current - 13].bufrate;
+
+    if (changed != 0) {
+      sprintf (element_log_text, "p %d %d", row_current - 13, changed);
+      do_print_log ("log", element_log_text);
+      element_log[row_current - 13].bufrate = new_datarate;
+    }
+  }
+
   mvprintw (row_offset + row_current, ELEMENT_NAME_MAX * 4 + 2,
       "%20.2f", data->datarate);
   row_current++;
@@ -106,6 +126,42 @@ print_element (gpointer key, gpointer value, gpointer user_data)
     *selected = NONE_SELECTED;
   }
   attroff (A_BOLD);
+
+  // check value for each element is changed
+  if (g_getenv ("LOG_ENABLED") && element_log) {
+
+    char element_log_text[100];
+    char *buf = &element_log_text[0];
+    if (element_log[row_current - 13].proctime != data->proctime->value) {
+      buf +=
+          sprintf (buf, "%ld ",
+          data->proctime->value - element_log[row_current - 13].proctime);
+      element_log[row_current - 13].proctime = data->proctime->value;
+    } else
+      buf += sprintf (buf, ". ");
+
+    if (element_log[row_current - 13].queue_level != data->queue_level) {
+      buf += sprintf (buf, "%d ", data->queue_level);
+      element_log[row_current - 13].queue_level = data->queue_level;
+    } else
+      buf += sprintf (buf, ". ");
+
+    if (element_log[row_current - 13].max_queue_level != data->max_queue_level) {
+      buf += sprintf (buf, "%d", data->max_queue_level);
+      element_log[row_current - 13].max_queue_level = data->max_queue_level;
+    } else
+      buf += sprintf (buf, ".");
+
+    // mvprintw (row_offset + row_current, ELEMENT_NAME_MAX,
+    //   "%10d %10d", row_current, data->elem_idx);
+
+    if (strcmp (element_log_text, ". . .")) {
+      char changed_data[100];
+      sprintf (changed_data, "%d %s", row_current - 13, element_log_text);
+
+      do_print_log ("log", changed_data);
+    }
+  }
 
   mvprintw (row_offset + row_current, ELEMENT_NAME_MAX,
       "%20ld %20.3f %17d/%2d",
@@ -294,6 +350,7 @@ curses_loop (void *arg)
   Packet *packet = (Packet *) arg;
   time_t tmp_t;                 //for getting time
   struct tm tm;                 //for getting time
+  struct timeval startTime;     //for getting time
   int key_in;
   int iter = 0;
   int i;
@@ -305,6 +362,13 @@ curses_loop (void *arg)
   printf ("DONE INITIALIZE\n");
   initialize ();
 
+  if (g_getenv ("LOG_ENABLED")) {
+    gettimeofday (&startTime, NULL);
+    char text[30];
+    sprintf (text, "%ld.%ld", startTime.tv_sec, startTime.tv_usec / 1000);
+    do_print_log ("log_metadata", text);
+  }
+
   while (1) {
     if (element_key == NULL) {
       element_key = g_hash_table_get_keys (packet->elements);
@@ -312,6 +376,12 @@ curses_loop (void *arg)
       if (elementIterator)
         element = g_hash_table_lookup (packet->elements, elementIterator->data);
     }
+
+    if (element_log == NULL && metadata_writed) {
+      cpu_log = (int *) malloc (sizeof (int) * packet->cpu_num);
+      element_log = (LogUnit *) malloc (sizeof (LogUnit) * metadata_writed);
+    }
+
     row_current = 0;
     col_current = 0;
 
@@ -410,6 +480,9 @@ curses_loop (void *arg)
     attroff (COLOR_PAIR (INVERT_PAIR));
     print_line (&row_current, &col_current);
 
+    if (g_getenv ("LOG_ENABLED")) {
+      do_print_log ("log", "t");
+    }
     //CPU Usage
     attron (A_BOLD);
     attron (COLOR_PAIR (TITLE_PAIR));
@@ -424,6 +497,18 @@ curses_loop (void *arg)
       mvprintw (row_offset + row_current++, col_current + 7 + 4, "%3.1f%%",
           packet->cpu_load[i]);
       i++;
+    }
+
+    if (g_getenv ("LOG_ENABLED") && cpu_log
+        && cpu_log[0] != (int) (packet->cpu_load[0] * 10)) {
+      char cpuusage_text[100];
+      char *buf = &cpuusage_text[0];
+      buf += sprintf (buf, "c ");
+      for (i = 0; i < packet->cpu_num; i++) {
+        cpu_log[i] = packet->cpu_load[i] * 10;
+        buf += sprintf (buf, "%d ", cpu_log[i]);
+      }
+      do_print_log ("log", cpuusage_text);
     }
 
     print_line (&row_current, &col_current);

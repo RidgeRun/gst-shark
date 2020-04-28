@@ -52,6 +52,7 @@ docs/version.entities
 cscope.files
 cscope.out
 gstshark_*-*-*_*:*:*/
+.vscode
 
 # Git conflicts
 *.c.orig

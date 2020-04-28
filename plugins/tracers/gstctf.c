@@ -700,6 +700,21 @@ add_metadata_event_struct (const gchar * metadata_event)
   g_mutex_unlock (&ctf_descriptor->mutex);
 }
 
+void
+do_print_log (const char *filename, const char *text)
+{
+  /* Lock mem, datastream and output_stream resources */
+  g_mutex_lock (&ctf_descriptor->mutex);
+
+  gchar *log_path =
+      g_strjoin (G_DIR_SEPARATOR_S, ctf_descriptor->dir_name, filename, NULL);
+
+  FILE *fp = g_fopen (log_path, "a");
+  fprintf (fp, "%s\n", text);
+  fclose (fp);
+
+  g_mutex_unlock (&ctf_descriptor->mutex);
+}
 
 void
 do_print_cpuusage_event (event_id id, guint32 cpu_num, gfloat * cpuload)
