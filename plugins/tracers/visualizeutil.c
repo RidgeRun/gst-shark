@@ -344,16 +344,75 @@ draw_element (gpointer key, gpointer value, gpointer user_data)
   return;
 }
 
+void
+draw_data (int key_in, Packet * packet)
+{
+  time_t tmp_t = time (NULL);
+  struct tm tm = *localtime (&tmp_t);
+  // draw
+  clear ();
+  mvprintw (row_offset + row_current, 36, "key");       //for debug
+  mvprintw (row_offset + row_current, 40, "%08d", key_in);      //for debug
+  attron (A_BOLD);
+  mvprintw (row_offset + row_current, 63, "%4d-%02d-%02d %2d:%02d:%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);     //time indicator
+  attron (COLOR_PAIR (INVERT_PAIR));
+  mvprintw (row_offset + row_current++, col_current,
+      "Press 'q' or 'Q' to quit");
+  attroff (A_BOLD);
+  attroff (COLOR_PAIR (INVERT_PAIR));
+  print_line (&row_current, &col_current);
+
+  if (g_getenv ("LOG_ENABLED")) {
+    do_print_log ("log", "t");
+  }
+  //CPU Usage
+  attron (A_BOLD);
+  attron (COLOR_PAIR (TITLE_PAIR));
+  mvprintw (row_offset + row_current++, col_current, "CPU Usage");
+  attroff (A_BOLD);
+  attroff (COLOR_PAIR (TITLE_PAIR));
+  int i = 0;
+  while (i < packet->cpu_num) {
+    attron (A_BOLD);
+    mvprintw (row_offset + row_current, col_current, "CPU%2d", i);
+    attroff (A_BOLD);
+    mvprintw (row_offset + row_current++, col_current + 7 + 4, "%3.1f%%",
+        packet->cpu_load[i]);
+    i++;
+  }
+
+  if (g_getenv ("LOG_ENABLED") && cpu_log
+      && cpu_log[0] != (int) (packet->cpu_load[0] * 10)) {
+    char cpuusage_text[100];
+    char *buf = &cpuusage_text[0];
+    buf += sprintf (buf, "c ");
+    for (i = 0; i < packet->cpu_num; i++) {
+      cpu_log[i] = packet->cpu_load[i] * 10;
+      buf += sprintf (buf, "%d ", cpu_log[i]);
+    }
+    do_print_log ("log", cpuusage_text);
+  }
+
+  print_line (&row_current, &col_current);
+
+  // Proctime & Bufferrate
+  attron (A_BOLD);
+  attron (COLOR_PAIR (TITLE_PAIR));
+  mvprintw (row_offset + row_current, 0, "ElementName");
+  mvprintw (row_offset + row_current++, ELEMENT_NAME_MAX,
+      "%20s %20s %20s %20s", "Proctime(ns)", "Avg_proctime(ns)", "queuelevel",
+      "Bufferrate(bps)");
+  attroff (COLOR_PAIR (TITLE_PAIR));
+  attroff (A_BOLD);
+}
+
 void *
 curses_loop (void *arg)
 {
   Packet *packet = (Packet *) arg;
-  time_t tmp_t;                 //for getting time
-  struct tm tm;                 //for getting time
   struct timeval startTime;     //for getting time
   int key_in;
   int iter = 0;
-  int i;
   gboolean selection_mode = ELEMENT_SELECTION;
   ElementUnit *element = NULL;
   GList *element_key = NULL;
@@ -464,64 +523,7 @@ curses_loop (void *arg)
         break;
     }
 
-    //get time
-    tmp_t = time (NULL);
-    tm = *localtime (&tmp_t);
-    // draw
-    clear ();
-    mvprintw (row_offset + row_current, 36, "key");     //for debug
-    mvprintw (row_offset + row_current, 40, "%08d", key_in);    //for debug
-    attron (A_BOLD);
-    mvprintw (row_offset + row_current, 63, "%4d-%02d-%02d %2d:%02d:%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);   //time indicator
-    attron (COLOR_PAIR (INVERT_PAIR));
-    mvprintw (row_offset + row_current++, col_current,
-        "Press 'q' or 'Q' to quit");
-    attroff (A_BOLD);
-    attroff (COLOR_PAIR (INVERT_PAIR));
-    print_line (&row_current, &col_current);
-
-    if (g_getenv ("LOG_ENABLED")) {
-      do_print_log ("log", "t");
-    }
-    //CPU Usage
-    attron (A_BOLD);
-    attron (COLOR_PAIR (TITLE_PAIR));
-    mvprintw (row_offset + row_current++, col_current, "CPU Usage");
-    attroff (A_BOLD);
-    attroff (COLOR_PAIR (TITLE_PAIR));
-    i = 0;
-    while (i < packet->cpu_num) {
-      attron (A_BOLD);
-      mvprintw (row_offset + row_current, col_current, "CPU%2d", i);
-      attroff (A_BOLD);
-      mvprintw (row_offset + row_current++, col_current + 7 + 4, "%3.1f%%",
-          packet->cpu_load[i]);
-      i++;
-    }
-
-    if (g_getenv ("LOG_ENABLED") && cpu_log
-        && cpu_log[0] != (int) (packet->cpu_load[0] * 10)) {
-      char cpuusage_text[100];
-      char *buf = &cpuusage_text[0];
-      buf += sprintf (buf, "c ");
-      for (i = 0; i < packet->cpu_num; i++) {
-        cpu_log[i] = packet->cpu_load[i] * 10;
-        buf += sprintf (buf, "%d ", cpu_log[i]);
-      }
-      do_print_log ("log", cpuusage_text);
-    }
-
-    print_line (&row_current, &col_current);
-
-    // Proctime & Bufferrate
-    attron (A_BOLD);
-    attron (COLOR_PAIR (TITLE_PAIR));
-    mvprintw (row_offset + row_current, 0, "ElementName");
-    mvprintw (row_offset + row_current++, ELEMENT_NAME_MAX,
-        "%20s %20s %20s %20s", "Proctime(ns)", "Avg_proctime(ns)", "queuelevel",
-        "Bufferrate(bps)");
-    attroff (COLOR_PAIR (TITLE_PAIR));
-    attroff (A_BOLD);
+    draw_data (key_in, packet);
 
     g_hash_table_foreach (packet->elements, (GHFunc) print_element, NULL);
 
