@@ -38,6 +38,13 @@ int element_col = 0;
 int element_width = 0;
 int element_height = 0;
 
+// Draw location 
+#define DRAW_START_ROW 1
+#define DRAW_START_COL 110
+#define DRAW_WIDTH 80
+#define DRAW_HEIGHT 20
+#define DRAW_ELE_WIDTH 30
+#define DRAW_ARROW_WIDTH 20
 
 // NCurses color scheme
 #define INVERT_PAIR	1
@@ -351,8 +358,8 @@ draw_element (gpointer key, gpointer value, gpointer user_data)
       data->proctime->value);
   mvprintw (element_info_row + 1, element_info_col, "%s: %f", "Average",
       data->proctime->avg);
-  mvprintw (element_info_row + 2, element_info_col, "%s: %d/%d", "Queue_level",
-      data->queue_level, data->max_queue_level);
+  mvprintw (element_info_row + 2, element_info_col, "%s: %d/%d",
+      "Queue_level", data->queue_level, data->max_queue_level);
 
   row_pad_src = element_row + 1;
   row_pad_sink = element_row + 1;
@@ -417,15 +424,15 @@ print_data (int key_in, Packet * packet)
   attron (COLOR_PAIR (TITLE_PAIR));
   mvprintw (row_offset + row_current, 0, "ElementName");
   mvprintw (row_offset + row_current++, ELEMENT_NAME_MAX,
-      "%20s %20s %20s %20s", "Proctime(ns)", "Avg_proctime(ns)", "queuelevel",
-      "Bufferrate(bps)");
+      "%20s %20s %20s %20s", "Proctime(ns)", "Avg_proctime(ns)",
+      "queuelevel", "Bufferrate(bps)");
   attroff (COLOR_PAIR (TITLE_PAIR));
   attroff (A_BOLD);
 }
 
 void
-draw_all (ElementUnit * element, int start_row, int start_col, int height,
-    int width, int ele_width, int arr_width)
+draw_all (ElementUnit * element, int start_row, int start_col, int width,
+    int height, int ele_width, int arr_width)
 {
   assert (element_width + 2 * arrow_width < width);
   draw_box (start_row, start_col, height, width);
@@ -560,7 +567,8 @@ curses_loop (void *arg)
 
     g_hash_table_foreach (packet->elements, (GHFunc) print_element, NULL);
 
-    draw_all (element, 1, 110, 20, 80, 30, 20);
+    draw_all (element, DRAW_START_ROW, DRAW_START_COL, DRAW_WIDTH,
+        DRAW_HEIGHT, DRAW_ELE_WIDTH, DRAW_ARROW_WIDTH);
 
     iter++;
     refresh ();

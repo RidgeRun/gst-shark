@@ -57,3 +57,10 @@ gstshark_*-*-*_*:*:*/
 # Git conflicts
 *.c.orig
 *.h.orig
+
+#cscope
+cscope.in.out
+cscope.po.out
+
+#tags
+tags
