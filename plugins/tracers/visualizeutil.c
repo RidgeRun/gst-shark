@@ -2,6 +2,7 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
+#include <assert.h>
 
 #include "visualizeutil.h"
 #include "gstliveprofiler.h"
@@ -29,6 +30,14 @@ int row_offset = 0;             //for scrolling
 // Draw Location
 int row_pad_sink = 0;
 int row_pad_src = 0;
+int arrow_width = 0;
+
+// Draw all location
+int element_row = 0;
+int element_col = 0;
+int element_width = 0;
+int element_height = 0;
+
 
 // NCurses color scheme
 #define INVERT_PAIR	1
@@ -285,6 +294,8 @@ draw_pad (gpointer key, gpointer value, gpointer user_data)
 {
   if (key == NULL || value == NULL)
     return;
+  int src_pad_info_col = element_col + element_width + 1;
+  int sink_pad_info_col = element_col - arrow_width - 1;
   gchar *name = (gchar *) key;
   PadUnit *data = (PadUnit *) value;
 
@@ -293,19 +304,21 @@ draw_pad (gpointer key, gpointer value, gpointer user_data)
     attron (COLOR_PAIR (SELECT_PAD_PAIR));
   }
   if (gst_pad_get_direction (data->element) == GST_PAD_SRC) {
-    draw_arrow (row_pad_src, 165 + 1, 20);
-    mvprintw (row_pad_src + 1, 165 + 1, "to %s",
+    draw_arrow (row_pad_src, src_pad_info_col, arrow_width);
+    mvprintw (row_pad_src + 1, src_pad_info_col, "to %s",
         GST_OBJECT_NAME (GST_OBJECT_PARENT (gst_pad_get_peer (data->element))));
-    mvprintw (row_pad_src + 2, 165 + 1, "bufrate: %10.2f", data->datarate);
-    mvprintw (row_pad_src + 3, 165 + 1, "bufsize: %10ld",
+    mvprintw (row_pad_src + 2, src_pad_info_col, "bufrate: %10.2f",
+        data->datarate);
+    mvprintw (row_pad_src + 3, src_pad_info_col, "bufsize: %10ld",
         data->buffer_size->value);
     row_pad_src += 4;
   } else {
-    draw_arrow (row_pad_sink, 115 - 1, 20);
-    mvprintw (row_pad_sink + 1, 115 - 1, "from %s",
+    draw_arrow (row_pad_sink, sink_pad_info_col, arrow_width);
+    mvprintw (row_pad_sink + 1, sink_pad_info_col, "from %s",
         GST_OBJECT_NAME (GST_OBJECT_PARENT (gst_pad_get_peer (data->element))));
-    mvprintw (row_pad_sink + 2, 115 - 1, "bufrate: %10.2f", data->datarate);
-    mvprintw (row_pad_sink + 3, 115 - 1, "bufsize: %10ld",
+    mvprintw (row_pad_sink + 2, sink_pad_info_col, "bufrate: %10.2f",
+        data->datarate);
+    mvprintw (row_pad_sink + 3, sink_pad_info_col, "bufsize: %10ld",
         data->buffer_size->value);
     row_pad_sink += 4;
   }
@@ -322,30 +335,34 @@ draw_element (gpointer key, gpointer value, gpointer user_data)
 {
   if (key == NULL || value == NULL)
     return;
+  int element_info_row = element_row + element_height / 2;
+  int element_info_col = element_col + element_width / 2 - 10;
   gchar *name = (gchar *) key;
   ElementUnit *data = (ElementUnit *) value;
 
-  draw_box (3, 135, 16, 30);
+  draw_box (element_row, element_col, element_height, element_width);
   attron (COLOR_PAIR (SELECT_ELEMENT_PAIR));
   attron (A_BOLD);
-  mvprintw (8, 140, "%s", name);
+  mvprintw (element_info_row - 3, element_info_col, "%s", name);
   attroff (COLOR_PAIR (SELECT_ELEMENT_PAIR));
   attroff (A_BOLD);
 
-  mvprintw (11, 140, "%s: %ld", "Proctime", data->proctime->value);
-  mvprintw (12, 140, "%s: %f", "Average", data->proctime->avg);
-  mvprintw (13, 140, "%s: %d/%d", "Queue_level", data->queue_level,
-      data->max_queue_level);
+  mvprintw (element_info_row, element_info_col, "%s: %ld", "Proctime",
+      data->proctime->value);
+  mvprintw (element_info_row + 1, element_info_col, "%s: %f", "Average",
+      data->proctime->avg);
+  mvprintw (element_info_row + 2, element_info_col, "%s: %d/%d", "Queue_level",
+      data->queue_level, data->max_queue_level);
 
-  row_pad_src = 4;
-  row_pad_sink = 4;
+  row_pad_src = element_row + 1;
+  row_pad_sink = element_row + 1;
   g_hash_table_foreach (data->pad, (GHFunc) draw_pad, NULL);
 
   return;
 }
 
 void
-draw_data (int key_in, Packet * packet)
+print_data (int key_in, Packet * packet)
 {
   time_t tmp_t = time (NULL);
   struct tm tm = *localtime (&tmp_t);
@@ -404,6 +421,22 @@ draw_data (int key_in, Packet * packet)
       "Bufferrate(bps)");
   attroff (COLOR_PAIR (TITLE_PAIR));
   attroff (A_BOLD);
+}
+
+void
+draw_all (ElementUnit * element, int start_row, int start_col, int height,
+    int width, int ele_width, int arr_width)
+{
+  assert (element_width + 2 * arrow_width < width);
+  draw_box (start_row, start_col, height, width);
+  element_row = start_row + 2;
+  element_height = height - 4;
+  element_col = start_col + width / 2 - element_width / 2;
+  element_width = ele_width;
+  arrow_width = arr_width;
+  if (elementIterator)
+    draw_element (elementIterator->data, element, NULL);
+
 }
 
 void *
@@ -523,13 +556,11 @@ curses_loop (void *arg)
         break;
     }
 
-    draw_data (key_in, packet);
+    print_data (key_in, packet);
 
     g_hash_table_foreach (packet->elements, (GHFunc) print_element, NULL);
 
-    draw_box (1, 110, 20, 80);
-    if (elementIterator)
-      draw_element (elementIterator->data, element, NULL);
+    draw_all (element, 1, 110, 20, 80, 30, 20);
 
     iter++;
     refresh ();
