@@ -26,7 +26,7 @@ Set environment variable as below.
 - GST_DEBUG = "GST_TRACER:7"
 - GST_TRACERS = "live;" + (tracers to use)
 ```console
-$ GST_DEBUG="GST_TRACER:7" GST_TRACERS="live;cpuusage;queuelevel"\
+$ GST_DEBUG="GST_TRACER:7" GST_TRACERS="live"\
      gst-launch-1.0 videotestsrc ! videorate max-rate=15 ! fakesink
 ```
 
