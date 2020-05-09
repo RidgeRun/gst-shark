@@ -6,7 +6,7 @@ dnl when going to/from release please set the nano (fourth number) right !
 dnl releases only do Wall, git and prerelease does Werror too
 dnl
 AC_INIT([GstShark],
-        [0.6.1.1],
+        [0.6.2.1],
 	[https://github.com/RidgeRun/gst-shark],
 	[gst-shark],
 	[https://github.com/RidgeRun/gst-shark])
