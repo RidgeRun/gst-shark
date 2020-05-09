@@ -98,10 +98,6 @@ AG_GST_ARG_EXAMPLES
 AG_GST_ARG_WITH_PKG_CONFIG_PATH
 AG_GST_PKG_CONFIG_PATH
 
-AG_GST_SET_PACKAGE_RELEASE_DATETIME_WITH_NANO([$PACKAGE_VERSION_NANO],
-  ["${srcdir}/gst-shark.doap"],
-  [$PACKAGE_VERSION_MAJOR.$PACKAGE_VERSION_MINOR.$PACKAGE_VERSION_MICRO])
-
 dnl build static plugins or not
 AC_MSG_CHECKING([whether to build static plugins or not])
 AC_ARG_ENABLE(
@@ -418,7 +414,6 @@ AC_SUBST(GST_SHARK_PLUGIN_LDFLAGS, "$GST_SHARK_PLUGIN_LDFLAGS")
 
 dnl Finally output everything
 AC_CONFIG_FILES([
-gst-shark.doap
 Makefile
 plugins/Makefile
 plugins/tracers/Makefile

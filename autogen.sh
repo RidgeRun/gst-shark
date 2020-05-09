@@ -14,7 +14,7 @@ olddir=`pwd`
 cd "$srcdir"
 
 package=gst-shark
-srcfile=gst-shark.doap.in
+srcfile=configure.ac
 
 # Make sure we have common
 if test ! -f common/gst-autogen.sh;
