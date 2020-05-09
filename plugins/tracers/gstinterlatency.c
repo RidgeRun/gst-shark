@@ -186,6 +186,12 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
 
   interlatency_tracer = GST_INTERLATENCY_TRACER_CAST (self);
 
+  /* Not having a peer pad means that the pad is not linked, which
+     results in a segfault */
+  if (!peer_pad) {
+    return;
+  }
+
   if (GST_OBJECT_FLAG_IS_SET (parent, GST_ELEMENT_FLAG_SOURCE)) {
     send_latency_probe (parent, pad, ts);
     calculate_latency (interlatency_tracer, peer_parent, peer_pad, ts);
