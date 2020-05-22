@@ -121,6 +121,8 @@ struct _GstCtfDescriptor
   gchar *dir_name;
   gchar *env_dir_name;
   gboolean file_output_disable;
+  gsize file_buf_size;
+  gboolean change_file_buf_size;
 
   /* TCP connection variables */
   gchar *host_name;
@@ -243,6 +245,9 @@ ctf_create_struct (void)
   /* File variables */
   ctf->dir_name = NULL;
   ctf->env_dir_name = NULL;
+  ctf->file_buf_size = 0;
+  ctf->change_file_buf_size = FALSE;
+
   /* Default state Enable */
   ctf->file_output_disable = FALSE;
 
@@ -470,11 +475,12 @@ file_parser_handler (gchar * line)
   strcpy (ctf_descriptor->env_dir_name, line);
 }
 
-
 static void
 ctf_process_env_var (void)
 {
   const gchar *env_loc_value;
+  const gchar *env_file_buf_value;
+  gchar *env_file_buf_value_end;
   gchar dir_name[MAX_DIRNAME_LEN];
   gchar *env_dir_name;
   gchar *env_line;
@@ -505,6 +511,16 @@ ctf_process_env_var (void)
     parser_finalize (parser);
 
     g_free (env_line);
+  }
+
+  env_file_buf_value = g_getenv ("GST_SHARK_FILE_BUFFERING");
+
+  if (NULL != env_file_buf_value) {
+    ctf_descriptor->file_buf_size =
+        g_ascii_strtoull (env_file_buf_value, &env_file_buf_value_end, 10);
+    if ('\0' == *env_file_buf_value_end && '-' != env_file_buf_value[0]) {
+      ctf_descriptor->change_file_buf_size = TRUE;
+    }
   }
 
   if (G_UNLIKELY (g_getenv ("GST_SHARK_CTF_DISABLE") != NULL)) {
@@ -576,6 +592,18 @@ ctf_file_init (void)
       if (ctf_descriptor->metadata == NULL) {
         GST_ERROR ("Could not open metadata file, path does not exist.");
         goto error;
+      }
+
+      if (ctf_descriptor->change_file_buf_size) {
+        if (ctf_descriptor->file_buf_size == 0) {
+          setvbuf (ctf_descriptor->metadata, NULL, _IONBF, 0);
+          setvbuf (ctf_descriptor->datastream, NULL, _IONBF, 0);
+        } else {
+          setvbuf (ctf_descriptor->metadata, NULL, _IOFBF,
+              ctf_descriptor->file_buf_size);
+          setvbuf (ctf_descriptor->datastream, NULL, _IOFBF,
+              ctf_descriptor->file_buf_size);
+        }
       }
 
       ctf_descriptor->start_time = gst_util_get_timestamp ();
