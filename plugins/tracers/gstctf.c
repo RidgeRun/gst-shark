@@ -457,9 +457,15 @@ tcp_parser_handler (gchar * line)
     ++line_end;
     port_name = line_end;
 
-    /* TODO: verify if is a numeric string */
     ctf_descriptor->port_number = g_ascii_strtoull (port_name,
         &port_name_end, 10);
+
+    /* Verify if the convertion of the string works */
+    if ('\0' != *port_name_end || '-' == port_name[0]) {
+      ctf_descriptor->port_number = SOCKET_PORT;
+      GST_ERROR ("Invalid port number \"%s\", using the default value: %d",
+          port_name, ctf_descriptor->port_number);
+    }
 
     return;
   }
@@ -520,6 +526,9 @@ ctf_process_env_var (void)
         g_ascii_strtoull (env_file_buf_value, &env_file_buf_value_end, 10);
     if ('\0' == *env_file_buf_value_end && '-' != env_file_buf_value[0]) {
       ctf_descriptor->change_file_buf_size = TRUE;
+    } else {
+      GST_ERROR ("Invalid buffer size \"%s\", using default system value",
+          env_file_buf_value);
     }
   }
 
