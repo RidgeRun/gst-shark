@@ -1,14 +1,11 @@
 #include <gst/gst.h>
 #include "gstliveunit.h"
 
-void ncurses_row_shift (int i);
-void ncurses_col_shift (int i);
-void ncurses_initialize (void);
 gboolean gst_liveprofiler_init (void);
+gboolean gst_liveprofiler_finalize (void);
 
 void print_element (gpointer key, gpointer value, gpointer user_data);
 void print_connection (gpointer key, gpointer value, gpointer user_data);
-
 
 void update_cpuusage_event (guint32 cpunum, gfloat * cpuload);
 void update_pipeline_init (GstPipeline * element);

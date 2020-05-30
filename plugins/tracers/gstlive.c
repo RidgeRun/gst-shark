@@ -62,8 +62,6 @@ do_periodic (GObject * obj)
   gint cpu_load_len;
   static guint counter = 0;
 
-  printf ("Tests: %d\n", counter++);
-
   cpu_usage = &self->cpu_usage;
 
   cpu_load = CPU_USAGE_ARRAY (cpu_usage);
@@ -153,6 +151,7 @@ static void
 gst_live_tracer_finalize (GObject * obj)
 {
   g_unsetenv ("LIVEPROFILER_ENABLED");
+  gst_liveprofiler_finalize ();
   G_OBJECT_CLASS (gst_live_tracer_parent_class)->finalize (obj);
 }
 
