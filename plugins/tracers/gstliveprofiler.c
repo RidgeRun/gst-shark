@@ -96,9 +96,9 @@ gst_liveprofiler_init (void)
   packet = packet_new (cpu_num);
 
 #ifndef _DEBUG_TRUE
-  // pthread_t thread;
-  // pthread_create (&thread, NULL, curses_loop, packet);
-  // pthread_detach (thread);
+  pthread_t thread;
+  pthread_create (&thread, NULL, curses_loop, packet);
+  pthread_detach (thread);
 #endif
 
   return TRUE;
