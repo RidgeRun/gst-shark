@@ -58,6 +58,7 @@ AvgUnit *
 avg_unit_new (void)
 {
   AvgUnit *a = g_malloc0 (sizeof (AvgUnit));
+  a->value = 0;
   a->num = 0;
   a->avg = 0;
   return a;
@@ -77,6 +78,8 @@ element_unit_new (GstElement * element)
   e->time = 0;
 
   e->proctime = avg_unit_new ();
+  e->queue_level = 0;
+  e->max_queue_level = 0;
 
   e->is_filter = is_filter (element);
   e->is_queue = is_queue (element);
@@ -101,6 +104,7 @@ PadUnit *
 pad_unit_new (ElementUnit * element)
 {
   PadUnit *p = g_malloc0 (sizeof (PadUnit));
+
   p->element = element;
   p->time_log = g_queue_new ();
   p->time = 0;
@@ -140,7 +144,6 @@ pad_unit_parent (GHashTable * elements, PadUnit * target)
   return g_hash_table_lookup (elements,
       GST_OBJECT_NAME (GST_OBJECT_PARENT (target->element)));
 }
-
 
 /******************************************************
  * Packet-related new/free functions                  *
