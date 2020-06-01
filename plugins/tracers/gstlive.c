@@ -151,6 +151,7 @@ static void
 gst_live_tracer_finalize (GObject * obj)
 {
   g_unsetenv ("LIVEPROFILER_ENABLED");
+  gst_liveprofiler_finalize ();
   G_OBJECT_CLASS (gst_live_tracer_parent_class)->finalize (obj);
 }
 

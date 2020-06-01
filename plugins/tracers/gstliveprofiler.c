@@ -1,7 +1,5 @@
 #include <gst/gst.h>
-// #include <ncurses.h>
 #include <stdlib.h>
-// #include <time.h>
 #include <pthread.h>
 #include <string.h>
 #include <unistd.h>
@@ -18,51 +16,6 @@
 Packet *packet;
 int log_idx = 0;
 int metadata_writed = 0;
-
-gboolean
-is_filter (GstElement * element)
-{
-  GList *pads;
-  GList *iterator;
-  GstPad *pPad;
-  gint sink = 0;
-  gint src = 0;
-
-  pads = GST_ELEMENT_PADS (element);
-  iterator = g_list_first (pads);
-  while (iterator != NULL) {
-    pPad = iterator->data;
-    if (gst_pad_get_direction (pPad) == GST_PAD_SRC)
-      src++;
-    if (gst_pad_get_direction (pPad) == GST_PAD_SINK)
-      sink++;
-    if (src > 1 || sink > 1)
-      return FALSE;
-
-    iterator = g_list_next (iterator);
-  }
-  if (src == 1 && sink == 1)
-    return TRUE;
-  else
-    return FALSE;
-}
-
-static gboolean
-is_queue (GstElement * element)
-{
-  static GstElementFactory *qfactory = NULL;
-  GstElementFactory *efactory;
-
-  g_return_val_if_fail (element, FALSE);
-
-  if (NULL == qfactory) {
-    qfactory = gst_element_factory_find ("queue");
-  }
-
-  efactory = gst_element_get_factory (element);
-
-  return efactory == qfactory;
-}
 
 void
 generate_meta_data_pad (gpointer key, gpointer value, gpointer user_data)
@@ -113,17 +66,13 @@ add_children_recursively (GstElement * element, GHashTable * table)
       iter = g_list_next (iter);
     }
   } else {
-    eUnit = element_unit_new ();
-    eUnit->element = element;
-    eUnit->pad = g_hash_table_new (g_str_hash, g_str_equal);
-    eUnit->is_filter = is_filter (element);
+    eUnit = element_unit_new (element);
 
     children = GST_ELEMENT_PADS (element);
     iter = g_list_first (children);
 
     while (iter != NULL) {
-      pUnit = pad_unit_new ();
-      pUnit->element = iter->data;
+      pUnit = pad_unit_new (iter->data);
       g_hash_table_insert (eUnit->pad, GST_OBJECT_NAME (iter->data), pUnit);
 
       iter = g_list_next (iter);
@@ -136,24 +85,13 @@ gboolean
 gst_liveprofiler_init (void)
 {
   gint cpu_num;
-  gfloat *cpu_load;
-  GHashTable *elements;
-  GHashTable *connections;
 
   if ((cpu_num = sysconf (_SC_NPROCESSORS_CONF)) == -1) {
     GST_WARNING ("Failed to get numbers of cpus");
     cpu_num = 1;
   }
 
-  cpu_load = g_malloc0 (sizeof (gfloat) * cpu_num);
-  elements = g_hash_table_new (g_str_hash, g_str_equal);
-  connections = g_hash_table_new (g_str_hash, g_str_equal);
-
-  packet = g_malloc0 (sizeof (Packet));
-  packet_set_cpu_num (packet, cpu_num);
-  packet_set_cpu_load (packet, cpu_load);
-  packet_set_elements (packet, elements);
-  packet_set_connections (packet, connections);
+  packet = packet_new (cpu_num);
 
 #ifndef _DEBUG_TRUE
   pthread_t thread;
@@ -161,6 +99,13 @@ gst_liveprofiler_init (void)
   pthread_detach (thread);
 #endif
 
+  return TRUE;
+}
+
+gboolean
+gst_liveprofiler_finalize (void)
+{
+  packet_free (packet);
   return TRUE;
 }
 
@@ -227,7 +172,7 @@ update_queue_level (ElementUnit * element)
   GstElement *pElement = element->element;
   guint32 size_buffers;
   guint32 max_size_buffers;
-  if (!is_queue (pElement)) {
+  if (!element->is_queue) {
     return;
   }
 

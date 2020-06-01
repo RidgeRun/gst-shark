@@ -11,7 +11,6 @@
 
 void initialize (void);
 void print_pad (gpointer key, gpointer value, gpointer user_data);
-void print_elements (gpointer key, gpointer value, gpointer user_data);
 
 void
 milsleep (int ms)
