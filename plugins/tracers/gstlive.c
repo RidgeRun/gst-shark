@@ -62,8 +62,6 @@ do_periodic (GObject * obj)
   gint cpu_load_len;
   static guint counter = 0;
 
-  printf ("Tests: %d\n", counter++);
-
   cpu_usage = &self->cpu_usage;
 
   cpu_load = CPU_USAGE_ARRAY (cpu_usage);
