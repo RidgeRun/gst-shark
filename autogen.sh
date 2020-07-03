@@ -68,6 +68,13 @@ if test -z "$NOCHECK"; then
     echo "not found! Please install pkg-config."
     exit 1
   }
+
+  printf "  checking for libtool ... "
+  echo
+  which "libtool" 2>/dev/null || which "libtoolize" 2>/dev/null || {
+    echo "not found! Please install libtool."
+    exit 1
+  }
 else
   echo ": skipped version checks"
 fi
