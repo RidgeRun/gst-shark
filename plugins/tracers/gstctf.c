@@ -67,23 +67,28 @@ typedef guint32 ctf_header_timestamp;
   *(gchar*)mem = '\0'; \
   ++mem;
 
+#ifdef WORDS_BIGENDIAN
+#  define CTF_EVENT_WRITE(w,mem,data)			\
+  G_STMT_START {					\
+  GST_WRITE_UINT ## w ## _BE (mem,data);		\
+  mem += sizeof(guint ## w );				\
+  } G_STMT_END
+#else
+#  define CTF_EVENT_WRITE(w,mem,data)			\
+  G_STMT_START {					\
+  GST_WRITE_UINT ## w ## _LE (mem,data);		\
+  mem += sizeof(guint ## w );				\
+  } G_STMT_END
+#endif
+
 #define CTF_EVENT_WRITE_INT16(int16,mem) \
-  *(guint16*)mem = int16; \
-  mem += sizeof(guint16);
+  CTF_EVENT_WRITE(16,mem,int16)
 
 #define CTF_EVENT_WRITE_INT32(int32,mem) \
-  *(guint32*)mem = int32; \
-  mem += sizeof(guint32);
+  CTF_EVENT_WRITE(32,mem,int32)
 
-#ifdef WORDS_BIGENDIAN
-#  define CTF_EVENT_WRITE_INT64(int64,mem) \
-  GST_WRITE_UINT64_BE(mem, int64); \
-  mem += sizeof(guint64);
-#else
-#  define CTF_EVENT_WRITE_INT64(int64,mem) \
-  GST_WRITE_UINT64_LE(mem, int64);	   \
-  mem += sizeof(guint64);
-#endif
+#define CTF_EVENT_WRITE_INT64(int64,mem) \
+  CTF_EVENT_WRITE(64,mem,int64)
 
 #define CTF_EVENT_WRITE_FLOAT(float_val,mem) \
   *(gfloat*)mem = float_val; \
