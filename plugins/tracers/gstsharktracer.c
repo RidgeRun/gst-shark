@@ -365,6 +365,19 @@ gst_shark_tracer_element_is_filtered (GstSharkTracer * self,
   return is_filtered;
 }
 
+GList *
+gst_shark_tracer_get_param (GstSharkTracer * self, const gchar * param)
+{
+  GstSharkTracerPrivate *priv = NULL;
+
+  g_return_val_if_fail (self, NULL);
+  g_return_val_if_fail (param, NULL);
+
+  priv = GST_SHARK_TRACER_PRIVATE (self);
+
+  return g_hash_table_lookup (priv->params, param);
+}
+
 void
 gst_shark_tracer_register_hook (GstSharkTracer * self, const gchar * detail,
     GCallback func)
