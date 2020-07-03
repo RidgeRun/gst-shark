@@ -55,6 +55,13 @@ if test -z "$NOCHECK"; then
     exit 1
   }
 
+  printf "  checking for automake ... "
+  echo
+  which "automake" 2>/dev/null || {
+    echo "not found! Please install the automake package."
+    exit 1
+  }
+
   printf "  checking for pkg-config ... "
   echo
   which "pkg-config" 2>/dev/null || {
