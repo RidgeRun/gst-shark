@@ -24,7 +24,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_shark_debug);
 #define GST_CAT_DEFAULT gst_shark_debug
 
 #define GST_SHARK_TRACER_PRIVATE(o) \
-  G_TYPE_INSTANCE_GET_PRIVATE((o), GST_SHARK_TYPE_TRACER, GstSharkTracerPrivate)
+  gst_shark_tracer_get_instance_private(GST_SHARK_TRACER(o))
 
 typedef struct _GstSharkTracerPrivate GstSharkTracerPrivate;
 struct _GstSharkTracerPrivate
