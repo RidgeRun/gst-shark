@@ -34,7 +34,7 @@ static void write_header_internal (GstPeriodicTracer * self);
 static gint set_period (GstPeriodicTracer * self);
 
 #define GST_PERIODIC_TRACER_PRIVATE(o) \
-  G_TYPE_INSTANCE_GET_PRIVATE((o), GST_TYPE_PERIODIC_TRACER, GstPeriodicTracerPrivate)
+  gst_periodic_tracer_get_instance_private(GST_PERIODIC_TRACER(o))
 
 #define DEFAULT_TIMEOUT_INTERVAL 1
 
