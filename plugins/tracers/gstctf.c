@@ -57,43 +57,63 @@ typedef guint32 ctf_header_timestamp;
 #define TCP_DATASTREAM_ID  (0x02)
 
 #define TCP_EVENT_HEADER_WRITE(id,size,mem) \
-    *(tcp_header_id*)mem = id; \
-    mem += sizeof(tcp_header_id); \
-    *(tcp_header_length*)mem = size;
+  G_STMT_START {                            \
+    *(tcp_header_id*)mem = id;              \
+    mem += sizeof(tcp_header_id);           \
+    *(tcp_header_length*)mem = size;        \
+  } G_STMT_END
 
 /* Write string */
-#define CTF_EVENT_WRITE_STRING(str,mem) \
-  mem = (guint8 *)g_stpcpy ((gchar*)mem,str); \
-  *(gchar*)mem = '\0'; \
-  ++mem;
-
-#define CTF_EVENT_WRITE_INT16(int16,mem) \
-  *(guint16*)mem = int16; \
-  mem += sizeof(guint16);
-
-#define CTF_EVENT_WRITE_INT32(int32,mem) \
-  *(guint32*)mem = int32; \
-  mem += sizeof(guint32);
+#define CTF_EVENT_WRITE_STRING(str,mem)         \
+  G_STMT_START {                                \
+    mem = (guint8 *)g_stpcpy ((gchar*)mem,str); \
+    *(gchar*)mem = '\0';                        \
+    ++mem;                                      \
+  } G_STMT_END
 
 #ifdef WORDS_BIGENDIAN
-#  define CTF_EVENT_WRITE_INT64(int64,mem) \
-  GST_WRITE_UINT64_BE(mem, int64); \
-  mem += sizeof(guint64);
+#  define CTF_EVENT_WRITE(w,mem,data)      \
+  G_STMT_START {                           \
+    GST_WRITE_UINT ## w ## _BE (mem,data); \
+    mem += sizeof(guint ## w );            \
+  } G_STMT_END
 #else
-#  define CTF_EVENT_WRITE_INT64(int64,mem) \
-  GST_WRITE_UINT64_LE(mem, int64);	   \
-  mem += sizeof(guint64);
+#  define CTF_EVENT_WRITE(w,mem,data)      \
+  G_STMT_START {                           \
+    GST_WRITE_UINT ## w ## _LE (mem,data); \
+    mem += sizeof(guint ## w );            \
+  } G_STMT_END
 #endif
 
-#define CTF_EVENT_WRITE_FLOAT(float_val,mem) \
-  *(gfloat*)mem = float_val; \
-  mem += sizeof(gfloat);
+#define CTF_EVENT_WRITE_INT16(int16,mem) \
+  CTF_EVENT_WRITE(16,mem,int16)
 
+#define CTF_EVENT_WRITE_INT32(int32,mem) \
+  CTF_EVENT_WRITE(32,mem,int32)
+
+#define CTF_EVENT_WRITE_INT64(int64,mem) \
+  CTF_EVENT_WRITE(64,mem,int64)
+
+#define CTF_EVENT_WRITE_FLOAT(float_val,mem) \
+  G_STMT_START {                             \
+    *(gfloat*)mem = float_val;               \
+    mem += sizeof(gfloat);                   \
+  } G_STMT_END
+
+/* *INDENT-OFF* */
 #define CTF_EVENT_WRITE_HEADER(id,mem) \
-  /* Write event ID */  \
-  CTF_EVENT_WRITE_INT16(id,mem); \
-  /* Write timestamp */ \
-  CTF_EVENT_WRITE_INT32(GST_CLOCK_DIFF (ctf_descriptor->start_time, gst_util_get_timestamp ())/1000,mem);
+  G_STMT_START {                       \
+    /* Write event ID */               \
+    CTF_EVENT_WRITE_INT16(id,mem);     \
+    /* Write timestamp */              \
+    CTF_EVENT_WRITE_INT32(             \
+      GST_CLOCK_DIFF (                 \
+          ctf_descriptor->start_time,  \
+          gst_util_get_timestamp ()    \
+      )/1000,                          \
+    mem);                              \
+  } G_STMT_END
+/* *INDENT-ON* */
 
 static void file_parser_handler (gchar * line);
 static void tcp_parser_handler (gchar * line);
