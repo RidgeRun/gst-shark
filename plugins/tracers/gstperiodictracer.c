@@ -31,11 +31,12 @@ static void remove_callback (GstPeriodicTracer * self);
 static void reset_internal (GstPeriodicTracer * self);
 static gboolean callback_internal (gpointer * data);
 static void write_header_internal (GstPeriodicTracer * self);
+static gint set_period (GstPeriodicTracer * self);
 
 #define GST_PERIODIC_TRACER_PRIVATE(o) \
   G_TYPE_INSTANCE_GET_PRIVATE((o), GST_TYPE_PERIODIC_TRACER, GstPeriodicTracerPrivate)
 
-#define TIMEOUT_INTERVAL 1
+#define DEFAULT_TIMEOUT_INTERVAL 1
 
 typedef struct _GstPeriodicTracerPrivate GstPeriodicTracerPrivate;
 struct _GstPeriodicTracerPrivate
@@ -43,6 +44,7 @@ struct _GstPeriodicTracerPrivate
   guint pipes_running;
   guint callback_id;
   gboolean header_written;
+  gint period;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GstPeriodicTracer, gst_periodic_tracer,
@@ -71,6 +73,7 @@ gst_periodic_tracer_init (GstPeriodicTracer * self)
   priv->pipes_running = 0;
   priv->callback_id = 0;
   priv->header_written = FALSE;
+  priv->period = DEFAULT_TIMEOUT_INTERVAL;
 
   gst_tracing_register_hook (tracer, "element-change-state-post",
       G_CALLBACK (element_change_state_post));
@@ -152,8 +155,9 @@ install_callback (GstPeriodicTracer * self)
     GST_INFO_OBJECT (self,
         "First pipeline started running, starting profiling");
 
+    priv->period = set_period (self);
     priv->callback_id =
-        g_timeout_add_seconds (TIMEOUT_INTERVAL,
+        g_timeout_add_seconds (priv->period,
         (GSourceFunc) callback_internal, (gpointer) self);
   }
 
@@ -218,4 +222,37 @@ callback_internal (gpointer * data)
   g_return_val_if_fail (klass->timer_callback, FALSE);
 
   return klass->timer_callback (self);
+}
+
+static gint
+set_period (GstPeriodicTracer * self)
+{
+  GstPeriodicTracerPrivate *priv = NULL;
+  GList *list = NULL;
+  GstSharkTracer *tracer = NULL;
+  static const gchar *name = "period";
+  gint period = -1;
+
+  g_return_val_if_fail (self, DEFAULT_TIMEOUT_INTERVAL);
+
+  priv = GST_PERIODIC_TRACER_PRIVATE (self);
+  tracer = GST_SHARK_TRACER (self);
+
+  list = gst_shark_tracer_get_param (tracer, name);
+
+  if (NULL == list) {
+    GST_INFO_OBJECT (self, "No period specifying, using default of %d",
+        DEFAULT_TIMEOUT_INTERVAL);
+    period = DEFAULT_TIMEOUT_INTERVAL;
+  } else {
+    GST_INFO_OBJECT (self, "Attempting to parse provided period \"%s\"",
+        list->data);
+    period = g_ascii_strtoull (list->data, NULL, 0);
+    /* On error, 0 is set */
+    if (0 == period) {
+      period = DEFAULT_TIMEOUT_INTERVAL;
+    }
+  }
+
+  return period;
 }
