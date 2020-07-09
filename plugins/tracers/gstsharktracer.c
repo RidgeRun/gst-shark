@@ -24,7 +24,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_shark_debug);
 #define GST_CAT_DEFAULT gst_shark_debug
 
 #define GST_SHARK_TRACER_PRIVATE(o) \
-  G_TYPE_INSTANCE_GET_PRIVATE((o), GST_SHARK_TYPE_TRACER, GstSharkTracerPrivate)
+  gst_shark_tracer_get_instance_private(GST_SHARK_TRACER(o))
 
 typedef struct _GstSharkTracerPrivate GstSharkTracerPrivate;
 struct _GstSharkTracerPrivate
@@ -363,6 +363,19 @@ gst_shark_tracer_element_is_filtered (GstSharkTracer * self,
       is_filtered ? "true" : "false");
 
   return is_filtered;
+}
+
+GList *
+gst_shark_tracer_get_param (GstSharkTracer * self, const gchar * param)
+{
+  GstSharkTracerPrivate *priv = NULL;
+
+  g_return_val_if_fail (self, NULL);
+  g_return_val_if_fail (param, NULL);
+
+  priv = GST_SHARK_TRACER_PRIVATE (self);
+
+  return g_hash_table_lookup (priv->params, param);
 }
 
 void

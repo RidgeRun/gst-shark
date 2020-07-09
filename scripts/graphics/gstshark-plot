@@ -20,6 +20,11 @@ then
     echo "                                 over each graphic generated"
     echo "                                 extern: display the legend over an external window"
     echo "                                 (default: inside)"
+    echo " -f, --filter [pattern]          Filter events that contains a match to the given pattern. The pattern is interpreted"
+    echo "                                 as an extended regular expression."
+    echo "                                 For example:"
+    echo "                                 Select one element information: $0 gstshark_filtered -p --filter x264enc"
+    echo "                                 Select more the one element:    $0 gstshark_filtered -p --filter \"x264enc|udpsink\""
     echo
     exit
 fi
@@ -39,67 +44,7 @@ then
     exit
 fi
 
-processing_tracer_list=("proctime" "interlatency" "framerate" "scheduling" "cpuusage" "bitrate" "queuelevel")
-parser_group_list1=("proctime" "interlatency" "scheduling" "framerate" "bitrate")
-parser_group_list2=("cpuusage")
-parser_queuelevel=("queuelevel")
-
-#
-rm -f tracer.pdf
-
-# Create readable file
-babeltrace $1 > datastream.log
-
-# Loop through the tracer list 1
-for tracer in "${parser_group_list1[@]}"
-do
-    echo "Loading ${tracer} events..."
-    # Split the events in files
-    grep -w ${tracer} datastream.log > ${tracer}.log
-    # Get data columns
-    awk '{print $1,$10,$13,$16}' ${tracer}.log > ${tracer}.mat
-    # Create plots
-done
-
-# Loop through the tracer list 1
-for tracer in "${parser_queuelevel[@]}"
-do
-    echo "Loading ${tracer} events..."
-    # Split the events in files
-    grep -w ${tracer} datastream.log > ${tracer}.log
-    # Get data columns
-    awk '{print $1,$10,$19}' ${tracer}.log > ${tracer}.tmp
-    awk '{gsub(",",""); print}' ${tracer}.tmp > ${tracer}.mat
-    # Create plots
-done
-
-
-# Loop through the tracer list 2
-for tracer in "${parser_group_list2[@]}"
-do
-    echo "Loading ${tracer} events..."
-    grep -w ${tracer} datastream.log > ${tracer}.log
-    head -n 1 ${tracer}.log  > ${tracer}_fields.log
-    # Count columns
-    COL_RAW=$(awk '{ print NF }' ${tracer}_fields.log)
-    COL_END=$(( COL_RAW - 3 ))
-    # Create the awk parameter dinamicaly based in the amount of columns
-    COUNTER=11
-    AWK_PARAM_FILED_NAME='{print $8'
-    AWK_PARAM_FIELD_VALUE='{print $1,$10'
-    while [  $COUNTER -le $COL_END ]; do
-        AWK_PARAM_FILED_NAME=${AWK_PARAM_FILED_NAME},'$'${COUNTER}
-        AWK_PARAM_FIELD_VALUE=${AWK_PARAM_FIELD_VALUE},'$'$(( COUNTER + 2 ))
-        let COUNTER=COUNTER+3
-    done
-    AWK_PARAM_FILED_NAME=${AWK_PARAM_FILED_NAME}'}'
-    AWK_PARAM_FIELD_VALUE=${AWK_PARAM_FIELD_VALUE}'}'
-
-    # Create a file with a list of field names
-    awk "$AWK_PARAM_FILED_NAME" ${tracer}_fields.log > ${tracer}_fields.mat
-    # Create a file with the timestamp and the list of field values for each event
-    awk "$AWK_PARAM_FIELD_VALUE" ${tracer}.log > ${tracer}_values.mat
-done
+CTF_DIR=$1
 
 # Skip directory name
 shift
@@ -148,11 +93,95 @@ do
         PERSIST="--persist"
         shift # past argument
         ;;
+        -f|--filter)
+        shift
+        FILTER="$1"
+        shift # past argument
+        ;;
         *)
         echo "WARN: unkown \"$key\" option"
         shift
         ;;
     esac
+done
+
+processing_tracer_list=("proctime" "interlatency" "framerate" "scheduling" "cpuusage" "bitrate" "queuelevel" "buffer")
+parser_group_list1=("proctime" "interlatency" "scheduling" "framerate" "bitrate")
+parser_group_list2=("cpuusage")
+parser_group_list3=("buffer")
+parser_queuelevel=("queuelevel")
+
+#
+rm -f tracer.pdf
+
+# Create readable file
+babeltrace $CTF_DIR > datastream.log
+
+# if a filter was provided, apply the filter
+if [ ${FILTER}x != x ]; then
+    grep -E ${FILTER} datastream.log > datastream_filter.log
+    mv datastream_filter.log datastream.log
+fi
+
+# Loop through the tracer list 1
+for tracer in "${parser_group_list1[@]}"
+do
+    echo "Loading ${tracer} events..."
+    # Split the events in files
+    grep -w ${tracer} datastream.log > ${tracer}.log
+    # Get data columns
+    awk '{print $1,$10,$13,$16}' ${tracer}.log > ${tracer}.mat
+    # Create plots
+done
+
+# Loop through the tracer list 1
+for tracer in "${parser_queuelevel[@]}"
+do
+    echo "Loading ${tracer} events..."
+    # Split the events in files
+    grep -w ${tracer} datastream.log > ${tracer}.log
+    # Get data columns
+    awk '{print $1,$10,$19}' ${tracer}.log > ${tracer}.tmp
+    awk '{gsub(",",""); print}' ${tracer}.tmp > ${tracer}.mat
+    # Create plots
+done
+
+# Loop through the tracer list 2
+for tracer in "${parser_group_list2[@]}"
+do
+    echo "Loading ${tracer} events..."
+    grep -w ${tracer} datastream.log > ${tracer}.log
+    head -n 1 ${tracer}.log  > ${tracer}_fields.log
+    # Count columns
+    COL_RAW=$(awk '{ print NF }' ${tracer}_fields.log)
+    COL_END=$(( COL_RAW - 3 ))
+    # Create the awk parameter dinamicaly based in the amount of columns
+    COUNTER=11
+    AWK_PARAM_FILED_NAME='{print $8'
+    AWK_PARAM_FIELD_VALUE='{print $1,$10'
+    while [  $COUNTER -le $COL_END ]; do
+        AWK_PARAM_FILED_NAME=${AWK_PARAM_FILED_NAME},'$'${COUNTER}
+        AWK_PARAM_FIELD_VALUE=${AWK_PARAM_FIELD_VALUE},'$'$(( COUNTER + 2 ))
+        let COUNTER=COUNTER+3
+    done
+    AWK_PARAM_FILED_NAME=${AWK_PARAM_FILED_NAME}'}'
+    AWK_PARAM_FIELD_VALUE=${AWK_PARAM_FIELD_VALUE}'}'
+
+    # Create a file with a list of field names
+    awk "$AWK_PARAM_FILED_NAME" ${tracer}_fields.log > ${tracer}_fields.mat
+    # Create a file with the timestamp and the list of field values for each event
+    awk "$AWK_PARAM_FIELD_VALUE" ${tracer}.log > ${tracer}_values.mat
+done
+
+# Loop through the tracer list 3
+for tracer in "${parser_group_list3[@]}"
+do
+    echo "Loading ${tracer} events..."
+    # Split the events in files
+    grep -w ${tracer} datastream.log > ${tracer}.log
+    # Get data columns
+    awk '{print $1,$10,$13}' ${tracer}.log > ${tracer}.tmp
+    awk '{gsub(",",""); print}' ${tracer}.tmp > ${tracer}.mat
 done
 
 # Create plots
@@ -178,4 +207,7 @@ do
     rm ${tracer}_values.log ${tracer}_values.mat -f
 done
 
-
+for tracer in "${parser_group_list3[@]}"
+do
+    rm ${tracer}.log ${tracer}.mat ${tracer}.tmp -f
+done
