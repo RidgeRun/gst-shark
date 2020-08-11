@@ -10,8 +10,8 @@ AC_DEFUN([AG_GST_SHARK_INIT],
   m4_pattern_forbid(^_?AG_GST_SHARK_)
 
   dnl FIXME: find a better way to do this
-  GST_SHARK_README_LONG=`sed -rn '/^## Description/,/^#/{ /^## Description/{n;n;}; /^#/q; p;}' README | tr '\n' ' '`
-  GST_SHARK_README_SHORT=`sed -rn 's/^> (.*)$/\1/p' README | tr '\n' ' '`
+  GST_SHARK_README_LONG=`sed -En '/^## Description/,/^#/{ /^## Description/{n;n;}; /^#/q; p;}' README | tr '\n' ' '`
+  GST_SHARK_README_SHORT=`sed -En 's/^> (.*)$/\1/p' README | tr '\n' ' '`
 
   GST_SHARK_PACKAGE_CREATED=2016-01-29
   GST_SHARK_PACKAGE_MAILINGLIST=
