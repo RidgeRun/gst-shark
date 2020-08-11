@@ -244,7 +244,7 @@ set_period (GstPeriodicTracer * self)
     period = DEFAULT_TIMEOUT_INTERVAL;
   } else {
     GST_INFO_OBJECT (self, "Attempting to parse provided period \"%s\"",
-        list->data);
+        (gchar *) list->data);
     period = g_ascii_strtoull (list->data, NULL, 0);
     /* On error, 0 is set */
     if (0 == period) {
