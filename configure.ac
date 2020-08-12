@@ -266,6 +266,19 @@ PKG_CHECK_MODULES(GIO, [
   ])
 ])
 
+dnl Babeltrace2
+BT2_REQ=2.0
+PKG_CHECK_MODULES(BT2, [
+  babeltrace2 >= $BT2_REQ
+], [
+  AC_SUBST(BT2_CFLAGS)
+  AC_SUBST(BT2_LIBS)
+],[
+  AC_MSG_ERROR([
+    Please install babeltrace2 development packages
+  ])
+])
+
 dnl building of unit test libraries
 AC_ARG_ENABLE(check,
   AS_HELP_STRING([--disable-check],[disable building unit test libraries]),

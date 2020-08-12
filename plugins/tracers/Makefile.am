@@ -1,10 +1,22 @@
-lib_LTLIBRARIES = libgstshark.la
+lib_LTLIBRARIES = libgstctf.la libgstshark.la
+
+libgstctf_la_SOURCES = \
+	gstctf.c
+
+libgstctf_la_CFLAGS = \
+	$(GST_SHARK_OBJ_CFLAGS) \
+	$(GST_CFLAGS) \
+	$(BT2_CFLAGS)
+
+libgstctf_la_LIBADD = \
+	$(GST_SHARK_OBJ_LIBS) \
+	$(GST_LIBS) \
+        $(BT2_LIBS)
 
 libgstshark_la_SOURCES = \
 	gstdot.c \
 	gstcpuusagecompute.c \
 	gstproctimecompute.c \
-	gstctf.c \
 	gstparser.c
 
 libgstshark_la_CFLAGS = \
@@ -45,6 +57,7 @@ libgstsharktracers_la_CFLAGS = \
 libgstsharktracers_la_LIBADD = \
 	$(GST_SHARK_OBJ_LIBS) \
 	$(GST_LIBS) \
+	libgstctf.la \
 	libgstshark.la
 
 libgstsharktracers_la_LDFLAGS = \
