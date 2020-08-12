@@ -75,17 +75,6 @@ struct _GstFramerateHash
   guint counter;
 };
 
-static const gchar framerate_metadata_event[] = "event {\n\
-    name = framerate;\n\
-    id = %d;\n\
-    stream_id = %d;\n\
-    fields := struct {\n\
-        string pad;\n\
-        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _fps;\n\
-    };\n\
-};\n\
-\n";
-
 static void
 gst_framerate_tracer_class_init (GstFramerateTracerClass * klass)
 {
@@ -153,13 +142,6 @@ reset_counters (GstPeriodicTracer * tracer)
 static void
 create_metadata_event (GstPeriodicTracer * tracer)
 {
-  gchar *metadata_event;
-
-  metadata_event = g_strdup_printf (framerate_metadata_event, FPS_EVENT_ID, 0);
-
-  /* Add event in metadata file */
-  add_metadata_event_struct (metadata_event);
-  g_free (metadata_event);
 }
 
 static gboolean
@@ -182,8 +164,6 @@ print_framerate (GstPeriodicTracer * tracer)
     pad_table = (GstFramerateHash *) value;
 
     gst_tracer_record_log (tr_framerate, pad_table->fullname,
-        pad_table->counter);
-    do_print_framerate_event (FPS_EVENT_ID, pad_table->fullname,
         pad_table->counter);
     pad_table->counter = 0;
   }

@@ -50,24 +50,6 @@ static void gst_buffer_range_post (GObject * self, GstClockTime ts,
 
 static GstTracerRecord *tr_buffer;
 
-static const gchar buffer_metadata_event[] = "event {\n\
-    name = buffer;\n\
-    id = %d;\n\
-    stream_id = %d;\n\
-    fields := struct {\n\
-        string pad;\n\
-        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } pts;\n\
-        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } dts;\n\
-        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } duration;\n\
-        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } offset;\n\
-        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } offset_end;\n\
-        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } size;\n\
-        integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } flags;\n\
-        integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } refcount;\n\
-    };\n\
-};\n\
-\n";
-
 static void
 gst_buffer_buffer_pre (GObject * self, GstClockTime ts, GstPad * pad,
     GstBuffer * buffer)
@@ -113,9 +95,6 @@ gst_buffer_buffer_pre (GObject * self, GstClockTime ts, GstPad * pad,
   gst_tracer_record_log (tr_buffer, pad_name, spts, sdts, sduration, offset,
       offset_end, size, sflags, refcount);
 
-  do_print_buffer_event (BUFFER_EVENT_ID, pad_name, pts, dts, duration,
-      offset, offset_end, size, flags, refcount);
-
   g_value_unset (&vflags);
   g_free (spts);
   g_free (sdts);
@@ -148,8 +127,6 @@ gst_buffer_buffer_list_pre (GObject * self, GstClockTime ts, GstPad * pad,
 static void
 gst_buffer_tracer_class_init (GstBufferTracerClass * klass)
 {
-  gchar *metadata_event;
-
   tr_buffer = gst_tracer_record_new ("buffer.class",
       "pad", GST_TYPE_STRUCTURE, gst_structure_new ("value",
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
@@ -178,10 +155,6 @@ gst_buffer_tracer_class_init (GstBufferTracerClass * klass)
       GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE,
           G_TYPE_UINT, "description", G_TYPE_STRING, "Ref Count", "min",
           G_TYPE_UINT, 0, "max", G_TYPE_UINT, G_MAXUINT32, NULL), NULL);
-
-  metadata_event = g_strdup_printf (buffer_metadata_event, BUFFER_EVENT_ID, 0);
-  add_metadata_event_struct (metadata_event);
-  g_free (metadata_event);
 }
 
 static void

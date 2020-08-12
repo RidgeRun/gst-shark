@@ -64,17 +64,6 @@ struct _GstBitrateHash
   guint64 bitrate;
 };
 
-static const gchar bitrate_metadata_event[] = "event {\n\
-    name = bitrate;\n\
-    id = %d;\n\
-    stream_id = %d;\n\
-    fields := struct {\n\
-        string pad;\n\
-        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _bps;\n\
-    };\n\
-};\n\
-\n";
-
 static gboolean
 do_print_bitrate (GstPeriodicTracer * tracer)
 {
@@ -92,8 +81,6 @@ do_print_bitrate (GstPeriodicTracer * tracer)
     pad_table = (GstBitrateHash *) value;
 
     gst_tracer_record_log (tr_bitrate, pad_table->fullname, pad_table->bitrate);
-    do_print_bitrate_event (BITRATE_EVENT_ID, pad_table->fullname,
-        pad_table->bitrate);
 
     pad_table->bitrate = 0;
   }
@@ -251,13 +238,6 @@ gst_bitrate_tracer_init (GstBitrateTracer * self)
 static void
 create_metadata_event (GstPeriodicTracer * tracer)
 {
-  gchar *metadata_event;
-
-  /* Add event in metadata file */
-  metadata_event =
-      g_strdup_printf (bitrate_metadata_event, BITRATE_EVENT_ID, 0);
-  add_metadata_event_struct (metadata_event);
-  g_free (metadata_event);
 }
 
 static gchar *

@@ -49,21 +49,6 @@ G_DEFINE_TYPE_WITH_CODE (GstCPUUsageTracer, gst_cpu_usage_tracer,
 
 static GstTracerRecord *tr_cpuusage;
 
-static const gchar cpuusage_metadata_event_header[] = "\
-event {\n\
-    name = cpuusage;\n\
-    id = %d;\n\
-    stream_id = %d;\n\
-    fields := struct {\n";
-
-static const gchar cpuusage_metadata_event_footer[] = "\
-    };\n\
-};\n\
-\n";
-
-static const gchar floating_point_event_field[] =
-    "        floating_point { exp_dig = %lu; mant_dig = %d; byte_order = le; align = 8; } _cpu%d;\n";
-
 static void cpuusage_dummy_bin_add_post (GObject * obj, GstClockTime ts,
     GstBin * bin, GstElement * element, gboolean result);
 static gboolean cpu_usage_thread_func (GstPeriodicTracer * tracer);
@@ -108,7 +93,6 @@ cpu_usage_thread_func (GstPeriodicTracer * tracer)
   for (cpu_id = 0; cpu_id < cpu_load_len; ++cpu_id) {
     gst_tracer_record_log (tr_cpuusage, cpu_id, cpu_load[cpu_id]);
   }
-  do_print_cpuusage_event (CPUUSAGE_EVENT_ID, cpu_load_len, cpu_load);
 
   return TRUE;
 }
@@ -116,60 +100,7 @@ cpu_usage_thread_func (GstPeriodicTracer * tracer)
 static void
 create_metadata_event (GstPeriodicTracer * tracer)
 {
-  GstCPUUsageTracer *self;
-  gint cpu_num;
-  gchar *mem;
-  gchar *mem_start;
-  gchar *event_header;
-  gsize str_size;
-  gsize mem_size;
-  gint msg_id;
-  gint number_of_bytes;
 
-  self = GST_CPU_USAGE_TRACER (tracer);
-  cpu_num = self->cpu_usage.cpu_num;
-
-  event_header =
-      g_strdup_printf (cpuusage_metadata_event_header, CPUUSAGE_EVENT_ID, 0);
-
-  str_size = strlen (event_header);
-
-  /* Compute event description size
-   * size = header + fields + footer
-   */
-  mem_size =
-      str_size + cpu_num * sizeof (floating_point_event_field) +
-      sizeof (cpuusage_metadata_event_footer);
-  mem_start = g_malloc (mem_size);
-  mem = mem_start;
-
-  /* Add event header */
-  mem += g_strlcpy (mem, event_header, mem_size);
-  mem_size -= str_size;
-
-  /* Add event fields */
-  for (msg_id = 0; msg_id < cpu_num; ++msg_id) {
-    /* floating point field definition:
-     * http://diamon.org/ctf/#spec4.1.7
-     */
-    number_of_bytes = g_snprintf (mem,
-        mem_size,
-        floating_point_event_field,
-        (unsigned long) (sizeof (gfloat) * CHAR_BIT - FLT_MANT_DIG),
-        FLT_MANT_DIG, msg_id);
-
-    mem += number_of_bytes;
-    mem_size -= number_of_bytes;
-  }
-
-  /* Add event footer */
-  g_strlcpy (mem, cpuusage_metadata_event_footer, mem_size);
-
-  /* Add event in metadata file */
-  add_metadata_event_struct (mem_start);
-  /* Free allocated memory */
-  g_free (mem_start);
-  g_free (event_header);
 }
 
 static void

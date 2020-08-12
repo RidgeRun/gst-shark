@@ -43,10 +43,13 @@ struct _GstDotRenderThread
   gpointer args;
 };
 
+#if 0
 static void gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags);
+#endif
 
 #define MAX_SUFFIX_LEN (32)
 
+#if 0
 void
 gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags)
 {
@@ -57,7 +60,7 @@ gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags)
   gchar time_suffix[MAX_SUFFIX_LEN];
   time_t now = time (NULL);
 
-  trace_dir = get_ctf_path_name ();
+  trace_dir = NULL;
 
   full_trace_dir = g_strdup_printf ("%s" G_DIR_SEPARATOR_S "graphic",
       trace_dir);
@@ -98,6 +101,7 @@ gst_dot_pipeline_to_file (GstBin * bin, GstDebugGraphDetails flags)
   g_free (full_file_name);
   g_free (full_trace_dir);
 }
+#endif
 
 gchar *
 gst_dot_pipeline_to_string (const GstPipeline * pipe)
@@ -109,7 +113,9 @@ gst_dot_pipeline_to_string (const GstPipeline * pipe)
   bin = GST_BIN (pipe);
   flags = GST_DEBUG_GRAPH_SHOW_ALL;
 
+#if 0
   gst_dot_pipeline_to_file (bin, flags);
+#endif
 
   return gst_debug_bin_to_dot_data (bin, flags);
 }

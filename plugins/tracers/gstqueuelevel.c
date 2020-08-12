@@ -48,22 +48,6 @@ static gboolean is_queue (GstElement * element);
 
 static GstTracerRecord *tr_qlevel;
 
-static const gchar queue_level_metadata_event[] = "event {\n\
-    name = queuelevel;\n\
-    id = %d;\n\
-    stream_id = %d;\n\
-    fields := struct {\n\
-        string queue;\n\
-        integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } size_bytes;\n\
-        integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } max_size_bytes;\n \
-        integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } size_buffers;\n\
-        integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } max_size_buffers;\n\
-        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } size_time;\n\
-        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } max_size_time;\n\
-    };\n\
-};\n\
-\n";
-
 static GstElement *
 get_parent_element (GstPad * pad)
 {
@@ -127,9 +111,6 @@ do_queue_level (GstTracer * self, guint64 ts, GstPad * pad)
   g_free (size_time_string);
   g_free (max_size_time_string);
 
-  do_print_queue_level_event (QUEUE_LEVEL_EVENT_ID, element_name, size_bytes,
-      max_size_bytes, size_buffers, max_size_buffers, size_time, max_size_time);
-
 out:
   {
     gst_object_unref (element);
@@ -170,8 +151,6 @@ is_queue (GstElement * element)
 static void
 gst_queue_level_tracer_class_init (GstQueueLevelTracerClass * klass)
 {
-  gchar *metadata_event;
-
   tr_qlevel = gst_tracer_record_new ("queuelevel.class", "queue",
       GST_TYPE_STRUCTURE, gst_structure_new ("scope",
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
@@ -201,11 +180,6 @@ gst_queue_level_tracer_class_init (GstQueueLevelTracerClass * klass)
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
           "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
           GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), NULL);
-
-  metadata_event =
-      g_strdup_printf (queue_level_metadata_event, QUEUE_LEVEL_EVENT_ID, 0);
-  add_metadata_event_struct (metadata_event);
-  g_free (metadata_event);
 }
 
 static void

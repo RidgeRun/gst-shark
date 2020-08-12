@@ -54,17 +54,6 @@ G_DEFINE_TYPE_WITH_CODE (GstScheduletimeTracer, gst_scheduletime_tracer,
 
 static GstTracerRecord *tr_schedule;
 
-static const gchar scheduling_metadata_event[] = "event {\n\
-    name = scheduling;\n\
-    id = %d;\n\
-    stream_id = %d;\n\
-    fields := struct {\n\
-        string pad;\n\
-        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _time;\n\
-    };\n\
-};\n\
-\n";
-
 static void sched_time_compute (GstTracer * tracer, guint64 ts, GstPad * pad);
 static void do_push_buffer_list_pre (GstTracer * tracer, GstClockTime ts,
     GstPad * pad, GstBufferList * list);
@@ -122,7 +111,6 @@ sched_time_compute (GstTracer * tracer, guint64 ts, GstPad * pad)
 
     gst_tracer_record_log (tr_schedule, pad_name, time_string->str);
 
-    do_print_scheduling_event (SCHED_TIME_EVENT_ID, pad_name, time_diff);
     g_string_free (time_string, TRUE);
   }
   schedule_pad->previous_time = ts;
@@ -155,7 +143,6 @@ static void
 gst_scheduletime_tracer_class_init (GstScheduletimeTracerClass * klass)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
-  gchar *metadata_event;
 
   gobject_class->finalize = gst_scheduletime_tracer_finalize;
 
@@ -168,11 +155,6 @@ gst_scheduletime_tracer_class_init (GstScheduletimeTracerClass * klass)
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
           "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
           GST_TRACER_VALUE_SCOPE_PROCESS, NULL), NULL);
-
-  metadata_event =
-      g_strdup_printf (scheduling_metadata_event, SCHED_TIME_EVENT_ID, 0);
-  add_metadata_event_struct (metadata_event);
-  g_free (metadata_event);
 }
 
 static void

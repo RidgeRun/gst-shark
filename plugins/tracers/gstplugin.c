@@ -74,9 +74,6 @@ plugin_init (GstPlugin * plugin)
   if (!gst_tracer_register (plugin, "buffer", gst_buffer_tracer_get_type ())) {
     return FALSE;
   }
-  if (!gst_ctf_init ()) {
-    return FALSE;
-  }
 
   return TRUE;
 }

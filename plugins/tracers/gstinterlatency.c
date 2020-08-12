@@ -61,18 +61,6 @@ static GQuark latency_probe_ts;
 static GstTracerRecord *tr_interlatency;
 #endif
 
-static const gchar interlatency_metadata_event[] = "event {\n\
-    name = interlatency;\n\
-    id = %d;\n\
-    stream_id = %d;\n\
-    fields := struct {\n\
-        string from_pad;\n\
-        string to_pad;\n\
-        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _time;\n\
-    };\n\
-};\n\
-\n";
-
 static void gst_interlatency_tracer_dispose (GObject * object);
 
 /* data helpers */
@@ -144,7 +132,6 @@ log_latency (GstInterLatencyTracer * interlatency_tracer,
           "to_pad", G_TYPE_STRING, sink,
           "time", G_TYPE_STRING, time_string->str, NULL));
 #endif
-  do_print_interlatency_event (INTERLATENCY_EVENT_ID, src, sink, time);
 
   g_string_free (time_string, TRUE);
   g_free (src);
@@ -271,7 +258,6 @@ static void
 gst_interlatency_tracer_class_init (GstInterLatencyTracerClass * klass)
 {
   GObjectClass *oclass;
-  gchar *metadata_event;
 
   oclass = G_OBJECT_CLASS (klass);
 
@@ -312,11 +298,6 @@ gst_interlatency_tracer_class_init (GstInterLatencyTracerClass * klass)
   /* *INDENT-ON* */
 
   oclass->dispose = gst_interlatency_tracer_dispose;
-
-  metadata_event =
-      g_strdup_printf (interlatency_metadata_event, INTERLATENCY_EVENT_ID, 0);
-  add_metadata_event_struct (metadata_event);
-  g_free (metadata_event);
 }
 
 static void

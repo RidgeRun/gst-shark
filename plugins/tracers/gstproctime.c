@@ -51,17 +51,6 @@ G_DEFINE_TYPE_WITH_CODE (GstProcTimeTracer, gst_proc_time_tracer,
 
 static GstTracerRecord *tr_proc_time;
 
-static const gchar proc_time_metadata_event[] = "event {\n\
-    name = proctime;\n\
-    id = %d;\n\
-    stream_id = %d;\n\
-    fields := struct {\n\
-        string element; \n\
-        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } _time;\n\
-    };\n\
-};\n\
-\n";
-
 static void
 do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
 {
@@ -95,8 +84,6 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
     time_string = g_strdup_printf ("%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
     gst_tracer_record_log (tr_proc_time, name, time_string);
-
-    do_print_proctime_event (PROCTIME_EVENT_ID, name, time);
 
     g_free (time_string);
   }
@@ -135,7 +122,6 @@ static void
 gst_proc_time_tracer_class_init (GstProcTimeTracerClass * klass)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
-  gchar *metadata_event;
 
   gobject_class->finalize = gst_proc_time_tracer_finalize;
 
@@ -147,13 +133,7 @@ gst_proc_time_tracer_class_init (GstProcTimeTracerClass * klass)
       gst_structure_new ("scope", "type", G_TYPE_GTYPE, G_TYPE_STRING,
           "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
           GST_TRACER_VALUE_SCOPE_PROCESS, NULL), NULL);
-
-  metadata_event =
-      g_strdup_printf (proc_time_metadata_event, PROCTIME_EVENT_ID, 0);
-  add_metadata_event_struct (metadata_event);
-  g_free (metadata_event);
 }
-
 
 static void
 gst_proc_time_tracer_init (GstProcTimeTracer * self)
