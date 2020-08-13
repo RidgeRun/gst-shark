@@ -39,6 +39,11 @@
 static gboolean
 plugin_init (GstPlugin * plugin)
 {
+  GstCtf *ctf = NULL;
+
+  ctf = g_object_new (GST_TYPE_CTF, NULL);
+  gst_ctf_start (ctf);
+
 #ifdef GST_CPUUSAGE_ENABLE
   if (!gst_tracer_register (plugin, "cpuusage",
           gst_cpu_usage_tracer_get_type ())) {
@@ -74,6 +79,8 @@ plugin_init (GstPlugin * plugin)
   if (!gst_tracer_register (plugin, "buffer", gst_buffer_tracer_get_type ())) {
     return FALSE;
   }
+
+  gst_object_unref (ctf);
 
   return TRUE;
 }

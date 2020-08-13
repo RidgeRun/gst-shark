@@ -25,6 +25,12 @@
 
 G_BEGIN_DECLS
 
+#define GST_TYPE_CTF gst_ctf_get_type ()
+G_DECLARE_FINAL_TYPE (GstCtf, gst_ctf, GST, CTF, GstObject)
+
+gboolean gst_ctf_start (GstCtf * self);
+void gst_ctf_stop (GstCtf * self);
+
 G_END_DECLS
 
 #endif /*__GST_CTF_H__*/
