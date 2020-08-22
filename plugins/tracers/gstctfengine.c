@@ -28,8 +28,8 @@
 
 #include "gstctfcomponent.h"
 
-GST_DEBUG_CATEGORY_STATIC (gst_ctf_engine_debug);
-#define GST_CAT_DEFAULT gst_ctf_engine_debug
+GST_DEBUG_CATEGORY_EXTERN (gst_ctf_debug);
+#define GST_CAT_DEFAULT gst_ctf_debug
 
 struct _GstCtfEngine
 {
@@ -66,9 +66,6 @@ gst_ctf_engine_class_init (GstCtfEngineClass * klass)
   GObjectClass *oclass = G_OBJECT_CLASS (klass);
 
   oclass->finalize = gst_ctf_engine_finalize;
-
-  GST_DEBUG_CATEGORY_INIT (gst_ctf_engine_debug, "ctfengine", 0,
-      "ctf engine debug");
 }
 
 static void

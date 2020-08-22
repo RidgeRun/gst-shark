@@ -25,7 +25,7 @@
 
 G_BEGIN_DECLS
 
-GST_DEBUG_CATEGORY_EXTERN(ctf);
+GST_DEBUG_CATEGORY_EXTERN (gst_ctf_debug);
 
 void gst_ctf_init (void);
 void gst_ctf_deinit (void);

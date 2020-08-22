@@ -26,8 +26,8 @@
 
 #include <babeltrace2/babeltrace.h>
 
-GST_DEBUG_CATEGORY_STATIC (gst_ctf_component_debug);
-#define GST_CAT_DEFAULT gst_ctf_component_debug
+GST_DEBUG_CATEGORY_EXTERN (gst_ctf_debug);
+#define GST_CAT_DEFAULT gst_ctf_debug
 
 struct _GstCtfComponent
 {
@@ -74,9 +74,6 @@ gst_ctf_component_class_init (GstCtfComponentClass * klass)
   GObjectClass *oclass = G_OBJECT_CLASS (klass);
 
   oclass->finalize = gst_ctf_component_finalize;
-
-  GST_DEBUG_CATEGORY_INIT (gst_ctf_component_debug, "ctfcomponent", 0,
-      "ctf debug");
 }
 
 static void
