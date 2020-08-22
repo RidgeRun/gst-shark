@@ -1,7 +1,8 @@
 lib_LTLIBRARIES = libgstctf.la libgstshark.la
 
 libgstctf_la_SOURCES = \
-	gstctf.c
+	gstctf.c \
+	gstctfcomponent.c
 
 libgstctf_la_CFLAGS = \
 	$(GST_SHARK_OBJ_CFLAGS) \
@@ -77,6 +78,7 @@ noinst_HEADERS = \
 	gstscheduletime.h \
 	gstframerate.h \
 	gstctf.h \
+	gstctfcomponent.h \
 	gstparser.h \
 	gstqueuelevel.h \
 	gstbitrate.h \
