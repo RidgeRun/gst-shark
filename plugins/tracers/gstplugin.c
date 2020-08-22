@@ -34,15 +34,12 @@
 #include "gstqueuelevel.h"
 #include "gstbitrate.h"
 #include "gstbuffer.h"
-#include "gstctfengine.h"
+#include "gstctf.h"
 
 static gboolean
 plugin_init (GstPlugin * plugin)
 {
-  GstCtfEngine *ctf = NULL;
-
-  ctf = g_object_new (GST_TYPE_CTF_ENGINE, NULL);
-  gst_ctf_engine_start (ctf);
+  gst_ctf_init ();
 
 #ifdef GST_CPUUSAGE_ENABLE
   if (!gst_tracer_register (plugin, "cpuusage",
@@ -80,7 +77,7 @@ plugin_init (GstPlugin * plugin)
     return FALSE;
   }
 
-  gst_object_unref (ctf);
+  gst_ctf_deinit ();
 
   return TRUE;
 }

@@ -1,6 +1,7 @@
 lib_LTLIBRARIES = libgstctf.la libgstshark.la
 
 libgstctf_la_SOURCES = \
+        gstctf.c \
 	gstctfcomponent.c \
 	gstctfengine.c
 
@@ -77,6 +78,7 @@ noinst_HEADERS = \
 	gstinterlatency.h \
 	gstscheduletime.h \
 	gstframerate.h \
+        gstctf.h \
 	gstctfcomponent.h \
 	gstctfengine.h \
 	gstparser.h \
