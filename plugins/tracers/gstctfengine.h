@@ -28,7 +28,7 @@ G_BEGIN_DECLS
 #define GST_TYPE_CTF_ENGINE gst_ctf_engine_get_type ()
 G_DECLARE_FINAL_TYPE (GstCtfEngine, gst_ctf_engine, GST, CTF_ENGINE, GstObject)
 
-gboolean gst_ctf_engine_start (GstCtfEngine * self);
+gboolean gst_ctf_engine_start (GstCtfEngine * self, const gchar * path);
 void gst_ctf_engine_stop (GstCtfEngine * self);
 
 G_END_DECLS

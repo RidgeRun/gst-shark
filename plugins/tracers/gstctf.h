@@ -27,6 +27,8 @@ G_BEGIN_DECLS
 
 GST_DEBUG_CATEGORY_EXTERN (gst_ctf_debug);
 
+#define GST_CTF_LOCATION "GST_SHARK_LOCATION"
+
 void gst_ctf_init (void);
 void gst_ctf_deinit (void);
 

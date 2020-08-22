@@ -23,9 +23,18 @@
 #include "gstctfengine.h"
 
 static GstCtfEngine *_ctf = NULL;
+const gchar *_gst_ctf_location = NULL;
 
 GST_DEBUG_CATEGORY (gst_ctf_debug);
 #define GST_CAT_DEFAULT gst_ctf_debug
+
+static void
+gst_ctf_load_env (void)
+{
+  _gst_ctf_location = g_getenv (GST_CTF_LOCATION);
+
+  GST_INFO ("Setting CTF location to \"%s\"", _gst_ctf_location);
+}
 
 void
 gst_ctf_init (void)
@@ -34,16 +43,25 @@ gst_ctf_init (void)
     GST_DEBUG_CATEGORY_INIT (gst_ctf_debug, "ctf", 0, "ctf debug");
   }
 
+  gst_ctf_load_env ();
+
+  /* Shortcircuit if user doesn't want to write CTF */
+  if (NULL == _gst_ctf_location) {
+    GST_INFO ("No CTF requested");
+    return;
+  }
+
   if (NULL == _ctf) {
     _ctf = g_object_new (GST_TYPE_CTF_ENGINE, NULL);
   }
 
-  if (FALSE == gst_ctf_engine_start (_ctf)) {
+  if (FALSE == gst_ctf_engine_start (_ctf, _gst_ctf_location)) {
     GST_ERROR ("Unable to start CTF engine");
     gst_clear_object (&_ctf);
-  } else {
-    GST_INFO ("Initialized CTF");
+    return;
   }
+
+  GST_INFO ("Initialized CTF");
 }
 
 void

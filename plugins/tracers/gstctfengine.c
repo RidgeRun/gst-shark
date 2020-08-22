@@ -37,6 +37,7 @@ struct _GstCtfEngine
 
   bt_graph *graph;
   GstCtfComponent *component;
+  gchar *path;
 };
 
 G_DEFINE_TYPE (GstCtfEngine, gst_ctf_engine, GST_TYPE_OBJECT);
@@ -46,7 +47,7 @@ static void gst_ctf_engine_finalize (GObject * self);
 
 static const bt_port_input *gst_ctf_engine_create_sink_component (GstCtfEngine *
     self, bt_graph * graph, const gchar * plugin_name,
-    const gchar * component_name);
+    const gchar * component_name, const gchar * path);
 static const bt_port_output
     * gst_ctf_engine_create_source_component (GstCtfEngine * self,
     bt_graph * graph, const gchar * plugin_name, const gchar * component_name);
@@ -58,6 +59,7 @@ gst_ctf_engine_init (GstCtfEngine * self)
 {
   self->graph = NULL;
   self->component = NULL;
+  self->path = NULL;
 }
 
 static void
@@ -171,7 +173,7 @@ out:
 
 static const bt_port_input *
 gst_ctf_engine_create_sink_component (GstCtfEngine * self, bt_graph * graph,
-    const gchar * plugin_name, const gchar * component_name)
+    const gchar * plugin_name, const gchar * component_name, const gchar * path)
 {
   const bt_port_input *port = NULL;
   const bt_plugin *plugin = NULL;
@@ -179,7 +181,6 @@ gst_ctf_engine_create_sink_component (GstCtfEngine * self, bt_graph * graph,
   const bt_component_class *cklass = NULL;
   const bt_component_sink *comp = NULL;
   const gchar *param_key = "path";
-  const gchar *param_val = "/tmp/ctf";
   bt_value *params = NULL;
   bt_bool fail_on_error = TRUE;
   bt_bool find_in_std_env_var = TRUE;
@@ -218,11 +219,14 @@ gst_ctf_engine_create_sink_component (GstCtfEngine * self, bt_graph * graph,
     goto free_plug;
   }
 
-  ret = bt_value_map_insert_string_entry (params, param_key, param_val);
+  ret = bt_value_map_insert_string_entry (params, param_key, path);
   if (BT_VALUE_MAP_INSERT_ENTRY_STATUS_OK != ret) {
     GST_ERROR_OBJECT (self, "Unable to create parameter for sink component");
     goto free_param;
   }
+
+  g_free (self->path);
+  self->path = g_strdup (path);
 
   ret =
       bt_graph_add_sink_component (graph, klass,
@@ -250,7 +254,7 @@ out:
 }
 
 gboolean
-gst_ctf_engine_start (GstCtfEngine * self)
+gst_ctf_engine_start (GstCtfEngine * self, const gchar * path)
 {
   const guint64 mip_version = 0;
   const bt_port_input *inport = NULL;
@@ -295,7 +299,8 @@ gst_ctf_engine_start (GstCtfEngine * self)
   }
 
   /* 3. Create sink component */
-  inport = gst_ctf_engine_create_sink_component (self, graph, "ctf", "fs");
+  inport =
+      gst_ctf_engine_create_sink_component (self, graph, "ctf", "fs", path);
   if (NULL == inport) {
     goto freegraph;
   }
@@ -326,6 +331,9 @@ gst_ctf_engine_stop (GstCtfEngine * self)
   self->graph = NULL;
 
   gst_clear_object (&self->component);
+
+  g_free (self->path);
+  self->path = NULL;
 }
 
 static void
