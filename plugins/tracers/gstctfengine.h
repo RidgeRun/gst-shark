@@ -18,19 +18,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef __GST_CTF_H__
-#define __GST_CTF_H__
+#ifndef __GST_CTF_ENGINE_H__
+#define __GST_CTF_ENGINE_H__
 
 #include <gst/gst.h>
 
 G_BEGIN_DECLS
 
-#define GST_TYPE_CTF gst_ctf_get_type ()
-G_DECLARE_FINAL_TYPE (GstCtf, gst_ctf, GST, CTF, GstObject)
+#define GST_TYPE_CTF_ENGINE gst_ctf_engine_get_type ()
+G_DECLARE_FINAL_TYPE (GstCtfEngine, gst_ctf_engine, GST, CTF_ENGINE, GstObject)
 
-gboolean gst_ctf_start (GstCtf * self);
-void gst_ctf_stop (GstCtf * self);
+gboolean gst_ctf_engine_start (GstCtfEngine * self);
+void gst_ctf_engine_stop (GstCtfEngine * self);
 
 G_END_DECLS
 
-#endif /*__GST_CTF_H__*/
+#endif /*__GST_CTF_ENGINE_H__*/

@@ -25,7 +25,6 @@
  */
 
 #include "gstscheduletime.h"
-#include "gstctf.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_scheduletime_debug);
 #define GST_CAT_DEFAULT gst_scheduletime_debug

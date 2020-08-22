@@ -22,16 +22,16 @@
 #include "config.h"
 #endif
 
-#include "gstctf.h"
+#include "gstctfengine.h"
 
 #include <babeltrace2/babeltrace.h>
 
 #include "gstctfcomponent.h"
 
-GST_DEBUG_CATEGORY_STATIC (gst_ctf_debug);
-#define GST_CAT_DEFAULT gst_ctf_debug
+GST_DEBUG_CATEGORY_STATIC (gst_ctf_engine_debug);
+#define GST_CAT_DEFAULT gst_ctf_engine_debug
 
-struct _GstCtf
+struct _GstCtfEngine
 {
   GstObject base;
 
@@ -39,37 +39,40 @@ struct _GstCtf
   GstCtfComponent *component;
 };
 
-G_DEFINE_TYPE (GstCtf, gst_ctf, GST_TYPE_OBJECT);
+G_DEFINE_TYPE (GstCtfEngine, gst_ctf_engine, GST_TYPE_OBJECT);
 
 /* GObject */
-static void gst_ctf_finalize (GObject * self);
+static void gst_ctf_engine_finalize (GObject * self);
 
-static const bt_port_input *gst_ctf_create_sink_component (GstCtf * self,
+static const bt_port_input *gst_ctf_engine_create_sink_component (GstCtfEngine *
+    self, bt_graph * graph, const gchar * plugin_name,
+    const gchar * component_name);
+static const bt_port_output
+    * gst_ctf_engine_create_source_component (GstCtfEngine * self,
     bt_graph * graph, const gchar * plugin_name, const gchar * component_name);
-static const bt_port_output *gst_ctf_create_source_component (GstCtf * self,
-    bt_graph * graph, const gchar * plugin_name, const gchar * component_name);
-static void gst_ctf_log_component (GstCtf * self, const bt_plugin * plugin,
-    const bt_component_class * klass);
+static void gst_ctf_engine_log_component (GstCtfEngine * self,
+    const bt_plugin * plugin, const bt_component_class * klass);
 
 static void
-gst_ctf_init (GstCtf * self)
+gst_ctf_engine_init (GstCtfEngine * self)
 {
   self->graph = NULL;
   self->component = NULL;
 }
 
 static void
-gst_ctf_class_init (GstCtfClass * klass)
+gst_ctf_engine_class_init (GstCtfEngineClass * klass)
 {
   GObjectClass *oclass = G_OBJECT_CLASS (klass);
 
-  oclass->finalize = gst_ctf_finalize;
+  oclass->finalize = gst_ctf_engine_finalize;
 
-  GST_DEBUG_CATEGORY_INIT (gst_ctf_debug, "ctf", 0, "ctf debug");
+  GST_DEBUG_CATEGORY_INIT (gst_ctf_engine_debug, "ctfengine", 0,
+      "ctf engine debug");
 }
 
 static void
-gst_ctf_log_component (GstCtf * self, const bt_plugin * plugin,
+gst_ctf_engine_log_component (GstCtfEngine * self, const bt_plugin * plugin,
     const bt_component_class * klass)
 {
   guint maj = 0;
@@ -98,7 +101,7 @@ gst_ctf_log_component (GstCtf * self, const bt_plugin * plugin,
 }
 
 static const bt_port_output *
-gst_ctf_create_source_component (GstCtf * self, bt_graph * graph,
+gst_ctf_engine_create_source_component (GstCtfEngine * self, bt_graph * graph,
     const gchar * plugin_name, const gchar * component_name)
 {
   const bt_port_output *port = NULL;
@@ -157,7 +160,7 @@ gst_ctf_create_source_component (GstCtf * self, bt_graph * graph,
   g_return_val_if_fail (comp, NULL);
 
   cklass = bt_component_class_source_as_component_class_const (klass);
-  gst_ctf_log_component (self, plugin, cklass);
+  gst_ctf_engine_log_component (self, plugin, cklass);
 
   port = bt_component_source_borrow_output_port_by_index_const (comp, index);
   g_return_val_if_fail (port, NULL);
@@ -170,7 +173,7 @@ out:
 }
 
 static const bt_port_input *
-gst_ctf_create_sink_component (GstCtf * self, bt_graph * graph,
+gst_ctf_engine_create_sink_component (GstCtfEngine * self, bt_graph * graph,
     const gchar * plugin_name, const gchar * component_name)
 {
   const bt_port_input *port = NULL;
@@ -234,7 +237,7 @@ gst_ctf_create_sink_component (GstCtf * self, bt_graph * graph,
   g_return_val_if_fail (comp, NULL);
 
   cklass = bt_component_class_sink_as_component_class_const (klass);
-  gst_ctf_log_component (self, plugin, cklass);
+  gst_ctf_engine_log_component (self, plugin, cklass);
 
   port = bt_component_sink_borrow_input_port_by_index_const (comp, index);
   g_return_val_if_fail (port, NULL);
@@ -250,7 +253,7 @@ out:
 }
 
 gboolean
-gst_ctf_start (GstCtf * self)
+gst_ctf_engine_start (GstCtfEngine * self)
 {
   const guint64 mip_version = 0;
   const bt_port_input *inport = NULL;
@@ -288,14 +291,14 @@ gst_ctf_start (GstCtf * self)
 
   /* 2. Create source component */
   outport =
-      gst_ctf_create_source_component (self, graph, GST_CTF_PLUGIN_NAME,
+      gst_ctf_engine_create_source_component (self, graph, GST_CTF_PLUGIN_NAME,
       GST_CTF_COMPONENT_NAME);
   if (NULL == outport) {
     goto freegraph;
   }
 
   /* 3. Create sink component */
-  inport = gst_ctf_create_sink_component (self, graph, "ctf", "fs");
+  inport = gst_ctf_engine_create_sink_component (self, graph, "ctf", "fs");
   if (NULL == inport) {
     goto freegraph;
   }
@@ -318,7 +321,7 @@ out:
 }
 
 void
-gst_ctf_stop (GstCtf * self)
+gst_ctf_engine_stop (GstCtfEngine * self)
 {
   g_return_if_fail (self);
 
@@ -329,11 +332,11 @@ gst_ctf_stop (GstCtf * self)
 }
 
 static void
-gst_ctf_finalize (GObject * object)
+gst_ctf_engine_finalize (GObject * object)
 {
-  GstCtf *self = GST_CTF (object);
+  GstCtfEngine *self = GST_CTF_ENGINE (object);
 
-  gst_ctf_stop (self);
+  gst_ctf_engine_stop (self);
 
-  return G_OBJECT_CLASS (gst_ctf_parent_class)->finalize (object);
+  return G_OBJECT_CLASS (gst_ctf_engine_parent_class)->finalize (object);
 }

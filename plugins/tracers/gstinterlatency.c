@@ -42,7 +42,6 @@
 #endif
 
 #include "gstinterlatency.h"
-#include "gstctf.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_interlatency_debug);
 #define GST_CAT_DEFAULT gst_interlatency_debug

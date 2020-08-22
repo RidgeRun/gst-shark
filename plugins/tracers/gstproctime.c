@@ -26,7 +26,6 @@
 
 #include "gstproctimecompute.h"
 #include "gstproctime.h"
-#include "gstctf.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_proc_time_debug);
 #define GST_CAT_DEFAULT gst_proc_time_debug

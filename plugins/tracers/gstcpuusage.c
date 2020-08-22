@@ -30,7 +30,6 @@
 
 #include "gstcpuusage.h"
 #include "gstcpuusagecompute.h"
-#include "gstctf.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_cpu_usage_debug);
 #define GST_CAT_DEFAULT gst_cpu_usage_debug
