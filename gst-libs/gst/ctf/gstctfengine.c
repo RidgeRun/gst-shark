@@ -114,18 +114,18 @@ gst_ctf_engine_create_source_component (GstCtfEngine * self, bt_graph * graph,
   gint index = 0;
   bt_bool fail_on_error = TRUE;
   bt_logging_level level = BT_LOGGING_LEVEL_TRACE;
+  const gchar *plugin_path = LIBDIR "/" GST_CTF_BT2_PLUGIN;
 
   g_return_val_if_fail (self, NULL);
   g_return_val_if_fail (graph, NULL);
   g_return_val_if_fail (plugin_name, NULL);
   g_return_val_if_fail (component_name, NULL);
 
-  ret =
-      bt_plugin_find_all_from_file (PLUGINDIR "/libgstsharktracers.so",
-      fail_on_error, &plugins);
+  ret = bt_plugin_find_all_from_file (plugin_path, fail_on_error, &plugins);
   if (BT_PLUGIN_FIND_ALL_FROM_FILE_STATUS_OK != ret) {
-    GST_ERROR_OBJECT (self, "Unable to find Babeltrace \"%s\" plug-in: %d",
-        plugin_name, ret);
+    GST_ERROR_OBJECT (self,
+        "Unable to find Babeltrace \"%s\" plug-in in \"%s\": %d", plugin_name,
+        plugin_path, ret);
     goto out;
   }
   g_return_val_if_fail (plugins, FALSE);

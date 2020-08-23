@@ -395,7 +395,7 @@ dnl - src and build dirs need to be added because every piece that gets built
 dnl   will need the GStreamer source and generated headers
 dnl LIBS: XML doesn't need to be added because we don't explicitly use symbols
 dnl       from LibXML except for in the core library
-GST_SHARK_ALL_CFLAGS="-I\$(top_srcdir) -I\$(top_builddir) $GLIB_CFLAGS \$(GLIB_EXTRA_CFLAGS) $XML_CFLAGS \$(GST_SHARK_OPTION_CFLAGS) \$(ERROR_CFLAGS)"
+GST_SHARK_ALL_CFLAGS="-I\$(top_srcdir) -I\$(top_builddir) -I\$(top_srcdir)/gst-libs -I\$(top_builddir)/gst-libs $GLIB_CFLAGS \$(GLIB_EXTRA_CFLAGS) $XML_CFLAGS \$(GST_SHARK_OPTION_CFLAGS) \$(ERROR_CFLAGS)"
 
 dnl FIXME: check if LTLIBINTL is needed everywhere
 dnl I presume it is given that it contains the symbols that _() stuff maps to
@@ -428,6 +428,9 @@ AC_SUBST(GST_SHARK_PLUGIN_LDFLAGS, "$GST_SHARK_PLUGIN_LDFLAGS")
 dnl Finally output everything
 AC_CONFIG_FILES([
 Makefile
+gst-libs/Makefile
+gst-libs/gst/Makefile
+gst-libs/gst/ctf/Makefile
 plugins/Makefile
 plugins/tracers/Makefile
 tests/Makefile

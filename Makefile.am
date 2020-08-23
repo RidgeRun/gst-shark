@@ -3,7 +3,8 @@ DISTCHECK_CONFIGURE_FLAGS=--enable-gtk-doc --enable-docbook
 # note: keep in sync with configure.ac
 ACLOCAL_AMFLAGS=-I m4 -I common/m4
 
-SUBDIRS= plugins \
+SUBDIRS= gst-libs \
+         plugins \
          tests \
          docs
 

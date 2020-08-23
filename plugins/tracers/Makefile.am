@@ -1,19 +1,4 @@
-lib_LTLIBRARIES = libgstctf.la libgstshark.la
-
-libgstctf_la_SOURCES = \
-        gstctf.c \
-	gstctfcomponent.c \
-	gstctfengine.c
-
-libgstctf_la_CFLAGS = \
-	$(GST_SHARK_OBJ_CFLAGS) \
-	$(GST_CFLAGS) \
-	$(BT2_CFLAGS)
-
-libgstctf_la_LIBADD = \
-	$(GST_SHARK_OBJ_LIBS) \
-	$(GST_LIBS) \
-        $(BT2_LIBS)
+lib_LTLIBRARIES = libgstshark.la
 
 libgstshark_la_SOURCES = \
 	gstdot.c \
@@ -59,8 +44,8 @@ libgstsharktracers_la_CFLAGS = \
 libgstsharktracers_la_LIBADD = \
 	$(GST_SHARK_OBJ_LIBS) \
 	$(GST_LIBS) \
-	libgstctf.la \
-	libgstshark.la
+	libgstshark.la \
+	$(top_builddir)/gst-libs/gst/ctf/libgstctf.la
 
 libgstsharktracers_la_LDFLAGS = \
 	$(GST_SHARK_PLUGIN_LDFLAGS)
@@ -78,9 +63,6 @@ noinst_HEADERS = \
 	gstinterlatency.h \
 	gstscheduletime.h \
 	gstframerate.h \
-        gstctf.h \
-	gstctfcomponent.h \
-	gstctfengine.h \
 	gstparser.h \
 	gstqueuelevel.h \
 	gstbitrate.h \

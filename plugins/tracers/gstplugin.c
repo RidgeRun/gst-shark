@@ -34,7 +34,7 @@
 #include "gstqueuelevel.h"
 #include "gstbitrate.h"
 #include "gstbuffer.h"
-#include "gstctf.h"
+#include "gst/ctf/gstctf.h"
 
 static gboolean
 plugin_init (GstPlugin * plugin)
