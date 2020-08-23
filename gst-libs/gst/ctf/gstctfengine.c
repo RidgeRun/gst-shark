@@ -312,6 +312,9 @@ gst_ctf_engine_start (GstCtfEngine * self, const gchar * path)
     goto freegraph;
   }
 
+  /* Run the graph once so that the iterators get created */
+  bt_graph_run_once (graph);
+
   GST_INFO_OBJECT (self, "Successfully created Babeltrace graph");
   ret = TRUE;
 

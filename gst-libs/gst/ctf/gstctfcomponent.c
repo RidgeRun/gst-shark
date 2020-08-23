@@ -35,6 +35,8 @@ struct _GstCtfComponent
 
   bt_stream *stream;
   bt_event_class *event_class;
+  bt_self_message_iterator *iterator;
+  bt_component *component;
 };
 
 G_DEFINE_TYPE (GstCtfComponent, gst_ctf_component, GST_TYPE_OBJECT);
@@ -52,8 +54,15 @@ ctf_component_initialize (bt_self_component_source * self_component_source,
     const bt_value * params, void *initialize_method_data);
 static void ctf_component_finalize (bt_self_component_source *
     self_component_source);
+static bt_message_iterator_class_initialize_method_status
+ctf_component_iterator_initialize (bt_self_message_iterator *
+    self_message_iterator,
+    bt_self_message_iterator_configuration * configuration,
+    bt_self_component_port_output * self_port);
+static void ctf_component_iterator_finalize (bt_self_message_iterator *
+    self_message_iterator);
 
-/* Sefl */
+/* Self */
 static bt_event_class *gst_ctf_component_create_event_class (GstCtfComponent *
     self, bt_stream_class * stream_class, const char *name);
 static bt_component_class_initialize_method_status
@@ -66,6 +75,8 @@ gst_ctf_component_init (GstCtfComponent * self)
 {
   self->stream = NULL;
   self->event_class = NULL;
+  self->iterator = NULL;
+  self->component = NULL;
 }
 
 static void
@@ -87,9 +98,13 @@ gst_ctf_component_finalize (GObject * object)
   bt_event_class_put_ref (self->event_class);
   self->event_class = NULL;
 
+  /* Iterator's ref is handled in the component */
+  bt_component_put_ref (self->component);
+  self->component = NULL;
+  self->iterator = NULL;
+
   return G_OBJECT_CLASS (gst_ctf_component_parent_class)->finalize (object);
 }
-
 
 static bt_event_class *
 gst_ctf_component_create_event_class (GstCtfComponent * self,
@@ -266,10 +281,12 @@ gst_ctf_component_create_metadata_and_stream (GstCtfComponent * self,
     goto free_stream;
   }
 
-  self->event_class = event_class;
-
   bt_stream_get_ref (stream);
+
+  GST_OBJECT_LOCK (self);
   self->stream = stream;
+  self->event_class = event_class;
+  GST_OBJECT_UNLOCK (self);
 
   ret = BT_COMPONENT_CLASS_INITIALIZE_METHOD_STATUS_OK;
 
@@ -362,9 +379,71 @@ static bt_message_iterator_class_next_method_status
 ctf_component_iterator_next (bt_self_message_iterator * self_message_iterator,
     bt_message_array_const messages, guint64 capacity, guint64 * count)
 {
+  GstCtfComponent *self = NULL;
+  bt_self_component *self_component = NULL;
   gint status = BT_MESSAGE_ITERATOR_CLASS_NEXT_METHOD_STATUS_OK;
 
+  self_component =
+      bt_self_message_iterator_borrow_component (self_message_iterator);
+  g_return_val_if_fail (self_component,
+      BT_MESSAGE_ITERATOR_CLASS_NEXT_METHOD_STATUS_ERROR);
+
+  self = GST_CTF_COMPONENT (bt_self_component_get_data (self_component));
+
+  GST_LOG_OBJECT (self, "Requested %" G_GUINT64_FORMAT " new messages",
+      capacity);
+
+  *count = 0;
+
   return status;
+}
+
+static bt_message_iterator_class_initialize_method_status
+ctf_component_iterator_initialize (bt_self_message_iterator *
+    self_message_iterator,
+    bt_self_message_iterator_configuration * configuration,
+    bt_self_component_port_output * self_port)
+{
+  GstCtfComponent *self = NULL;
+  bt_self_component *self_component = NULL;
+  const bt_component *component = NULL;
+  gint ret = BT_MESSAGE_ITERATOR_CLASS_INITIALIZE_METHOD_STATUS_OK;
+
+  self_component =
+      bt_self_message_iterator_borrow_component (self_message_iterator);
+  g_return_val_if_fail (self_component,
+      BT_MESSAGE_ITERATOR_CLASS_INITIALIZE_METHOD_STATUS_ERROR);
+
+  self = GST_CTF_COMPONENT (bt_self_component_get_data (self_component));
+
+  /* The reference of the iterator is handled in the component. Need to upcast */
+  component = bt_self_component_as_component (self_component);
+  g_return_val_if_fail (component,
+      BT_MESSAGE_ITERATOR_CLASS_INITIALIZE_METHOD_STATUS_ERROR);
+  bt_component_get_ref (component);
+
+  GST_OBJECT_LOCK (self);
+  self->iterator = self_message_iterator;
+  GST_OBJECT_UNLOCK (self);
+
+  /* Set the message iterator's user data to our private data structure */
+  bt_self_message_iterator_set_data (self_message_iterator,
+      gst_object_ref (self));
+
+  GST_DEBUG_OBJECT (self, "Initialized CTF message iterator");
+
+  return ret;
+}
+
+static void
+ctf_component_iterator_finalize (bt_self_message_iterator *
+    self_message_iterator)
+{
+  GstCtfComponent *self =
+      GST_CTF_COMPONENT (bt_self_message_iterator_get_data
+      (self_message_iterator));
+
+  gst_object_unref (self);
 }
 
 /* Define plugin and source component */
@@ -375,7 +454,10 @@ BT_PLUGIN_SOURCE_COMPONENT_CLASS_INITIALIZE_METHOD (tracers,
     ctf_component_initialize);
 BT_PLUGIN_SOURCE_COMPONENT_CLASS_FINALIZE_METHOD (tracers,
     ctf_component_finalize);
-
+BT_PLUGIN_SOURCE_COMPONENT_CLASS_MESSAGE_ITERATOR_CLASS_INITIALIZE_METHOD
+    (tracers, ctf_component_iterator_initialize);
+BT_PLUGIN_SOURCE_COMPONENT_CLASS_MESSAGE_ITERATOR_CLASS_FINALIZE_METHOD
+    (tracers, ctf_component_iterator_finalize);
 /* Plugin metadata */
 BT_PLUGIN_AUTHOR ("RidgeRun <support@ridgerun.com>");
 BT_PLUGIN_DESCRIPTION ("GStreamer tracing subsystem");
