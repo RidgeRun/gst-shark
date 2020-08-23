@@ -18,24 +18,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef __GST_CTF_H__
-#define __GST_CTF_H__
+#ifndef __GST_CTF_RECORD_H__
+#define __GST_CTF_RECORD_H__
 
 #include <gst/gst.h>
-#include <gst/ctf/gstctfrecord.h>
 
 G_BEGIN_DECLS
 
-GST_DEBUG_CATEGORY_EXTERN (gst_ctf_debug);
-
-#define GST_CTF_LOCATION "GST_SHARK_LOCATION"
-
-void gst_ctf_init (void);
-void gst_ctf_deinit (void);
-
-GstCtfRecord *gst_ctf_register_event (const gchar *name,
-    const gchar *firstfield, ...);
+#define GST_TYPE_CTF_RECORD gst_ctf_record_get_type ()
+G_DECLARE_FINAL_TYPE (GstCtfRecord, gst_ctf_record, GST, CTF_RECORD, GstObject)
 
 G_END_DECLS
 
-#endif /*__GST_CTF_H__*/
+#endif /*__GST_CTF_RECORD_H__*/

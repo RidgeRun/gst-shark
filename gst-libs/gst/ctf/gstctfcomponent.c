@@ -26,6 +26,8 @@
 
 #include <babeltrace2/babeltrace.h>
 
+#include "gstctfrecordpriv.h"
+
 GST_DEBUG_CATEGORY_EXTERN (gst_ctf_debug);
 #define GST_CAT_DEFAULT gst_ctf_debug
 
@@ -34,7 +36,7 @@ struct _GstCtfComponent
   GstObject base;
 
   bt_stream *stream;
-  bt_event_class *event_class;
+  bt_stream_class *stream_class;
   bt_self_message_iterator *iterator;
   bt_component *component;
 };
@@ -63,8 +65,6 @@ static void ctf_component_iterator_finalize (bt_self_message_iterator *
     self_message_iterator);
 
 /* Self */
-static bt_event_class *gst_ctf_component_create_event_class (GstCtfComponent *
-    self, bt_stream_class * stream_class, const char *name);
 static bt_component_class_initialize_method_status
 gst_ctf_component_create_metadata_and_stream (GstCtfComponent * self,
     bt_self_component * component);
@@ -74,7 +74,6 @@ static void
 gst_ctf_component_init (GstCtfComponent * self)
 {
   self->stream = NULL;
-  self->event_class = NULL;
   self->iterator = NULL;
   self->component = NULL;
 }
@@ -95,9 +94,6 @@ gst_ctf_component_finalize (GObject * object)
   bt_stream_put_ref (self->stream);
   self->stream = NULL;
 
-  bt_event_class_put_ref (self->event_class);
-  self->event_class = NULL;
-
   /* Iterator's ref is handled in the component */
   bt_component_put_ref (self->component);
   self->component = NULL;
@@ -106,100 +102,24 @@ gst_ctf_component_finalize (GObject * object)
   return G_OBJECT_CLASS (gst_ctf_component_parent_class)->finalize (object);
 }
 
-static bt_event_class *
-gst_ctf_component_create_event_class (GstCtfComponent * self,
-    bt_stream_class * stream_class, const char *name)
+GstCtfRecord *
+gst_ctf_component_register_event_valist (GstCtfComponent * self,
+    const gchar * name, const gchar * firstfield, va_list var_args)
 {
-  bt_event_class *event_class = NULL;
-  bt_event_class *event_class_ret = NULL;
-  bt_trace_class *trace_class = NULL;
-  bt_field_class *payload_field_class = NULL;
-  bt_field_class *msg_field_class = NULL;
-  gint ret = BT_EVENT_CLASS_SET_NAME_STATUS_OK;
+  bt_stream *stream = NULL;
+  bt_self_message_iterator *iterator = NULL;
 
   g_return_val_if_fail (self, NULL);
-  g_return_val_if_fail (stream_class, NULL);
   g_return_val_if_fail (name, NULL);
+  g_return_val_if_fail (firstfield, NULL);
 
-  /* Borrow trace class from stream class */
-  trace_class = bt_stream_class_borrow_trace_class (stream_class);
-  g_return_val_if_fail (trace_class, NULL);
+  GST_OBJECT_LOCK (self);
+  stream = self->stream;
+  iterator = self->iterator;
+  GST_OBJECT_UNLOCK (self);
 
-  /* Create a default event class */
-  event_class = bt_event_class_create (stream_class);
-  if (NULL == event_class) {
-    GST_ERROR_OBJECT (self, "Unable to create event class for \"%s\"", name);
-    goto out;
-  }
-
-  /* Name the event class */
-  ret = bt_event_class_set_name (event_class, name);
-  if (BT_EVENT_CLASS_SET_NAME_STATUS_OK != ret) {
-    GST_ERROR_OBJECT (self, "Unable to create event class for \"%s\": %d", name,
-        ret);
-    goto free_event_class;
-  }
-
-  /*
-   * Create an empty structure field class to be used as the
-   * event class's payload field class.
-   */
-  payload_field_class = bt_field_class_structure_create (trace_class);
-  if (NULL == payload_field_class) {
-    GST_ERROR_OBJECT (self,
-        "Unable to create the payload field class for \"%s\"", name);
-    goto free_event_class;
-  }
-
-  /*
-   * Create a string field class to be used as the payload field
-   * class's `msg` member.
-   */
-  msg_field_class = bt_field_class_string_create (trace_class);
-  if (NULL == msg_field_class) {
-    GST_ERROR_OBJECT (self, "Unable to create the msg field class for \"%s\"",
-        name);
-    goto free_payload_field;
-  }
-
-  /*
-   * Append the string field class to the structure field class as the
-   * `msg` member.
-   */
-  ret = bt_field_class_structure_append_member (payload_field_class, "msg",
-      msg_field_class);
-  if (BT_FIELD_CLASS_STRUCTURE_APPEND_MEMBER_STATUS_OK != ret) {
-    GST_ERROR_OBJECT (self, "Unable to append the message field to the payload "
-        "for \"%s\": %d", name, ret);
-    goto free_msg_field;
-  }
-
-  /* Set the event class's payload field class */
-  ret =
-      bt_event_class_set_payload_field_class (event_class, payload_field_class);
-  if (BT_EVENT_CLASS_SET_FIELD_CLASS_STATUS_OK != ret) {
-    GST_ERROR_OBJECT (self,
-        "Unable to set the payload field in the event class " "for \"%s\": %d",
-        name, ret);
-    goto free_msg_field;
-  }
-
-  /* Success, save a ref and exit */
-  GST_INFO_OBJECT (self, "Successfully created event class \"%s\"", name);
-  bt_event_class_get_ref (event_class);
-  event_class_ret = event_class;
-
-free_msg_field:
-  bt_field_class_put_ref (msg_field_class);
-
-free_payload_field:
-  bt_field_class_put_ref (payload_field_class);
-
-free_event_class:
-  bt_event_class_put_ref (event_class);
-
-out:
-  return event_class_ret;
+  return gst_ctf_record_new_valist (stream, iterator, name, firstfield,
+      var_args);
 }
 
 static bt_component_class_initialize_method_status
@@ -209,11 +129,9 @@ gst_ctf_component_create_metadata_and_stream (GstCtfComponent * self,
   bt_trace_class *trace_class = NULL;
   bt_stream_class *stream_class = NULL;
   bt_clock_class *clock_class = NULL;
-  bt_event_class *event_class = NULL;
   bt_trace *trace = NULL;
   bt_stream *stream = NULL;
   gint ret = BT_COMPONENT_CLASS_INITIALIZE_METHOD_STATUS_OK;
-  const gchar *event_class_name = "event";
 
   g_return_val_if_fail (self,
       BT_COMPONENT_CLASS_INITIALIZE_METHOD_STATUS_ERROR);
@@ -271,27 +189,11 @@ gst_ctf_component_create_metadata_and_stream (GstCtfComponent * self,
     goto free_trace;
   }
 
-  /* Create the two event classes we need */
-  event_class =
-      gst_ctf_component_create_event_class (self, stream_class,
-      event_class_name);
-  if (NULL == event_class) {
-    GST_ERROR_OBJECT (self, "Unable to create event class");
-    ret = BT_COMPONENT_CLASS_INITIALIZE_METHOD_STATUS_ERROR;
-    goto free_stream;
-  }
-
-  bt_stream_get_ref (stream);
-
   GST_OBJECT_LOCK (self);
   self->stream = stream;
-  self->event_class = event_class;
   GST_OBJECT_UNLOCK (self);
 
   ret = BT_COMPONENT_CLASS_INITIALIZE_METHOD_STATUS_OK;
-
-free_stream:
-  bt_stream_put_ref (stream);
 
 free_trace:
   bt_trace_put_ref (trace);

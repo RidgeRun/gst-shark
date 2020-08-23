@@ -22,6 +22,7 @@
 #define __GST_CTF_COMPONENT_H__
 
 #include <gst/gst.h>
+#include <gst/ctf/gstctfrecord.h>
 
 G_BEGIN_DECLS
 
@@ -30,6 +31,9 @@ G_BEGIN_DECLS
 
 #define GST_TYPE_CTF_COMPONENT gst_ctf_component_get_type ()
 G_DECLARE_FINAL_TYPE (GstCtfComponent, gst_ctf_component, GST, CTF_COMPONENT, GstObject)
+
+GstCtfRecord * gst_ctf_component_register_event_valist (GstCtfComponent * self,
+    const gchar *name, const gchar *firstfield, va_list var_args);
 
 G_END_DECLS
 

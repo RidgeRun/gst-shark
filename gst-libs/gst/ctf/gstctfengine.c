@@ -27,6 +27,7 @@
 #include <babeltrace2/babeltrace.h>
 
 #include "gstctfcomponent.h"
+#include "gstctfrecord.h"
 
 GST_DEBUG_CATEGORY_EXTERN (gst_ctf_debug);
 #define GST_CAT_DEFAULT gst_ctf_debug
@@ -347,4 +348,28 @@ gst_ctf_engine_finalize (GObject * object)
   gst_ctf_engine_stop (self);
 
   return G_OBJECT_CLASS (gst_ctf_engine_parent_class)->finalize (object);
+}
+
+GstCtfRecord *
+gst_ctf_engine_register_event_valist (GstCtfEngine * self, const gchar * name,
+    const gchar * firstfield, va_list var_args)
+{
+  GstCtfComponent *component = NULL;
+
+  g_return_val_if_fail (self, NULL);
+  g_return_val_if_fail (name, NULL);
+  g_return_val_if_fail (firstfield, NULL);
+
+  GST_OBJECT_LOCK (self);
+  component = self->component;
+  GST_OBJECT_UNLOCK (self);
+
+  if (NULL == component) {
+    GST_ERROR_OBJECT (self, "Unable to register event, did you call "
+        "gst_ctf_engine_start()?");
+    return NULL;
+  }
+
+  return gst_ctf_component_register_event_valist (component, name, firstfield,
+      var_args);
 }

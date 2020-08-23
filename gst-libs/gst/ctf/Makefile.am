@@ -6,7 +6,9 @@ lib_LTLIBRARIES = $(gstctfbt2plugin)
 libgstctf_la_SOURCES = \
         gstctf.c \
 	gstctfcomponent.c \
-	gstctfengine.c
+	gstctfengine.c \
+        gstctfrecord.c
+
 
 libgstctf_la_CFLAGS = \
 	$(GST_SHARK_OBJ_CFLAGS) \
@@ -22,5 +24,7 @@ libgstctf_la_LIBADD = \
 gstctfinclude_HEADERS = \
         gstctf.h \
 	gstctfcomponent.h \
-	gstctfengine.h
+	gstctfengine.h \
+        gstctfrecord.h \
+        gstctfrecordpriv.h
 

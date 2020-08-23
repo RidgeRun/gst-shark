@@ -35,11 +35,16 @@
 #include "gstbitrate.h"
 #include "gstbuffer.h"
 #include "gst/ctf/gstctf.h"
+#include "gst/ctf/gstctfrecord.h"
 
 static gboolean
 plugin_init (GstPlugin * plugin)
 {
+  GstCtfRecord *ctf = NULL;
   gst_ctf_init ();
+
+  ctf = gst_ctf_register_event ("name", "firstfield");
+  gst_object_unref (ctf);
 
 #ifdef GST_CPUUSAGE_ENABLE
   if (!gst_tracer_register (plugin, "cpuusage",
