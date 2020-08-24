@@ -104,6 +104,7 @@ static const bt_port_output *
 gst_ctf_engine_create_source_component (GstCtfEngine * self, bt_graph * graph,
     const gchar * plugin_name, const gchar * component_name)
 {
+  GstCtfComponent *component = NULL;
   const bt_port_output *port = NULL;
   const bt_plugin_set *plugins = NULL;
   const bt_plugin *plugin = NULL;
@@ -151,7 +152,7 @@ gst_ctf_engine_create_source_component (GstCtfEngine * self, bt_graph * graph,
 
   ret =
       bt_graph_add_source_component_with_initialize_method_data (graph, klass,
-      component_name, params, &(self->component), level, &comp);
+      component_name, params, &component, level, &comp);
   if (BT_GRAPH_ADD_COMPONENT_STATUS_OK != ret) {
     GST_ERROR_OBJECT (self, "Unable to create Babeltrace \"%s\" component: %d",
         component_name, ret);
@@ -164,6 +165,10 @@ gst_ctf_engine_create_source_component (GstCtfEngine * self, bt_graph * graph,
 
   port = bt_component_source_borrow_output_port_by_index_const (comp, index);
   g_return_val_if_fail (port, NULL);
+
+  GST_OBJECT_LOCK (self);
+  self->component = component;
+  GST_OBJECT_UNLOCK (self);
 
 free_plug:
   bt_plugin_set_put_ref (plugins);
@@ -266,6 +271,8 @@ gst_ctf_engine_start (GstCtfEngine * self, const gchar * path)
 
   g_return_val_if_fail (self, FALSE);
 
+  gst_ctf_engine_stop (self);
+
   /*
    * Build the babel trace processing graph:
    *
@@ -307,7 +314,7 @@ gst_ctf_engine_start (GstCtfEngine * self, const gchar * path)
   }
 
   /* 4. Connect components by their ports */
-  status = bt_graph_connect_ports (self->graph, outport, inport, NULL);
+  status = bt_graph_connect_ports (graph, outport, inport, NULL);
   if (BT_GRAPH_CONNECT_PORTS_STATUS_OK != status) {
     GST_ERROR_OBJECT (self, "Unable to connect ports");
     goto freegraph;
@@ -315,6 +322,10 @@ gst_ctf_engine_start (GstCtfEngine * self, const gchar * path)
 
   /* Run the graph once so that the iterators get created */
   bt_graph_run_once (graph);
+
+  GST_OBJECT_LOCK (self);
+  self->graph = graph;
+  GST_OBJECT_UNLOCK (self);
 
   GST_INFO_OBJECT (self, "Successfully created Babeltrace graph");
   ret = TRUE;
@@ -331,6 +342,7 @@ gst_ctf_engine_stop (GstCtfEngine * self)
 {
   g_return_if_fail (self);
 
+  GST_OBJECT_LOCK (self);
   bt_graph_put_ref (self->graph);
   self->graph = NULL;
 
@@ -338,6 +350,7 @@ gst_ctf_engine_stop (GstCtfEngine * self)
 
   g_free (self->path);
   self->path = NULL;
+  GST_OBJECT_UNLOCK (self);
 }
 
 static void
