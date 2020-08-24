@@ -28,6 +28,9 @@ G_BEGIN_DECLS
 #define GST_TYPE_CTF_RECORD gst_ctf_record_get_type ()
 G_DECLARE_FINAL_TYPE (GstCtfRecord, gst_ctf_record, GST, CTF_RECORD, GstObject)
 
+gboolean gst_ctf_record_log (GstCtfRecord *self, ...);
+gboolean gst_ctf_record_log_valist (GstCtfRecord *self, va_list var_args);
+
 G_END_DECLS
 
 #endif /*__GST_CTF_RECORD_H__*/

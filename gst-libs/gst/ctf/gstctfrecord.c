@@ -37,6 +37,8 @@ struct _GstCtfRecord
   bt_stream *stream;
   bt_event_class *event_class;
   gchar *name;
+
+  GList *types;
 };
 
 G_DEFINE_TYPE (GstCtfRecord, gst_ctf_record, GST_TYPE_OBJECT);
@@ -70,6 +72,7 @@ gst_ctf_record_init (GstCtfRecord * self)
   self->stream = NULL;
   self->event_class = NULL;
   self->name = NULL;
+  self->types = NULL;
 }
 
 static void
@@ -110,6 +113,8 @@ gst_ctf_record_finalize (GObject * object)
 
   g_free (self->name);
   self->name = NULL;
+
+  g_clear_list (&(self->types), NULL);
 
   return G_OBJECT_CLASS (gst_ctf_record_parent_class)->finalize (object);
 }
@@ -203,8 +208,7 @@ gst_ctf_record_append_structure (GstCtfRecord * self,
       factory = bt_field_class_integer_signed_create;
       break;
     case G_TYPE_FLOAT:
-      factory = bt_field_class_real_single_precision_create;
-      break;
+      GST_WARNING_OBJECT (self, "Promoting float field to double");
     case G_TYPE_DOUBLE:
       factory = bt_field_class_real_double_precision_create;
       break;
@@ -214,6 +218,10 @@ gst_ctf_record_append_structure (GstCtfRecord * self,
       ret = FALSE;
       goto out;
   }
+
+  GST_OBJECT_LOCK (self);
+  self->types = g_list_append (self->types, GSIZE_TO_POINTER (type));
+  GST_OBJECT_UNLOCK (self);
 
   ret = gst_ctf_record_append_field (self, trace_class,
       payload_field_class, name, factory, g_type_name (type));
@@ -384,4 +392,133 @@ gst_ctf_record_new_valist (bt_stream * stream,
 
 out:
   return self;
+}
+
+gboolean
+gst_ctf_record_log_valist (GstCtfRecord * self, va_list var_args)
+{
+  GList *types = NULL;
+  gboolean ret = FALSE;
+  guint64 timestamp = 0;
+  bt_message *message = NULL;
+  bt_event *event = NULL;
+  bt_field *payload_field = NULL;
+  bt_field *msg_field = NULL;
+  gint index = 0;
+
+  g_return_val_if_fail (self, FALSE);
+
+  timestamp = gst_util_get_timestamp ();
+
+  GST_OBJECT_LOCK (self);
+
+  /* Create the event message */
+  message = bt_message_event_create_with_default_clock_snapshot (self->iterator,
+      self->event_class, self->stream, timestamp);
+
+  /*
+   * At this point `message` is an event message which contains
+   * an empty event object.
+   *
+   * We need to fill its fields.
+   *
+   * The only field to fill is the payload field's `msg` field
+   * which is the event record's message.
+   *
+   * All the references below are borrowed references, therefore we
+   * don't need to put them.
+   */
+  event = bt_message_event_borrow_event (message);
+  payload_field = bt_event_borrow_payload_field (event);
+
+  GST_LOG_OBJECT (self, "Logging %s message:", self->name);
+
+  for (types = self->types; types; types = g_list_next (types)) {
+    GType type = GPOINTER_TO_SIZE (types->data);
+
+    msg_field = bt_field_structure_borrow_member_field_by_index (payload_field,
+        index);
+    if (NULL == msg_field) {
+      GST_ERROR_OBJECT (self, "Malformed log, expecting a %s. Message doesn't "
+          "comply with the initial specification", g_type_name (type));
+      goto out;
+    }
+
+    switch (type) {
+      case G_TYPE_STRING:{
+        gint status = BT_FIELD_STRING_APPEND_STATUS_OK;
+        const gchar *value = va_arg (var_args, const gchar *);
+        GST_LOG_OBJECT (self, "\tstring %s", value);
+
+        status = bt_field_string_set_value (msg_field, value);
+        if (BT_FIELD_STRING_APPEND_STATUS_OK != status) {
+          GST_ERROR_OBJECT (self, "Error setting string argument number %d: %d",
+              index, status);
+          goto out;
+        }
+
+        break;
+      }
+      case G_TYPE_BOOLEAN:{
+        const gboolean value = va_arg (var_args, gboolean);
+        GST_LOG_OBJECT (self, "\tboolean %s:", value ? "true" : "false");
+
+        bt_field_bool_set_value (msg_field, value);
+        break;
+      }
+      case G_TYPE_UINT:{
+        const guint value = va_arg (var_args, guint);
+        GST_LOG_OBJECT (self, "\tuint %u:", value);
+
+        bt_field_integer_unsigned_set_value (msg_field, value);
+        break;
+      }
+      case G_TYPE_INT:{
+        const gint value = va_arg (var_args, gint);
+        GST_LOG_OBJECT (self, "\tint %u:", value);
+
+        bt_field_integer_signed_set_value (msg_field, value);
+        break;
+      }
+      case G_TYPE_FLOAT:
+      case G_TYPE_DOUBLE:{
+        const gdouble value = va_arg (var_args, gdouble);
+        GST_LOG_OBJECT (self, "\tdouble %f:", value);
+
+        bt_field_real_double_precision_set_value (msg_field, value);
+        break;
+      }
+      default:
+        GST_FIXME_OBJECT (self, "Type \"%s\" is not supported yet",
+            g_type_name (type));
+        ret = FALSE;
+        goto out;
+    }
+
+    index++;
+  }
+
+  /* TODO: send message here */
+
+out:
+  GST_OBJECT_UNLOCK (self);
+
+  bt_message_put_ref (message);
+
+  return ret;
+}
+
+gboolean
+gst_ctf_record_log (GstCtfRecord * self, ...)
+{
+  gboolean ret = FALSE;
+  va_list var_args;
+
+  g_return_val_if_fail (self, FALSE);
+
+  va_start (var_args, self);
+  ret = gst_ctf_record_log_valist (self, var_args);
+  va_end (var_args);
+
+  return ret;
 }

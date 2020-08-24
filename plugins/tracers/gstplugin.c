@@ -47,6 +47,8 @@ plugin_init (GstPlugin * plugin)
       gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_STRING, NULL),
       "secondfield", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type",
           G_TYPE_GTYPE, G_TYPE_DOUBLE, NULL), NULL);
+  gst_ctf_record_log (ctf, "hola", 3.1416);
+
   gst_object_unref (ctf);
 
 #ifdef GST_CPUUSAGE_ENABLE
