@@ -43,7 +43,10 @@ plugin_init (GstPlugin * plugin)
   GstCtfRecord *ctf = NULL;
   gst_ctf_init ();
 
-  ctf = gst_ctf_register_event ("name", "firstfield");
+  ctf = gst_ctf_register_event ("name", "firstfield", GST_TYPE_STRUCTURE,
+      gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_STRING, NULL),
+      "secondfield", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type",
+          G_TYPE_GTYPE, G_TYPE_STRING, NULL), NULL);
   gst_object_unref (ctf);
 
 #ifdef GST_CPUUSAGE_ENABLE
