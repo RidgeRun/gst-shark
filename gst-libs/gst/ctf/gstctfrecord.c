@@ -48,18 +48,15 @@ static void gst_ctf_record_finalize (GObject * self);
 static bt_event_class *gst_ctf_record_create_event_class (GstCtfRecord * self,
     bt_stream * stream, const gchar * name, const gchar * fieldname,
     va_list var_args);
-static gboolean gst_ctf_record_append_string (GstCtfRecord * self,
-    bt_trace_class * trace_class, bt_event_class * event_class,
-    bt_field_class * payload_field_class, const gchar * name);
 static gboolean gst_ctf_record_append_field (GstCtfRecord * self,
-    bt_trace_class * trace_class, bt_event_class * event_class,
+    bt_trace_class * trace_class,
     bt_field_class * payload_field_class, const gchar * name,
-    BtFieldClassCreate factory);
+    BtFieldClassCreate factory, const gchar * typename);
 static gboolean gst_ctf_record_iterate_fields (GstCtfRecord * self,
-    bt_trace_class * trace_class, bt_event_class * event_class,
+    bt_trace_class * trace_class,
     bt_field_class * payload_field_class, const gchar * name, va_list var_args);
 static gboolean gst_ctf_record_append_structure (GstCtfRecord * self,
-    bt_trace_class * trace_class, bt_event_class * event_class,
+    bt_trace_class * trace_class,
     bt_field_class * payload_field_class, const gchar * name,
     GstStructure * st);
 
@@ -118,21 +115,10 @@ gst_ctf_record_finalize (GObject * object)
 }
 
 static gboolean
-gst_ctf_record_append_string (GstCtfRecord * self,
-    bt_trace_class * trace_class, bt_event_class * event_class,
-    bt_field_class * payload_field_class, const gchar * name)
-{
-  BtFieldClassCreate factory = bt_field_class_string_create;
-
-  return gst_ctf_record_append_field (self, trace_class, event_class,
-      payload_field_class, name, factory);
-}
-
-static gboolean
 gst_ctf_record_append_field (GstCtfRecord * self,
-    bt_trace_class * trace_class, bt_event_class * event_class,
+    bt_trace_class * trace_class,
     bt_field_class * payload_field_class, const gchar * name,
-    BtFieldClassCreate factory)
+    BtFieldClassCreate factory, const gchar * typename)
 {
   gboolean ret = FALSE;
   bt_field_class *msg_field_class = NULL;
@@ -140,7 +126,6 @@ gst_ctf_record_append_field (GstCtfRecord * self,
 
   g_return_val_if_fail (self, FALSE);
   g_return_val_if_fail (trace_class, FALSE);
-  g_return_val_if_fail (event_class, FALSE);
   g_return_val_if_fail (payload_field_class, FALSE);
   g_return_val_if_fail (name, FALSE);
 
@@ -150,8 +135,8 @@ gst_ctf_record_append_field (GstCtfRecord * self,
    */
   msg_field_class = factory (trace_class);
   if (NULL == msg_field_class) {
-    GST_ERROR_OBJECT (self, "Unable to create the msg field class for \"%s\"",
-        name);
+    GST_ERROR_OBJECT (self,
+        "Unable to create the %s msg field class for \"%s\"", typename, name);
     goto out;
   }
 
@@ -167,7 +152,8 @@ gst_ctf_record_append_field (GstCtfRecord * self,
     goto free_msg_field;
   }
 
-  GST_DEBUG_OBJECT (self, "Added string \"%s\" field to record", name);
+  GST_DEBUG_OBJECT (self, "Added \"%s\" field of type %s to record", name,
+      typename);
   ret = TRUE;
 
 free_msg_field:
@@ -179,20 +165,20 @@ out:
 
 static gboolean
 gst_ctf_record_append_structure (GstCtfRecord * self,
-    bt_trace_class * trace_class, bt_event_class * event_class,
+    bt_trace_class * trace_class,
     bt_field_class * payload_field_class, const gchar * name, GstStructure * st)
 {
   gboolean ret = TRUE;
   const gchar *type_field = "type";
   const GValue *value = NULL;
   GType type = 0;
+  BtFieldClassCreate factory = NULL;
 
   g_return_val_if_fail (self, FALSE);
   g_return_val_if_fail (trace_class, FALSE);
-  g_return_val_if_fail (event_class, FALSE);
   g_return_val_if_fail (payload_field_class, FALSE);
   g_return_val_if_fail (name, FALSE);
-  g_return_val_if_fail (name, FALSE);
+  g_return_val_if_fail (st, FALSE);
 
   /* A tracer record is a structure with the following shape:
    * - "type": (GType) The type of the field
@@ -205,23 +191,40 @@ gst_ctf_record_append_structure (GstCtfRecord * self,
 
   switch (type) {
     case G_TYPE_STRING:
-      ret =
-          gst_ctf_record_append_string (self, trace_class, event_class,
-          payload_field_class, name);
+      factory = bt_field_class_string_create;
+      break;
+    case G_TYPE_BOOLEAN:
+      factory = bt_field_class_bool_create;
+      break;
+    case G_TYPE_UINT:
+      factory = bt_field_class_integer_unsigned_create;
+      break;
+    case G_TYPE_INT:
+      factory = bt_field_class_integer_signed_create;
+      break;
+    case G_TYPE_FLOAT:
+      factory = bt_field_class_real_single_precision_create;
+      break;
+    case G_TYPE_DOUBLE:
+      factory = bt_field_class_real_double_precision_create;
       break;
     default:
       GST_FIXME_OBJECT (self, "Type \"%s\" is not supported yet",
           g_type_name (type));
       ret = FALSE;
-      break;
+      goto out;
   }
 
+  ret = gst_ctf_record_append_field (self, trace_class,
+      payload_field_class, name, factory, g_type_name (type));
+
+out:
   return ret;
 }
 
 static gboolean
 gst_ctf_record_iterate_fields (GstCtfRecord * self,
-    bt_trace_class * trace_class, bt_event_class * event_class,
+    bt_trace_class * trace_class,
     bt_field_class * payload_field_class, const gchar * name, va_list var_args)
 {
   gboolean ret = FALSE;
@@ -231,10 +234,8 @@ gst_ctf_record_iterate_fields (GstCtfRecord * self,
 
   g_return_val_if_fail (self, FALSE);
   g_return_val_if_fail (trace_class, FALSE);
-  g_return_val_if_fail (event_class, FALSE);
   g_return_val_if_fail (payload_field_class, FALSE);
   g_return_val_if_fail (name, FALSE);
-
 
   do {
     fieldname = name ? name : va_arg (var_args, const gchar *);
@@ -258,8 +259,7 @@ gst_ctf_record_iterate_fields (GstCtfRecord * self,
       break;
     }
 
-    ret =
-        gst_ctf_record_append_structure (self, trace_class, event_class,
+    ret = gst_ctf_record_append_structure (self, trace_class,
         payload_field_class, fieldname, st);
 
     /* Grab the rest of the fieldnames from the var args */
@@ -318,7 +318,7 @@ gst_ctf_record_create_event_class (GstCtfRecord * self,
     goto free_event_class;
   }
 
-  if (FALSE == gst_ctf_record_iterate_fields (self, trace_class, event_class,
+  if (FALSE == gst_ctf_record_iterate_fields (self, trace_class,
           payload_field_class, fieldname, var_args)) {
     GST_ERROR_OBJECT (self, "Unable to append payload to \"%s\"", name);
     goto free_payload_class;
