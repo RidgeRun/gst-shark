@@ -423,6 +423,7 @@ generate_metadata (gint major, gint minor, gint byte_order)
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     fwrite (event_mem, sizeof (gchar), str_len, ctf_descriptor->metadata);
+    fflush (ctf_descriptor->metadata);
   }
 
   if (FALSE == ctf_descriptor->tcp_output_disable) {
@@ -430,6 +431,7 @@ generate_metadata (gint major, gint minor, gint byte_order)
     TCP_EVENT_HEADER_WRITE (TCP_METADATA_ID, str_len, mem);
     g_output_stream_write (ctf_descriptor->output_stream,
         ctf_descriptor->mem, str_len + TCP_HEADER_SIZE, NULL, &error);
+    g_output_stream_flush (ctf_descriptor->output_stream, NULL, NULL);
   }
   g_mutex_unlock (&ctf_descriptor->mutex);
 }
