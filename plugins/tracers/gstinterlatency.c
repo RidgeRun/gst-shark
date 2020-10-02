@@ -221,7 +221,8 @@ do_pull_range_pre (GstTracer * self, guint64 ts, GstPad * pad)
 
   interlatency_tracer = GST_INTERLATENCY_TRACER_CAST (self);
 
-  if (GST_OBJECT_FLAG_IS_SET (parent_peer, GST_ELEMENT_FLAG_SOURCE))
+  if (parent_peer
+      && GST_OBJECT_FLAG_IS_SET (parent_peer, GST_ELEMENT_FLAG_SOURCE))
     send_latency_probe (parent_peer, peer_pad, ts);
   else
     calculate_latency (interlatency_tracer, parent_peer, peer_pad, ts);
@@ -234,7 +235,8 @@ do_pull_range_post (GstTracer * self, guint64 ts, GstPad * pad)
   GstElement *parent = get_real_pad_parent (pad);
 
   interlatency_tracer = GST_INTERLATENCY_TRACER_CAST (self);
-  if (GST_OBJECT_FLAG_IS_SET (parent, GST_ELEMENT_FLAG_SINK))
+
+  if (parent && GST_OBJECT_FLAG_IS_SET (parent, GST_ELEMENT_FLAG_SINK))
     calculate_latency (interlatency_tracer, parent, pad, ts);
 }
 
