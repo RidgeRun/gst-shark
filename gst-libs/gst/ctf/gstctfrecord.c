@@ -39,6 +39,7 @@ struct _GstCtfRecord
   gchar *name;
 
   GList *types;
+  GAsyncQueue *queue;
 };
 
 G_DEFINE_TYPE (GstCtfRecord, gst_ctf_record, GST_TYPE_OBJECT);
@@ -359,8 +360,8 @@ out:
 
 GstCtfRecord *
 gst_ctf_record_new_valist (bt_stream * stream,
-    bt_self_message_iterator * iterator, const gchar * name,
-    const gchar * firstfield, va_list var_args)
+    bt_self_message_iterator * iterator, GAsyncQueue * queue,
+    const gchar * name, const gchar * firstfield, va_list var_args)
 {
   GstCtfRecord *self = NULL;
 
@@ -378,6 +379,7 @@ gst_ctf_record_new_valist (bt_stream * stream,
   self->iterator = iterator;
 
   self->name = g_strdup (name);
+  self->queue = queue;
 
   self->event_class =
       gst_ctf_record_create_event_class (self, stream, name, firstfield,
@@ -446,12 +448,12 @@ gst_ctf_record_log_valist (GstCtfRecord * self, va_list var_args)
 
     switch (type) {
       case G_TYPE_STRING:{
-        gint status = BT_FIELD_STRING_APPEND_STATUS_OK;
+        gint status = BT_FIELD_STRING_SET_VALUE_STATUS_OK;
         const gchar *value = va_arg (var_args, const gchar *);
         GST_LOG_OBJECT (self, "\tstring %s", value);
 
         status = bt_field_string_set_value (msg_field, value);
-        if (BT_FIELD_STRING_APPEND_STATUS_OK != status) {
+        if (BT_FIELD_STRING_SET_VALUE_STATUS_OK != status) {
           GST_ERROR_OBJECT (self, "Error setting string argument number %d: %d",
               index, status);
           goto out;
@@ -498,7 +500,9 @@ gst_ctf_record_log_valist (GstCtfRecord * self, va_list var_args)
     index++;
   }
 
-  /* TODO: send message here */
+  GST_LOG_OBJECT (self, "Queueing msg %p", message);
+  bt_message_get_ref (message);
+  g_async_queue_push (self->queue, message);
 
 out:
   GST_OBJECT_UNLOCK (self);

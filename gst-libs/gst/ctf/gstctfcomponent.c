@@ -31,6 +31,14 @@
 GST_DEBUG_CATEGORY_EXTERN (gst_ctf_debug);
 #define GST_CAT_DEFAULT gst_ctf_debug
 
+typedef enum _GstCtfComponentState GstCtfComponentState;
+enum _GstCtfComponentState
+{
+  GST_CTF_COMPONENT_STATE_INIT,
+  GST_CTF_COMPONENT_STATE_RUNNING,
+  GST_CTF_COMPONENT_STATE_ENDED,
+};
+
 struct _GstCtfComponent
 {
   GstObject base;
@@ -39,6 +47,9 @@ struct _GstCtfComponent
   bt_stream_class *stream_class;
   bt_self_message_iterator *iterator;
   bt_component *component;
+
+  GAsyncQueue *queue;
+  GstCtfComponentState state;
 };
 
 G_DEFINE_TYPE (GstCtfComponent, gst_ctf_component, GST_TYPE_OBJECT);
@@ -69,13 +80,14 @@ static bt_component_class_initialize_method_status
 gst_ctf_component_create_metadata_and_stream (GstCtfComponent * self,
     bt_self_component * component);
 
-
 static void
 gst_ctf_component_init (GstCtfComponent * self)
 {
   self->stream = NULL;
   self->iterator = NULL;
   self->component = NULL;
+  self->queue = g_async_queue_new_full ((GDestroyNotify) bt_message_put_ref);
+  self->state = GST_CTF_COMPONENT_STATE_INIT;
 }
 
 static void
@@ -99,6 +111,11 @@ gst_ctf_component_finalize (GObject * object)
   self->component = NULL;
   self->iterator = NULL;
 
+  if (self->queue) {
+    g_async_queue_unref (self->queue);
+  }
+  self->queue = NULL;
+
   return G_OBJECT_CLASS (gst_ctf_component_parent_class)->finalize (object);
 }
 
@@ -108,6 +125,7 @@ gst_ctf_component_register_event_valist (GstCtfComponent * self,
 {
   bt_stream *stream = NULL;
   bt_self_message_iterator *iterator = NULL;
+  GAsyncQueue *queue = NULL;
 
   g_return_val_if_fail (self, NULL);
   g_return_val_if_fail (name, NULL);
@@ -116,10 +134,26 @@ gst_ctf_component_register_event_valist (GstCtfComponent * self,
   GST_OBJECT_LOCK (self);
   stream = self->stream;
   iterator = self->iterator;
+  queue = self->queue;
   GST_OBJECT_UNLOCK (self);
 
-  return gst_ctf_record_new_valist (stream, iterator, name, firstfield,
+  return gst_ctf_record_new_valist (stream, iterator, queue, name, firstfield,
       var_args);
+}
+
+void
+gst_ctf_component_set_queue (GstCtfComponent * self, GAsyncQueue * queue)
+{
+  g_return_if_fail (self);
+  g_return_if_fail (queue);
+
+  GST_OBJECT_LOCK (self);
+  if (NULL != self->queue) {
+    g_async_queue_unref (self->queue);
+  }
+
+  self->queue = g_async_queue_ref (queue);
+  GST_OBJECT_UNLOCK (self);
 }
 
 static bt_component_class_initialize_method_status
@@ -131,6 +165,8 @@ gst_ctf_component_create_metadata_and_stream (GstCtfComponent * self,
   bt_clock_class *clock_class = NULL;
   bt_trace *trace = NULL;
   bt_stream *stream = NULL;
+  const gchar *trace_name = "gst";
+  const gchar *stream_name = "tracers";
   gint ret = BT_COMPONENT_CLASS_INITIALIZE_METHOD_STATUS_OK;
 
   g_return_val_if_fail (self,
@@ -182,9 +218,23 @@ gst_ctf_component_create_metadata_and_stream (GstCtfComponent * self,
     goto free_clock_class;
   }
 
+  ret = bt_trace_set_name (trace, trace_name);
+  if (BT_TRACE_SET_NAME_STATUS_OK != ret) {
+    GST_ERROR_OBJECT (self, "Unable to set trace name");
+    ret = BT_COMPONENT_CLASS_INITIALIZE_METHOD_STATUS_ERROR;
+    goto free_clock_class;
+  }
+
   stream = bt_stream_create (stream_class, trace);
   if (NULL == trace) {
     GST_ERROR_OBJECT (self, "Unable to create stream");
+    ret = BT_COMPONENT_CLASS_INITIALIZE_METHOD_STATUS_ERROR;
+    goto free_trace;
+  }
+
+  ret = bt_stream_set_name (stream, stream_name);
+  if (BT_TRACE_SET_NAME_STATUS_OK != ret) {
+    GST_ERROR_OBJECT (self, "Unable to set stream name");
     ret = BT_COMPONENT_CLASS_INITIALIZE_METHOD_STATUS_ERROR;
     goto free_trace;
   }
@@ -273,7 +323,6 @@ ctf_component_finalize (bt_self_component_source * self_component_source)
   g_return_if_fail (component);
 
   self = GST_CTF_COMPONENT (bt_self_component_get_data (component));
-
   gst_object_unref (self);
 }
 
@@ -282,8 +331,13 @@ ctf_component_iterator_next (bt_self_message_iterator * self_message_iterator,
     bt_message_array_const messages, guint64 capacity, guint64 * count)
 {
   GstCtfComponent *self = NULL;
+  GstCtfComponentState state = GST_CTF_COMPONENT_STATE_INIT;
+  GAsyncQueue *queue = NULL;
   bt_self_component *self_component = NULL;
+  bt_stream *stream = NULL;
   gint status = BT_MESSAGE_ITERATOR_CLASS_NEXT_METHOD_STATUS_OK;
+  gboolean processing = TRUE;
+  static const guint64 timeout = 100 * GST_MSECOND / GST_USECOND;
 
   self_component =
       bt_self_message_iterator_borrow_component (self_message_iterator);
@@ -296,6 +350,63 @@ ctf_component_iterator_next (bt_self_message_iterator * self_message_iterator,
       capacity);
 
   *count = 0;
+
+  GST_OBJECT_LOCK (self);
+  state = self->state;
+  queue = self->queue;
+  stream = self->stream;
+  GST_OBJECT_UNLOCK (self);
+
+  while (processing) {
+    switch (state) {
+      case GST_CTF_COMPONENT_STATE_INIT:
+        GST_DEBUG_OBJECT (self, "Created stream beggining message");
+        messages[(*count)++] =
+            bt_message_stream_beginning_create (self_message_iterator, stream);
+        state = GST_CTF_COMPONENT_STATE_RUNNING;
+        break;
+      case GST_CTF_COMPONENT_STATE_RUNNING:{
+        bt_message *msg = NULL;
+
+        /* Output array is full, return */
+        if (*count >= capacity) {
+          processing = FALSE;
+          break;
+        }
+
+        /* No more messages available, don't block anymore */
+        msg = g_async_queue_timeout_pop (queue, timeout);
+        if (NULL != msg) {
+          GST_LOG_OBJECT (self, "Processing msg num %llu %p", *count, msg);
+          messages[(*count)++] = msg;
+
+          /* FIXME: Nothing gets written unless the end message is sent */
+          /* messages[(*count)++] =
+             bt_message_stream_end_create (self_message_iterator, stream);
+             state = GST_CTF_COMPONENT_STATE_ENDED; */
+        } else {
+          GST_LOG_OBJECT (self, "No new mesages");
+          /* FIXME: If we have no messages in the array, we should
+             return BT_MESSAGE_ITERATOR_CLASS_NEXT_METHOD_STATUS_AGAIN
+             to ask BT to call the callback again. However, for some
+             reason we never get called again */
+          processing = FALSE;
+        }
+        break;
+      }
+      case GST_CTF_COMPONENT_STATE_ENDED:
+        GST_DEBUG_OBJECT (self, "Finished CTF");
+        processing = FALSE;
+        status = BT_MESSAGE_ITERATOR_CLASS_NEXT_METHOD_STATUS_END;
+        break;
+    }
+  }
+
+  GST_LOG_OBJECT (self, "Sent %" G_GUINT64_FORMAT " messages", *count);
+
+  GST_OBJECT_LOCK (self);
+  self->state = state;
+  GST_OBJECT_UNLOCK (self);
 
   return status;
 }

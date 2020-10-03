@@ -39,6 +39,7 @@ struct _GstCtfEngine
   bt_graph *graph;
   GstCtfComponent *component;
   gchar *path;
+  GThread *thread;
 };
 
 G_DEFINE_TYPE (GstCtfEngine, gst_ctf_engine, GST_TYPE_OBJECT);
@@ -61,6 +62,7 @@ gst_ctf_engine_init (GstCtfEngine * self)
   self->graph = NULL;
   self->component = NULL;
   self->path = NULL;
+  self->thread = NULL;
 }
 
 static void
@@ -320,11 +322,12 @@ gst_ctf_engine_start (GstCtfEngine * self, const gchar * path)
     goto freegraph;
   }
 
-  /* Run the graph once so that the iterators get created */
   bt_graph_run_once (graph);
 
   GST_OBJECT_LOCK (self);
   self->graph = graph;
+  self->thread =
+      g_thread_new (GST_OBJECT_NAME (self), (GThreadFunc) bt_graph_run, graph);
   GST_OBJECT_UNLOCK (self);
 
   GST_INFO_OBJECT (self, "Successfully created Babeltrace graph");
@@ -343,6 +346,12 @@ gst_ctf_engine_stop (GstCtfEngine * self)
   g_return_if_fail (self);
 
   GST_OBJECT_LOCK (self);
+  if (NULL != self->graph) {
+    bt_interrupter_set (bt_graph_borrow_default_interrupter (self->graph));
+    g_thread_join (self->thread);
+    self->thread = NULL;
+  }
+
   bt_graph_put_ref (self->graph);
   self->graph = NULL;
 

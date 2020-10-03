@@ -18,25 +18,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef __GST_CTF_COMPONENT_H__
-#define __GST_CTF_COMPONENT_H__
+#ifndef __GST_CTF_RECORD_PRIV_H__
+#define __GST_CTF_RECORD_PRIV_H__
 
+#include <babeltrace2/babeltrace.h>
 #include <gst/gst.h>
 #include <gst/ctf/gstctfrecord.h>
 
 G_BEGIN_DECLS
 
-#define GST_CTF_PLUGIN_NAME "gst"
-#define GST_CTF_COMPONENT_NAME "tracers"
-
-#define GST_TYPE_CTF_COMPONENT gst_ctf_component_get_type ()
-G_DECLARE_FINAL_TYPE (GstCtfComponent, gst_ctf_component, GST, CTF_COMPONENT, GstObject)
-
-GstCtfRecord * gst_ctf_component_register_event_valist (GstCtfComponent * self,
-    const gchar *name, const gchar *firstfield, va_list var_args);
-
-void gst_ctf_component_set_queue (GstCtfComponent * self, GAsyncQueue * queue);
+GstCtfRecord * gst_ctf_record_new_valist (bt_stream * stream,
+    bt_self_message_iterator * iterator, GAsyncQueue * queue, const gchar * name,
+    const gchar * firstfield, va_list var_args);
 
 G_END_DECLS
 
-#endif /*__GST_CTF_COMPONENT_H__*/
+#endif /*__GST_CTF_RECORD_PRIV_H__*/
