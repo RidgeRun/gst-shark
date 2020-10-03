@@ -385,10 +385,10 @@ ctf_component_iterator_next (bt_self_message_iterator * self_message_iterator,
           GST_LOG_OBJECT (self, "Processing msg num %llu %p", *count, msg);
           messages[(*count)++] = msg;
 
-          /* FIXME: Nothing gets written unless the end message is sent */
-          /* messages[(*count)++] =
-             bt_message_stream_end_create (self_message_iterator, stream);
-             state = GST_CTF_COMPONENT_STATE_ENDED; */
+          if (BT_MESSAGE_TYPE_STREAM_END == bt_message_get_type (msg)) {
+            processing = FALSE;
+            state = GST_CTF_COMPONENT_STATE_ENDED;
+          }
         } else {
           GST_LOG_OBJECT (self, "No new mesages");
           /* FIXME: If we have no messages in the array, we should

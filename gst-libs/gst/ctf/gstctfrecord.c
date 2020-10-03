@@ -101,8 +101,13 @@ static void
 gst_ctf_record_finalize (GObject * object)
 {
   GstCtfRecord *self = GST_CTF_RECORD (object);
+  bt_message *message = NULL;
 
   GST_INFO_OBJECT (self, "Freeing %s record", GST_OBJECT_NAME (self));
+
+  /* Send a stream end message to flush data to the FS */
+  message = bt_message_stream_end_create (self->iterator, self->stream);
+  g_async_queue_push (self->queue, message);
 
   /* Iterator's ref is handled in the component */
   bt_component_put_ref (iterator_borrow_component (self->iterator));

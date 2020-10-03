@@ -43,13 +43,16 @@ plugin_init (GstPlugin * plugin)
   GstCtfRecord *ctf = NULL;
   gst_ctf_init ();
 
-  ctf = gst_ctf_register_event ("name", "firstfield", GST_TYPE_STRUCTURE,
+  ctf = gst_ctf_register_event ("mytracer", "string", GST_TYPE_STRUCTURE,
       gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_STRING, NULL),
+      "double", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type",
+          G_TYPE_GTYPE, G_TYPE_DOUBLE, NULL), "int", GST_TYPE_STRUCTURE,
+      gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_INT, NULL),
       NULL);
 
-  for (gint i = 0; i < 1000; i++) {
-    gst_ctf_record_log (ctf, "test1");
-    gst_ctf_record_log (ctf, "test2");
+  for (gint i = 1; i < 200; i++) {
+    gst_ctf_record_log (ctf, "mystring", 1.0 / i, i);
+    g_usleep (10000);
   }
 
   gst_object_unref (ctf);
