@@ -103,6 +103,8 @@ gst_ctf_component_finalize (GObject * object)
 {
   GstCtfComponent *self = GST_CTF_COMPONENT (object);
 
+  GST_INFO_OBJECT (self, "Freeing component");
+
   bt_stream_put_ref (self->stream);
   self->stream = NULL;
 
@@ -323,6 +325,9 @@ ctf_component_finalize (bt_self_component_source * self_component_source)
   g_return_if_fail (component);
 
   self = GST_CTF_COMPONENT (bt_self_component_get_data (component));
+
+  GST_INFO_OBJECT (self, "Freeing BT component");
+
   gst_object_unref (self);
 }
 
@@ -419,7 +424,6 @@ ctf_component_iterator_initialize (bt_self_message_iterator *
 {
   GstCtfComponent *self = NULL;
   bt_self_component *self_component = NULL;
-  const bt_component *component = NULL;
   gint ret = BT_MESSAGE_ITERATOR_CLASS_INITIALIZE_METHOD_STATUS_OK;
 
   self_component =
@@ -429,12 +433,9 @@ ctf_component_iterator_initialize (bt_self_message_iterator *
 
   self = GST_CTF_COMPONENT (bt_self_component_get_data (self_component));
 
-  /* The reference of the iterator is handled in the component. Need to upcast */
-  component = bt_self_component_as_component (self_component);
-  g_return_val_if_fail (component,
-      BT_MESSAGE_ITERATOR_CLASS_INITIALIZE_METHOD_STATUS_ERROR);
-  bt_component_get_ref (component);
-
+  /* Do not take a reference to the iterator to avoid a dependency
+     cycle. We already have the component which is the same reference
+     as the iterator */
   GST_OBJECT_LOCK (self);
   self->iterator = self_message_iterator;
   GST_OBJECT_UNLOCK (self);
@@ -455,6 +456,8 @@ ctf_component_iterator_finalize (bt_self_message_iterator *
   GstCtfComponent *self =
       GST_CTF_COMPONENT (bt_self_message_iterator_get_data
       (self_message_iterator));
+
+  GST_INFO_OBJECT (self, "Freeing BT iterator");
 
   gst_object_unref (self);
 }

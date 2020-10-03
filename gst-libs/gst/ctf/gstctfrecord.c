@@ -102,6 +102,8 @@ gst_ctf_record_finalize (GObject * object)
 {
   GstCtfRecord *self = GST_CTF_RECORD (object);
 
+  GST_INFO_OBJECT (self, "Freeing %s record", GST_OBJECT_NAME (self));
+
   /* Iterator's ref is handled in the component */
   bt_component_put_ref (iterator_borrow_component (self->iterator));
   self->iterator = NULL;
@@ -370,7 +372,7 @@ gst_ctf_record_new_valist (bt_stream * stream,
   g_return_val_if_fail (name, NULL);
   g_return_val_if_fail (firstfield, NULL);
 
-  self = g_object_new (GST_TYPE_CTF_RECORD, NULL);
+  self = g_object_new (GST_TYPE_CTF_RECORD, "name", name, NULL);
 
   bt_stream_get_ref (stream);
   self->stream = stream;
