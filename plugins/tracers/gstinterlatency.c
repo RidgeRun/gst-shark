@@ -51,11 +51,7 @@ GST_DEBUG_CATEGORY_STATIC (gst_interlatency_debug);
     GST_DEBUG_CATEGORY_INIT (gst_interlatency_debug, "interlatency", 0, "interlatency tracer");
 #define gst_interlatency_tracer_parent_class parent_class
 G_DEFINE_TYPE_WITH_CODE (GstInterLatencyTracer, gst_interlatency_tracer,
-    GST_TYPE_TRACER, _do_init);
-
-#ifdef EVAL
-#define EVAL_TIME (10)
-#endif
+    GST_SHARK_TYPE_TRACER, _do_init);
 
 static GQuark latency_probe_id;
 static GQuark latency_probe_pad;
@@ -158,7 +154,10 @@ log_latency (GstInterLatencyTracer * interlatency_tracer,
 static void
 send_latency_probe (GstElement * parent, GstPad * pad, guint64 ts)
 {
-  if (parent && (!GST_IS_BIN (parent))) {
+  g_return_if_fail (parent);
+  g_return_if_fail (pad);
+
+  if (!GST_IS_BIN (parent)) {
     GstEvent *latency_probe = gst_event_new_custom (GST_EVENT_CUSTOM_DOWNSTREAM,
         gst_structure_new_id (latency_probe_id,
             latency_probe_pad, GST_TYPE_PAD, pad,
@@ -172,13 +171,11 @@ static void
 calculate_latency (GstInterLatencyTracer * interlatency_tracer,
     GstElement * parent, GstPad * pad, guint64 ts)
 {
+  g_return_if_fail (interlatency_tracer);
+  g_return_if_fail (parent);
+  g_return_if_fail (pad);
 
-#ifdef EVAL
-  if (ts > EVAL_TIME * GST_SECOND)
-    return;
-#endif
-
-  if (parent && (!GST_IS_BIN (parent))) {
+  if (!GST_IS_BIN (parent)) {
     GstEvent *ev = g_object_get_qdata ((GObject *) pad, latency_probe_id);
 
     if (GST_IS_EVENT (ev))
@@ -190,14 +187,28 @@ static void
 do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
 {
   GstElement *parent = get_real_pad_parent (pad);
+  GstPad *peer_pad = GST_PAD_PEER (pad);
+  GstElement *peer_parent = get_real_pad_parent (peer_pad);
   GstInterLatencyTracer *interlatency_tracer;
 
   interlatency_tracer = GST_INTERLATENCY_TRACER_CAST (self);
 
-  if (GST_OBJECT_FLAG_IS_SET (parent, GST_ELEMENT_FLAG_SOURCE))
+  /* Not having a peer pad means that the pad is not linked, which
+     results in a segfault */
+  if (!peer_pad) {
+    return;
+  }
+
+  if (parent && GST_OBJECT_FLAG_IS_SET (parent, GST_ELEMENT_FLAG_SOURCE)) {
     send_latency_probe (parent, pad, ts);
-  else
+    calculate_latency (interlatency_tracer, peer_parent, peer_pad, ts);
+  } else
     calculate_latency (interlatency_tracer, parent, pad, ts);
+
+  if (peer_parent
+      && GST_OBJECT_FLAG_IS_SET (peer_parent, GST_ELEMENT_FLAG_SINK))
+    calculate_latency (interlatency_tracer, peer_parent, peer_pad, ts);
+
 }
 
 static void
@@ -210,22 +221,10 @@ do_pull_range_pre (GstTracer * self, guint64 ts, GstPad * pad)
 
   interlatency_tracer = GST_INTERLATENCY_TRACER_CAST (self);
 
-  if (GST_OBJECT_FLAG_IS_SET (parent_peer, GST_ELEMENT_FLAG_SOURCE))
+  if (parent_peer
+      && GST_OBJECT_FLAG_IS_SET (parent_peer, GST_ELEMENT_FLAG_SOURCE))
     send_latency_probe (parent_peer, peer_pad, ts);
   else
-    calculate_latency (interlatency_tracer, parent_peer, peer_pad, ts);
-}
-
-static void
-do_push_buffer_post (GstTracer * self, guint64 ts, GstPad * pad)
-{
-  GstInterLatencyTracer *interlatency_tracer;
-  GstPad *peer_pad = GST_PAD_PEER (pad);
-  GstElement *parent_peer = get_real_pad_parent (peer_pad);
-
-  interlatency_tracer = GST_INTERLATENCY_TRACER_CAST (self);
-
-  if (GST_OBJECT_FLAG_IS_SET (parent_peer, GST_ELEMENT_FLAG_SINK))
     calculate_latency (interlatency_tracer, parent_peer, peer_pad, ts);
 }
 
@@ -236,7 +235,8 @@ do_pull_range_post (GstTracer * self, guint64 ts, GstPad * pad)
   GstElement *parent = get_real_pad_parent (pad);
 
   interlatency_tracer = GST_INTERLATENCY_TRACER_CAST (self);
-  if (GST_OBJECT_FLAG_IS_SET (parent, GST_ELEMENT_FLAG_SINK))
+
+  if (parent && GST_OBJECT_FLAG_IS_SET (parent, GST_ELEMENT_FLAG_SINK))
     calculate_latency (interlatency_tracer, parent, pad, ts);
 }
 
@@ -271,6 +271,7 @@ static void
 gst_interlatency_tracer_class_init (GstInterLatencyTracerClass * klass)
 {
   GObjectClass *oclass;
+  gchar *metadata_event;
 
   oclass = G_OBJECT_CLASS (klass);
 
@@ -311,28 +312,6 @@ gst_interlatency_tracer_class_init (GstInterLatencyTracerClass * klass)
   /* *INDENT-ON* */
 
   oclass->dispose = gst_interlatency_tracer_dispose;
-}
-
-static void
-gst_interlatency_tracer_init (GstInterLatencyTracer * self)
-{
-  GstTracer *tracer = GST_TRACER (self);
-  gchar *metadata_event;
-
-  gst_tracing_register_hook (tracer, "pad-push-pre",
-      G_CALLBACK (do_push_buffer_pre));
-  gst_tracing_register_hook (tracer, "pad-push-list-pre",
-      G_CALLBACK (do_push_buffer_pre));
-  gst_tracing_register_hook (tracer, "pad-push-post",
-      G_CALLBACK (do_push_buffer_post));
-  gst_tracing_register_hook (tracer, "pad-push-list-post",
-      G_CALLBACK (do_push_buffer_post));
-  gst_tracing_register_hook (tracer, "pad-pull-range-pre",
-      G_CALLBACK (do_pull_range_pre));
-  gst_tracing_register_hook (tracer, "pad-pull-range-post",
-      G_CALLBACK (do_pull_range_post));
-  gst_tracing_register_hook (tracer, "pad-push-event-pre",
-      G_CALLBACK (do_push_event_pre));
 
   metadata_event =
       g_strdup_printf (interlatency_metadata_event, INTERLATENCY_EVENT_ID, 0);
@@ -341,9 +320,33 @@ gst_interlatency_tracer_init (GstInterLatencyTracer * self)
 }
 
 static void
+gst_interlatency_tracer_init (GstInterLatencyTracer * self)
+{
+  GstTracer *tracer = GST_TRACER (self);
+
+  /* In push mode, pre/post will be called before/after the peer chain
+   * function has been called. For this reason, we only use -pre to avoid
+   * accounting for the processing time of the peer element (the sink).
+   */
+  gst_tracing_register_hook (tracer, "pad-push-pre",
+      G_CALLBACK (do_push_buffer_pre));
+  gst_tracing_register_hook (tracer, "pad-push-list-pre",
+      G_CALLBACK (do_push_buffer_pre));
+
+  /* While in pull mode, pre/post will happend before and after the upstream
+   * pull_range call is made, so it already only account for the upstream
+   * processing time. As a side effect, in pull mode, we can measure the
+   * source processing latency, while in push mode, we can't .
+   */
+  gst_tracing_register_hook (tracer, "pad-pull-range-pre",
+      G_CALLBACK (do_pull_range_pre));
+  gst_tracing_register_hook (tracer, "pad-pull-range-post",
+      G_CALLBACK (do_pull_range_post));
+  gst_tracing_register_hook (tracer, "pad-push-event-pre",
+      G_CALLBACK (do_push_event_pre));
+}
+
+static void
 gst_interlatency_tracer_dispose (GObject * object)
 {
-  GstInterLatencyTracer *self;
-
-  self = GST_INTERLATENCY_TRACER (object);
 }

@@ -81,7 +81,7 @@ function plot_tracer(tracer,savefig,format,legend_location)
         timestamp_min = min(min(tracer.framerate.timestamp_mat));
 
         figure('Name','Frame rate')
-        plot(tracer.framerate.timestamp_mat,tracer.framerate.fps_mat,'linewidth',LINEWIDTH)
+        plot(tracer.framerate.timestamp_mat',tracer.framerate.fps_mat','linewidth',LINEWIDTH)
         title('Frame rate','fontsize',FONTSIZE)
         xlabel('time (seconds)','fontsize',FONTSIZE)
         ylabel('Frame per second','fontsize',FONTSIZE)
@@ -205,6 +205,73 @@ function plot_tracer(tracer,savefig,format,legend_location)
             plot_legend(tracer.scheduling.pad_name_list,'Schedule plot legend',savefig,'schedule_legend',format)
         end
     end
+
+    # Plot Bitrate
+    if (1 == isfield(tracer,'bitrate'))
+        # Calculate the greatest time value
+        timestamp_max = max(max(tracer.bitrate.timestamp_mat));
+        timestamp_min = min(min(tracer.bitrate.timestamp_mat));
+
+        figure('Name','Bitrate')
+        plot(tracer.bitrate.timestamp_mat',tracer.bitrate.bitrate_mat','linewidth',LINEWIDTH)
+        title('Bitrate','fontsize',FONTSIZE)
+        xlabel('time (seconds)','fontsize',FONTSIZE)
+        ylabel('time (nanoseconds)','fontsize',FONTSIZE)
+        xlim([timestamp_min,timestamp_max])
+        if (0 == strcmp(legend_location,'extern'))
+            legend(str2latex(tracer.bitrate.pad_name_list),'Location',legend_location)
+        end
+        # Save figure
+        if (TRUE == savefig)
+            disp('Save bitrate figure...')
+            switch format
+                case 'pdf'
+                    print tracer -dpdf -append
+                case 'png'
+                    print('bitrate','-dpng');
+                otherwise
+                    printf('octave: WARN: %s is not supported',format)
+            end
+        end
+        # Create a new figure if the legend location is extern
+        if (1 == strcmp(legend_location,'extern'))
+            plot_legend(tracer.bitrate.pad_name_list,'Bitrate plot legend',savefig,'bitrate_legend',format)
+        end
+    end
+
+    # Plot Queuelevel
+    if (1 == isfield(tracer,'queuelevel'))
+        # Calculate the greatest time value
+        timestamp_max = max(max(tracer.queuelevel.timestamp_mat));
+        timestamp_min = min(min(tracer.queuelevel.timestamp_mat));
+
+        figure('Name','Queuelevel')
+        plot(tracer.queuelevel.timestamp_mat',tracer.queuelevel.size_buffers_mat','linewidth',LINEWIDTH)
+        title('Queuelevel','fontsize',FONTSIZE)
+        xlabel('time (seconds)','fontsize',FONTSIZE)
+        ylabel('Number of Buffers','fontsize',FONTSIZE)
+        xlim([timestamp_min,timestamp_max])
+        if (0 == strcmp(legend_location,'extern'))
+            legend(str2latex(tracer.queuelevel.element_name_list),'Location',legend_location)
+        end
+        # Save figure
+        if (TRUE == savefig)
+            disp('Save queuelevel figure...')
+            switch format
+                case 'pdf'
+                    print tracer -dpdf -append
+                case 'png'
+                    print('queuelevel','-dpng');
+                otherwise
+                    printf('octave: WARN: %s is not supported',format)
+            end
+        end
+        # Create a new figure if the legend location is extern
+        if (1 == strcmp(legend_location,'extern'))
+            plot_legend(tracer.queuelevel.element_name_list,'Queuelevel plot legend',savefig,'queuelevel_legend',format)
+        end
+    end
+
     
     if ((1 == isfield(tracer,'cpuusage')) && (1 == isfield(tracer,'framerate')))
         # Create legend name list 
@@ -216,7 +283,7 @@ function plot_tracer(tracer,savefig,format,legend_location)
         timestamp_min = min(min(min(tracer.framerate.timestamp_mat)),min(tracer.cpuusage.timestamp_mat(:,1)));
 
         figure('Name','Frame rate and CPU usage')
-        [hAx,hLine1,hLine2] = plotyy(tracer.framerate.timestamp_mat,tracer.framerate.fps_mat,tracer.cpuusage.timestamp_mat(:,1),tracer.cpuusage.cpu_mat(:,1));
+        [hAx,hLine1,hLine2] = plotyy(tracer.framerate.timestamp_mat',tracer.framerate.fps_mat',tracer.cpuusage.timestamp_mat(:,1),tracer.cpuusage.cpu_mat(:,1));
          if (0 == strcmp(legend_location,'extern'))
             legend(str2latex(legend_list),'Location',legend_location)
         end
@@ -243,4 +310,38 @@ function plot_tracer(tracer,savefig,format,legend_location)
             plot_legend(legend_list,'Frame rate and CPU usage legend',savefig,'cpuusage_framerate_legend',format)
         end
     end
+
+    # Plot Buffer time
+    if (1 == isfield(tracer,'buffer'))
+        # Calculate the greatest time value
+        timestamp_max = max(max(tracer.buffer.timestamp_mat));
+        timestamp_min = min(min(tracer.buffer.timestamp_mat));
+
+        figure('Name','Buffer time')
+        plot(tracer.buffer.timestamp_mat',tracer.buffer.buffer_mat','linewidth',LINEWIDTH)
+        title('Processing time','fontsize',FONTSIZE)
+        xlabel('time (seconds)','fontsize',FONTSIZE)
+        ylabel('time (nanoseconds)','fontsize',FONTSIZE)
+        xlim([timestamp_min,timestamp_max])
+        if (0 == strcmp(legend_location,'extern'))
+            legend(str2latex(tracer.buffer.element_name_list),'Location',legend_location)
+        end
+
+        if (TRUE == savefig)
+            disp('Save buffer figure...')
+            switch format
+                case 'pdf'
+                    print tracer -dpdf -append
+                case 'png'
+                    print('buffer','-dpng');
+                otherwise
+                    printf('octave: WARN: %s is not supported',format)
+            end
+        end
+        # Create a new figure if the legend location is extern
+        if (1 == strcmp(legend_location,'extern'))
+            plot_legend(tracer.buffer.element_name_list,'Buffer plot legend',savefig,'buffer_legend',format)
+        end
+    end
+
 end

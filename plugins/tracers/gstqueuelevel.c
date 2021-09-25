@@ -1,5 +1,5 @@
 /* GstShark - A Front End for GstTracer
- * Copyright (C) 2016-2017 RidgeRun Engineering <carlos.rodriguez@ridgerun.com>
+ * Copyright (C) 2016-2018 RidgeRun Engineering <carlos.rodriguez@ridgerun.com>
  *
  * This file is part of GstShark.
  *
@@ -24,35 +24,29 @@
  * A tracing module that takes queue's current level
  */
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
 #include "gstqueuelevel.h"
 #include "gstctf.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_queue_level_debug);
 #define GST_CAT_DEFAULT gst_queue_level_debug
 
+struct _GstQueueLevelTracer
+{
+  GstSharkTracer parent;
+};
+
 #define _do_init \
     GST_DEBUG_CATEGORY_INIT (gst_queue_level_debug, "queuelevel", 0, "queuelevel tracer");
-#define gst_queue_level_tracer_parent_class parent_class
+
 G_DEFINE_TYPE_WITH_CODE (GstQueueLevelTracer, gst_queue_level_tracer,
-    GST_TYPE_TRACER, _do_init);
+    GST_SHARK_TYPE_TRACER, _do_init);
 
-#ifdef EVAL
-#define EVAL_TIME (10)
-#endif
-
-static void do_queue_level (GstTracer * self, guint64 ts, GstPad * pad);
-static void forward_to_peer (GstTracer * self, guint64 ts, GstPad * pad);
+static void do_queue_level (GstTracer * tracer, guint64 ts, GstPad * pad);
+static void do_queue_level_list (GstTracer * tracer, guint64 ts, GstPad * pad,
+    GstBufferList * list);
 static gboolean is_queue (GstElement * element);
 
-
-
-#ifdef GST_STABLE_RELEASE
 static GstTracerRecord *tr_qlevel;
-#endif
 
 static const gchar queue_level_metadata_event[] = "event {\n\
     name = queuelevel;\n\
@@ -61,30 +55,35 @@ static const gchar queue_level_metadata_event[] = "event {\n\
     fields := struct {\n\
         string queue;\n\
         integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } size_bytes;\n\
+        integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } max_size_bytes;\n \
         integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } size_buffers;\n\
+        integer { size = 32; align = 8; signed = 0; encoding = none; base = 10; } max_size_buffers;\n\
         integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } size_time;\n\
+        integer { size = 64; align = 8; signed = 0; encoding = none; base = 10; } max_size_time;\n\
     };\n\
 };\n\
 \n";
 
-static void
-forward_to_peer (GstTracer * self, guint64 ts, GstPad * pad)
+static GstElement *
+get_parent_element (GstPad * pad)
 {
-  GstPad *peer;
+  GstElement *element;
+  GstObject *parent;
+  GstObject *child = GST_OBJECT (pad);
 
-  /* We are most interested in the sink
-     pads rather than the source pads, however
-     hooks are installed on the later. As such,
-     we find the peer pad of this pad, and run
-     the tracer there */
-  peer = gst_pad_get_peer (pad);
-  if (NULL == peer) {
-    return;
-  }
+  do {
+    parent = GST_OBJECT_PARENT (child);
 
-  do_queue_level (self, ts, peer);
+    if (GST_IS_ELEMENT (parent))
+      break;
 
-  gst_object_unref (peer);
+    child = parent;
+
+  } while (GST_IS_OBJECT (child));
+
+  element = gst_pad_get_parent_element (GST_PAD (child));
+
+  return element;
 }
 
 static void
@@ -92,18 +91,16 @@ do_queue_level (GstTracer * self, guint64 ts, GstPad * pad)
 {
   GstElement *element;
   guint32 size_bytes;
+  guint32 max_size_bytes;
   guint32 size_buffers;
+  guint32 max_size_buffers;
   guint64 size_time;
+  guint64 max_size_time;
   gchar *size_time_string;
+  gchar *max_size_time_string;
   const gchar *element_name;
 
-#ifdef EVAL
-  if (ts > EVAL_TIME * GST_SECOND) {
-    return;
-  }
-#endif
-
-  element = gst_pad_get_parent_element (pad);
+  element = get_parent_element (pad);
 
   if (!is_queue (element)) {
     goto out;
@@ -113,29 +110,40 @@ do_queue_level (GstTracer * self, guint64 ts, GstPad * pad)
 
   g_object_get (element, "current-level-bytes", &size_bytes,
       "current-level-buffers", &size_buffers,
-      "current-level-time", &size_time, NULL);
+      "current-level-time", &size_time,
+      "max-size-bytes", &max_size_bytes,
+      "max-size-buffers", &max_size_buffers,
+      "max-size-time", &max_size_time, NULL);
 
   size_time_string =
       g_strdup_printf ("%" GST_TIME_FORMAT, GST_TIME_ARGS (size_time));
 
-#ifdef GST_STABLE_RELEASE
-  gst_tracer_record_log (tr_qlevel, element_name, size_bytes, size_buffers,
-      size_time_string);
-#else
-  gst_tracer_log_trace (gst_structure_new ("queuelevel",
-          "queue", G_TYPE_STRING, element_name,
-          "size_bytes", G_TYPE_UINT, size_bytes,
-          "size_buffers", G_TYPE_UINT, size_buffers,
-          "size_time", G_TYPE_STRING, size_time_string, NULL));
-#endif
+  max_size_time_string =
+      g_strdup_printf ("%" GST_TIME_FORMAT, GST_TIME_ARGS (max_size_time));
+
+  gst_tracer_record_log (tr_qlevel, element_name, size_bytes, max_size_bytes,
+      size_buffers, max_size_buffers, size_time_string, max_size_time_string);
+
   g_free (size_time_string);
+  g_free (max_size_time_string);
 
   do_print_queue_level_event (QUEUE_LEVEL_EVENT_ID, element_name, size_bytes,
-      size_buffers, size_time);
+      max_size_bytes, size_buffers, max_size_buffers, size_time, max_size_time);
 
 out:
   {
     gst_object_unref (element);
+  }
+}
+
+static void
+do_queue_level_list (GstTracer * tracer, guint64 ts, GstPad * pad,
+    GstBufferList * list)
+{
+  guint idx;
+
+  for (idx = 0; idx < gst_buffer_list_length (list); ++idx) {
+    do_queue_level (tracer, ts, pad);
   }
 }
 
@@ -162,53 +170,55 @@ is_queue (GstElement * element)
 static void
 gst_queue_level_tracer_class_init (GstQueueLevelTracerClass * klass)
 {
-}
-
-
-static void
-gst_queue_level_tracer_init (GstQueueLevelTracer * self)
-{
-  GstTracer *tracer = GST_TRACER (self);
   gchar *metadata_event;
 
-  gst_tracing_register_hook (tracer, "pad-push-post",
-      G_CALLBACK (forward_to_peer));
-
-  gst_tracing_register_hook (tracer, "pad-push-list-post",
-      G_CALLBACK (forward_to_peer));
-
-  gst_tracing_register_hook (tracer, "pad-pull-range-post",
-      G_CALLBACK (forward_to_peer));
-
-#ifdef GST_STABLE_RELEASE
-  tr_qlevel = gst_tracer_record_new ("queuelevel.class",
-      "queue", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+  tr_qlevel = gst_tracer_record_new ("queuelevel.class", "queue",
+      GST_TYPE_STRUCTURE, gst_structure_new ("scope",
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
           "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
           GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), "size_bytes",
-      GST_TYPE_STRUCTURE, gst_structure_new ("scope", "type", G_TYPE_GTYPE,
-          G_TYPE_UINT, "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+      GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_UINT,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+          GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), "max_size_bytes",
+      GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_UINT,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
           GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), "size_buffers",
-      GST_TYPE_STRUCTURE, gst_structure_new ("scope", "type", G_TYPE_GTYPE,
-          G_TYPE_UINT, "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+      GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_UINT,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+          GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), "max_size_buffers",
+      GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_UINT,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
           GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), "size_time",
-      GST_TYPE_STRUCTURE, gst_structure_new ("scope", "type", G_TYPE_GTYPE,
-          G_TYPE_STRING, "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+      GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+          GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), "max_size_time",
+      GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
           GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), NULL);
-#else
-  gst_tracer_log_trace (gst_structure_new ("queuelevel.class",
-          "queue", GST_TYPE_STRUCTURE, gst_structure_new ("scope", "related-to",
-              G_TYPE_STRING, "element", NULL), "size_bytes", GST_TYPE_STRUCTURE,
-          gst_structure_new ("scope", "related-to", G_TYPE_STRING, "element",
-              NULL), "size_buffers", GST_TYPE_STRUCTURE,
-          gst_structure_new ("scope", "related-to", G_TYPE_STRING, "element",
-              NULL), "size_time", GST_TYPE_STRUCTURE,
-          gst_structure_new ("scope", "related-to", G_TYPE_STRING, "element",
-              NULL), NULL));
-#endif
 
   metadata_event =
       g_strdup_printf (queue_level_metadata_event, QUEUE_LEVEL_EVENT_ID, 0);
   add_metadata_event_struct (metadata_event);
   g_free (metadata_event);
+}
+
+static void
+gst_queue_level_tracer_init (GstQueueLevelTracer * self)
+{
+  GstSharkTracer *tracer = GST_SHARK_TRACER (self);
+
+  gst_shark_tracer_register_hook (tracer, "pad-push-pre",
+      G_CALLBACK (do_queue_level));
+
+  gst_shark_tracer_register_hook (tracer, "pad-push-list-pre",
+      G_CALLBACK (do_queue_level_list));
+
+  gst_shark_tracer_register_hook (tracer, "pad-pull-range-pre",
+      G_CALLBACK (do_queue_level));
 }

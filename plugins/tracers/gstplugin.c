@@ -41,7 +41,7 @@ plugin_init (GstPlugin * plugin)
 {
 #ifdef GST_CPUUSAGE_ENABLE
   if (!gst_tracer_register (plugin, "cpuusage",
-          gst_cpuusage_tracer_get_type ())) {
+          gst_cpu_usage_tracer_get_type ())) {
     return FALSE;
   }
 #endif
@@ -49,7 +49,7 @@ plugin_init (GstPlugin * plugin)
     return FALSE;
   }
   if (!gst_tracer_register (plugin, "proctime",
-          gst_proctime_tracer_get_type ())) {
+          gst_proc_time_tracer_get_type ())) {
     return FALSE;
   }
   if (!gst_tracer_register (plugin, "interlatency",
@@ -77,34 +77,10 @@ plugin_init (GstPlugin * plugin)
   if (!gst_ctf_init ()) {
     return FALSE;
   }
-#ifdef EVAL
-  g_print ("\n"
-      "*************************************\n"
-      "*** THIS IS AN EVALUATION VERSION ***\n"
-      "*************************************\n"
-      "                                     \n"
-      "  Thanks for evaluating Gst-Shark!   \n"
-      "                                     \n"
-      "  The application will run fully for \n"
-      "  around 10 seconds, after that every\n"
-      "  output will be disabled and you    \n"
-      "  will not be able to check any other\n"
-      "  message from any tracer. Please    \n"
-      "  contact <support@ridgerun.com> to  \n"
-      "  purchase the professional version  \n"
-      "  of the application.                \n"
-      "                                     \n"
-      "*************************************\n"
-      "*** THIS IS AN EVALUATION VERSION ***\n"
-      "*************************************\n"
-      "                                     \n");
-
-  sleep (3);
-#endif
 
   return TRUE;
 }
 
 GST_PLUGIN_DEFINE (GST_VERSION_MAJOR, GST_VERSION_MINOR,
-    gstsharktracers, "GstShark tracers", plugin_init, VERSION,
+    sharktracers, "GstShark tracers", plugin_init, VERSION,
     GST_SHARK_LICENSE, PACKAGE_NAME, PACKAGE_URL);

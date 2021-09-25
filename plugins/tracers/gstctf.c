@@ -39,13 +39,15 @@
 /* Default port */
 #define SOCKET_PORT     (1000)
 #define SOCKET_PROTOCOL G_SOCKET_PROTOCOL_TCP
-#define CTF_MEM_SIZE      (2024)
+#define CTF_MEM_SIZE      (1048576)     //1M = 1024*1024
 #define CTF_UUID_SIZE     (16)
 
 typedef guint8 tcp_header_id;
 typedef guint32 tcp_header_length;
 
 #define TCP_HEADER_SIZE (sizeof(tcp_header_id) + sizeof(tcp_header_length))
+#define CTF_HEADER_SIZE (sizeof(guint16) + sizeof(guint32))
+#define CTF_AVAILABLE_MEM_SIZE (CTF_MEM_SIZE - TCP_HEADER_SIZE)
 
 typedef guint16 ctf_header_id;
 typedef guint32 ctf_header_timestamp;
@@ -55,46 +57,67 @@ typedef guint32 ctf_header_timestamp;
 #define TCP_DATASTREAM_ID  (0x02)
 
 #define TCP_EVENT_HEADER_WRITE(id,size,mem) \
-    *(tcp_header_id*)mem = id; \
-    mem += sizeof(tcp_header_id); \
-    *(tcp_header_length*)mem = size;
+  G_STMT_START {                            \
+    *(tcp_header_id*)mem = id;              \
+    mem += sizeof(tcp_header_id);           \
+    *(tcp_header_length*)mem = size;        \
+  } G_STMT_END
 
 /* Write string */
-#define CTF_EVENT_WRITE_STRING(str,mem) \
-  mem = (guint8 *)g_stpcpy ((gchar*)mem,str); \
-  *(gchar*)mem = '\0'; \
-  ++mem;
-
-#define CTF_EVENT_WRITE_INT16(int16,mem) \
-  *(guint16*)mem = int16; \
-  mem += sizeof(guint16);
-
-#define CTF_EVENT_WRITE_INT32(int32,mem) \
-  *(guint32*)mem = int32; \
-  mem += sizeof(guint32);
+#define CTF_EVENT_WRITE_STRING(str,mem)         \
+  G_STMT_START {                                \
+    mem = (guint8 *)g_stpcpy ((gchar*)mem,str); \
+    *(gchar*)mem = '\0';                        \
+    ++mem;                                      \
+  } G_STMT_END
 
 #ifdef WORDS_BIGENDIAN
-#  define CTF_EVENT_WRITE_INT64(int64,mem) \
-  GST_WRITE_UINT64_BE(mem, int64); \
-  mem += sizeof(guint64);
+#  define CTF_EVENT_WRITE(w,mem,data)      \
+  G_STMT_START {                           \
+    GST_WRITE_UINT ## w ## _BE (mem,data); \
+    mem += sizeof(guint ## w );            \
+  } G_STMT_END
 #else
-#  define CTF_EVENT_WRITE_INT64(int64,mem) \
-  GST_WRITE_UINT64_LE(mem, int64);	   \
-  mem += sizeof(guint64);
+#  define CTF_EVENT_WRITE(w,mem,data)      \
+  G_STMT_START {                           \
+    GST_WRITE_UINT ## w ## _LE (mem,data); \
+    mem += sizeof(guint ## w );            \
+  } G_STMT_END
 #endif
 
-#define CTF_EVENT_WRITE_FLOAT(float_val,mem) \
-  *(gfloat*)mem = float_val; \
-  mem += sizeof(gfloat);
+#define CTF_EVENT_WRITE_INT16(int16,mem) \
+  CTF_EVENT_WRITE(16,mem,int16)
 
+#define CTF_EVENT_WRITE_INT32(int32,mem) \
+  CTF_EVENT_WRITE(32,mem,int32)
+
+#define CTF_EVENT_WRITE_INT64(int64,mem) \
+  CTF_EVENT_WRITE(64,mem,int64)
+
+#define CTF_EVENT_WRITE_FLOAT(float_val,mem) \
+  G_STMT_START {                             \
+    *(gfloat*)mem = float_val;               \
+    mem += sizeof(gfloat);                   \
+  } G_STMT_END
+
+/* *INDENT-OFF* */
 #define CTF_EVENT_WRITE_HEADER(id,mem) \
-  /* Write event ID */  \
-  CTF_EVENT_WRITE_INT16(id,mem); \
-  /* Write timestamp */ \
-  CTF_EVENT_WRITE_INT32(GST_CLOCK_DIFF (ctf_descriptor->start_time, gst_util_get_timestamp ())/1000,mem);
+  G_STMT_START {                       \
+    /* Write event ID */               \
+    CTF_EVENT_WRITE_INT16(id,mem);     \
+    /* Write timestamp */              \
+    CTF_EVENT_WRITE_INT32(             \
+      GST_CLOCK_DIFF (                 \
+          ctf_descriptor->start_time,  \
+          gst_util_get_timestamp ()    \
+      )/1000,                          \
+    mem);                              \
+  } G_STMT_END
+/* *INDENT-ON* */
 
 static void file_parser_handler (gchar * line);
 static void tcp_parser_handler (gchar * line);
+static inline gboolean event_exceeds_mem_size (gsize size);
 
 typedef enum
 {
@@ -118,6 +141,8 @@ struct _GstCtfDescriptor
   gchar *dir_name;
   gchar *env_dir_name;
   gboolean file_output_disable;
+  gsize file_buf_size;
+  gboolean change_file_buf_size;
 
   /* TCP connection variables */
   gchar *host_name;
@@ -206,6 +231,22 @@ event {\n\
 ";
 
 
+static gboolean
+event_exceeds_mem_size (const gsize size)
+{
+  gboolean ret;
+
+  /* Protect against overflows */
+  if (size > CTF_AVAILABLE_MEM_SIZE) {
+    GST_ERROR ("Metadata event exceeds available memory and will not be added");
+    ret = TRUE;
+  } else {
+    ret = FALSE;
+  }
+
+  return ret;
+}
+
 static GstCtfDescriptor *
 ctf_create_struct (void)
 {
@@ -224,6 +265,9 @@ ctf_create_struct (void)
   /* File variables */
   ctf->dir_name = NULL;
   ctf->env_dir_name = NULL;
+  ctf->file_buf_size = 0;
+  ctf->change_file_buf_size = FALSE;
+
   /* Default state Enable */
   ctf->file_output_disable = FALSE;
 
@@ -433,9 +477,15 @@ tcp_parser_handler (gchar * line)
     ++line_end;
     port_name = line_end;
 
-    /* TODO: verify if is a numeric string */
     ctf_descriptor->port_number = g_ascii_strtoull (port_name,
         &port_name_end, 10);
+
+    /* Verify if the convertion of the string works */
+    if ('\0' != *port_name_end || '-' == port_name[0]) {
+      ctf_descriptor->port_number = SOCKET_PORT;
+      GST_ERROR ("Invalid port number \"%s\", using the default value: %d",
+          port_name, ctf_descriptor->port_number);
+    }
 
     return;
   }
@@ -451,11 +501,12 @@ file_parser_handler (gchar * line)
   strcpy (ctf_descriptor->env_dir_name, line);
 }
 
-
 static void
 ctf_process_env_var (void)
 {
   const gchar *env_loc_value;
+  const gchar *env_file_buf_value;
+  gchar *env_file_buf_value_end;
   gchar dir_name[MAX_DIRNAME_LEN];
   gchar *env_dir_name;
   gchar *env_line;
@@ -488,6 +539,19 @@ ctf_process_env_var (void)
     g_free (env_line);
   }
 
+  env_file_buf_value = g_getenv ("GST_SHARK_FILE_BUFFERING");
+
+  if (NULL != env_file_buf_value) {
+    ctf_descriptor->file_buf_size =
+        g_ascii_strtoull (env_file_buf_value, &env_file_buf_value_end, 10);
+    if ('\0' == *env_file_buf_value_end && '-' != env_file_buf_value[0]) {
+      ctf_descriptor->change_file_buf_size = TRUE;
+    } else {
+      GST_ERROR ("Invalid buffer size \"%s\", using default system value",
+          env_file_buf_value);
+    }
+  }
+
   if (G_UNLIKELY (g_getenv ("GST_SHARK_CTF_DISABLE") != NULL)) {
     env_dir_name = (gchar *) g_getenv ("PWD");
     ctf_descriptor->file_output_disable = TRUE;
@@ -507,13 +571,16 @@ ctf_process_env_var (void)
   }
 }
 
-static void
+static int
 create_ctf_path (gchar * dir_name)
 {
-  g_return_if_fail (dir_name);
+  int ret = 0;
+
+  g_return_val_if_fail (dir_name, -1);
 
   if (!g_file_test (dir_name, G_FILE_TEST_EXISTS)) {
-    if (g_mkdir (dir_name, 0775) == 0) {
+    ret = g_mkdir (dir_name, 0755);
+    if (ret == 0) {
       GST_INFO ("Directory %s did not exist and was created sucessfully.",
           dir_name);
     } else {
@@ -522,43 +589,71 @@ create_ctf_path (gchar * dir_name)
   } else {
     GST_INFO ("Directory %s already exists in the current path.", dir_name);
   }
+
+  return ret;
 }
 
 static void
 ctf_file_init (void)
 {
-  gchar *metadata_file;
-  gchar *datastream_file;
+  gchar *metadata_file = NULL;
+  gchar *datastream_file = NULL;
 
   g_mutex_init (&ctf_descriptor->mutex);
 
   if (TRUE != ctf_descriptor->file_output_disable) {
     /* Creating the output folder for the CTF output files. */
-    create_ctf_path (ctf_descriptor->dir_name);
+    if (create_ctf_path (ctf_descriptor->dir_name) == 0) {
+      datastream_file =
+          g_strjoin (G_DIR_SEPARATOR_S, ctf_descriptor->dir_name, "datastream",
+          NULL);
+      metadata_file =
+          g_strjoin (G_DIR_SEPARATOR_S, ctf_descriptor->dir_name, "metadata",
+          NULL);
 
-    datastream_file =
-        g_strjoin (G_DIR_SEPARATOR_S, ctf_descriptor->dir_name, "datastream",
-        NULL);
-    metadata_file =
-        g_strjoin (G_DIR_SEPARATOR_S, ctf_descriptor->dir_name, "metadata",
-        NULL);
+      ctf_descriptor->datastream = g_fopen (datastream_file, "w");
+      if (ctf_descriptor->datastream == NULL) {
+        GST_ERROR ("Could not open datastream file, path does not exist.");
+        goto error;
+      }
 
-    ctf_descriptor->datastream = g_fopen (datastream_file, "w");
-    if (ctf_descriptor->datastream == NULL) {
-      GST_ERROR ("Could not open datastream file, path does not exist.");
+      ctf_descriptor->metadata = g_fopen (metadata_file, "w");
+      if (ctf_descriptor->metadata == NULL) {
+        GST_ERROR ("Could not open metadata file, path does not exist.");
+        goto error;
+      }
+
+      if (ctf_descriptor->change_file_buf_size) {
+        if (ctf_descriptor->file_buf_size == 0) {
+          setvbuf (ctf_descriptor->metadata, NULL, _IONBF, 0);
+          setvbuf (ctf_descriptor->datastream, NULL, _IONBF, 0);
+        } else {
+          setvbuf (ctf_descriptor->metadata, NULL, _IOFBF,
+              ctf_descriptor->file_buf_size);
+          setvbuf (ctf_descriptor->datastream, NULL, _IOFBF,
+              ctf_descriptor->file_buf_size);
+        }
+      }
+
+      ctf_descriptor->start_time = gst_util_get_timestamp ();
+      ctf_descriptor->file_output_disable = FALSE;
+
+      g_free (datastream_file);
+      g_free (metadata_file);
+      return;
+    } else {
+      GST_ERROR ("Could not create CTF output files, ignoring them");
+      ctf_descriptor->file_output_disable = TRUE;
+      return;
     }
-
-    ctf_descriptor->metadata = g_fopen (metadata_file, "w");
-    if (ctf_descriptor->metadata == NULL) {
-      GST_ERROR ("Could not open metadata file, path does not exist.");
-    }
-
-    ctf_descriptor->start_time = gst_util_get_timestamp ();
-    ctf_descriptor->file_output_disable = FALSE;
-
-    g_free (datastream_file);
-    g_free (metadata_file);
   }
+
+  return;
+
+error:
+  ctf_descriptor->file_output_disable = TRUE;
+  g_free (datastream_file);
+  g_free (metadata_file);
 }
 
 
@@ -632,9 +727,14 @@ add_metadata_event_struct (const gchar * metadata_event)
 {
   GError *error;
   gchar *event_mem;
-  gchar *event_mem_end;
   guint event_size;
   guint8 *mem;
+
+  event_size = strlen (metadata_event);
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
 
   mem = ctf_descriptor->mem;
   event_mem = (gchar *) mem + TCP_HEADER_SIZE;
@@ -643,9 +743,7 @@ add_metadata_event_struct (const gchar * metadata_event)
      depends entirely of what is passed as an argument. */
   g_mutex_lock (&ctf_descriptor->mutex);
 
-  event_mem_end = g_stpcpy (event_mem, metadata_event);
-  /* Computer event size */
-  event_size = event_mem_end - event_mem;
+  memcpy (event_mem, metadata_event, event_size);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     fwrite (event_mem, sizeof (gchar), event_size, ctf_descriptor->metadata);
@@ -669,6 +767,12 @@ do_print_cpuusage_event (event_id id, guint32 cpu_num, gfloat * cpuload)
   gsize event_size;
   gint cpu_idx;
 
+  event_size = cpu_num * sizeof (gfloat) + CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
 
@@ -681,9 +785,6 @@ do_print_cpuusage_event (event_id id, guint32 cpu_num, gfloat * cpuload)
     /* Write CPU load */
     CTF_EVENT_WRITE_FLOAT (cpuload[cpu_idx], event_mem);
   }
-
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem = mem + TCP_HEADER_SIZE;
@@ -709,6 +810,12 @@ do_print_proctime_event (event_id id, gchar * elementname, guint64 time)
   guint8 *event_mem;
   gsize event_size;
 
+  event_size = strlen (elementname) + 1 + sizeof (time) + CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
 
@@ -719,9 +826,7 @@ do_print_proctime_event (event_id id, gchar * elementname, guint64 time)
   /* Write element name */
   CTF_EVENT_WRITE_STRING (elementname, event_mem);
   /* Write time */
-  CTF_EVENT_WRITE_INT64 (time, event_mem)
-      /* Computer event size */
-      event_size = event_mem - (mem + TCP_HEADER_SIZE);
+  CTF_EVENT_WRITE_INT64 (time, event_mem);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem -= event_size;
@@ -740,13 +845,18 @@ do_print_proctime_event (event_id id, gchar * elementname, guint64 time)
 }
 
 void
-do_print_framerate_event (event_id id, guint32 pad_num, guint64 * fps)
+do_print_framerate_event (event_id id, gchar * elementname, guint64 fps)
 {
   GError *error;
   guint8 *mem;
   guint8 *event_mem;
   gsize event_size;
-  guint32 pad_idx;
+
+  event_size = strlen (elementname) + 1 + sizeof (guint64) + CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
 
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
@@ -755,14 +865,10 @@ do_print_framerate_event (event_id id, guint32 pad_num, guint64 * fps)
   g_mutex_lock (&ctf_descriptor->mutex);
   /* Add CTF header */
   CTF_EVENT_WRITE_HEADER (id, event_mem);
-
-  for (pad_idx = 0; pad_idx < pad_num; ++pad_idx) {
-    /* Write FPS */
-    CTF_EVENT_WRITE_INT64 (fps[pad_idx], event_mem);
-  }
-
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
+  /* Write element name */
+  CTF_EVENT_WRITE_STRING (elementname, event_mem);
+  /* Write fps */
+  CTF_EVENT_WRITE_INT64 (fps, event_mem);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem = mem + TCP_HEADER_SIZE;
@@ -789,6 +895,14 @@ do_print_interlatency_event (event_id id,
   guint8 *event_mem;
   gsize event_size;
 
+  event_size =
+      strlen (originpad) + 1 + strlen (destinationpad) + 1 + sizeof (guint64) +
+      CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
 
@@ -803,8 +917,6 @@ do_print_interlatency_event (event_id id,
   CTF_EVENT_WRITE_STRING (destinationpad, event_mem);
   /* Write time */
   CTF_EVENT_WRITE_INT64 (time, event_mem);
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem = mem + TCP_HEADER_SIZE;
@@ -829,6 +941,12 @@ do_print_scheduling_event (event_id id, gchar * elementname, guint64 time)
   guint8 *event_mem;
   gsize event_size;
 
+  event_size = strlen (elementname) + 1 + sizeof (guint64) + CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
 
@@ -838,11 +956,9 @@ do_print_scheduling_event (event_id id, gchar * elementname, guint64 time)
   CTF_EVENT_WRITE_HEADER (id, event_mem);
   /* Add event payload */
   /* Write element name */
-  CTF_EVENT_WRITE_STRING (elementname, event_mem)
-      /* Write time */
-      CTF_EVENT_WRITE_INT64 (time, event_mem);
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
+  CTF_EVENT_WRITE_STRING (elementname, event_mem);
+  /* Write time */
+  CTF_EVENT_WRITE_INT64 (time, event_mem);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem = mem + TCP_HEADER_SIZE;
@@ -862,12 +978,21 @@ do_print_scheduling_event (event_id id, gchar * elementname, guint64 time)
 
 void
 do_print_queue_level_event (event_id id, const gchar * elementname,
-    guint32 bytes, guint32 buffers, guint64 time)
+    guint32 bytes, guint32 max_bytes, guint32 buffers, guint32 max_buffers,
+    guint64 time, guint64 max_time)
 {
   GError *error;
   guint8 *mem;
   guint8 *event_mem;
   gsize event_size;
+
+  event_size =
+      strlen (elementname) + 1 + 4 * sizeof (guint32) + 2 * sizeof (guint64) +
+      CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
 
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
@@ -883,13 +1008,20 @@ do_print_queue_level_event (event_id id, const gchar * elementname,
   /* Write bytes */
   CTF_EVENT_WRITE_INT32 (bytes, event_mem);
 
+  /* Write bytes */
+  CTF_EVENT_WRITE_INT32 (max_bytes, event_mem);
+
   /* Write buffers */
   CTF_EVENT_WRITE_INT32 (buffers, event_mem);
 
+  /* Write buffers */
+  CTF_EVENT_WRITE_INT32 (max_buffers, event_mem);
+
   /* Write time */
   CTF_EVENT_WRITE_INT64 (time, event_mem);
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
+
+  /* Write time */
+  CTF_EVENT_WRITE_INT64 (max_time, event_mem);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem = mem + TCP_HEADER_SIZE;
@@ -908,13 +1040,18 @@ do_print_queue_level_event (event_id id, const gchar * elementname,
 }
 
 void
-do_print_bitrate_event (event_id id, guint32 pad_num, guint64 * fps)
+do_print_bitrate_event (event_id id, gchar * elementname, guint64 bps)
 {
   GError *error;
   guint8 *mem;
   guint8 *event_mem;
   gsize event_size;
-  guint32 pad_idx;
+
+  event_size = strlen (elementname) + 1 + sizeof (bps) + CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
 
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
@@ -923,14 +1060,10 @@ do_print_bitrate_event (event_id id, guint32 pad_num, guint64 * fps)
   g_mutex_lock (&ctf_descriptor->mutex);
   /* Add CTF header */
   CTF_EVENT_WRITE_HEADER (id, event_mem);
-
-  for (pad_idx = 0; pad_idx < pad_num; ++pad_idx) {
-    /* Write bitrate */
-    CTF_EVENT_WRITE_INT64 (fps[pad_idx], event_mem);
-  }
-
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
+  /* Write element name */
+  CTF_EVENT_WRITE_STRING (elementname, event_mem);
+  /* Write bitrate */
+  CTF_EVENT_WRITE_INT64 (bps, event_mem);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem = mem + TCP_HEADER_SIZE;
@@ -958,6 +1091,14 @@ do_print_buffer_event (event_id id, const gchar * pad, GstClockTime pts,
   guint8 *event_mem;
   gsize event_size;
 
+  event_size =
+      strlen (pad) + 1 + 6 * sizeof (guint64) + 2 * sizeof (guint32) +
+      CTF_HEADER_SIZE;
+
+  if (event_exceeds_mem_size (event_size)) {
+    return;
+  }
+
   mem = ctf_descriptor->mem;
   event_mem = mem + TCP_HEADER_SIZE;
 
@@ -976,9 +1117,6 @@ do_print_buffer_event (event_id id, const gchar * pad, GstClockTime pts,
   CTF_EVENT_WRITE_INT64 (size, event_mem);
   CTF_EVENT_WRITE_INT32 (flags, event_mem);
   CTF_EVENT_WRITE_INT32 (refcount, event_mem);
-
-  /* Computer event size */
-  event_size = event_mem - (mem + TCP_HEADER_SIZE);
 
   if (FALSE == ctf_descriptor->file_output_disable) {
     event_mem -= event_size;

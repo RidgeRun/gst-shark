@@ -44,3 +44,14 @@
 = Release v0.4.5 =
 
 * Avoid assertions with invalid GstEvents
+
+= Release v0.4.6 =
+
+* Remove Evaluation Version feature
+* Avoid Overflow reading Interlatency Timestamps
+
+= Release v0.4.7 =
+
+* Handle permissions failure writing CTF output files
+* Fix plugin name
+* Avoid sink synchronization pause

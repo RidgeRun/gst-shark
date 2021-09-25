@@ -24,7 +24,7 @@ if (0 == count)
 end
 [from_pad count] = fscanf(fileID,'%s\"');
 [to_pad count] = fscanf(fileID,'%s\"');
-[time count] = fscanf(fileID,'%d');
+[time count] = fscanf(fileID,'%ld');
 
 # Store the source element
 src_pad = from_pad;
@@ -39,7 +39,7 @@ while (count == 1)
     end
     [from_pad count] = fscanf(fileID,'%s\"');
     [to_pad count] = fscanf(fileID,'%s\"');
-    [time count] = fscanf(fileID,'%d');
+    [time count] = fscanf(fileID,'%ld');
 
     pad_name_list_len = length(pad_name_list);
     for list_idx = 1:pad_name_list_len
@@ -79,7 +79,7 @@ while (count == 1)
     end
     [from_pad count] = fscanf(fileID,'%s\"');
     [to_pad count] = fscanf(fileID,'%s\"');
-    [time count] = fscanf(fileID,'%d');
+    [time count] = fscanf(fileID,'%ld');
     # Match the event with a pad name
     for list_idx = 1:pad_name_list_len
         if (1 == strcmp(char(pad_name_list{list_idx}),to_pad))

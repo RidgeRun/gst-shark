@@ -6,7 +6,7 @@ dnl when going to/from release please set the nano (fourth number) right !
 dnl releases only do Wall, git and prerelease does Werror too
 dnl
 AC_INIT([GstShark],
-        [0.4.5.1],
+        [0.7.3.1],
 	[https://github.com/RidgeRun/gst-shark],
 	[gst-shark],
 	[https://github.com/RidgeRun/gst-shark])
@@ -22,7 +22,7 @@ dnl check if this is a release version
 AS_NANO(GST_GIT="no", GST_GIT="yes")
 
 dnl can autoconf find the source ?
-AC_CONFIG_SRCDIR([plugins/tracers/gstsharktracers.c])
+AC_CONFIG_SRCDIR([plugins/tracers/gstplugin.c])
 
 dnl define the output header for config
 AC_CONFIG_HEADERS([config.h])
@@ -97,10 +97,6 @@ AG_GST_ARG_GCOV
 AG_GST_ARG_EXAMPLES
 AG_GST_ARG_WITH_PKG_CONFIG_PATH
 AG_GST_PKG_CONFIG_PATH
-
-AG_GST_SET_PACKAGE_RELEASE_DATETIME_WITH_NANO([$PACKAGE_VERSION_NANO],
-  ["${srcdir}/gst-shark.doap"],
-  [$PACKAGE_VERSION_MAJOR.$PACKAGE_VERSION_MINOR.$PACKAGE_VERSION_MICRO])
 
 dnl build static plugins or not
 AC_MSG_CHECKING([whether to build static plugins or not])
@@ -203,7 +199,7 @@ dnl *** checks for dependency libraries ***
 
 dnl GLib
 dnl GLib
-GLIB_REQ=2.40.0
+GLIB_REQ=2.44.0
 AG_GST_GLIB_CHECK([$GLIB_REQ])
 
 dnl Check for documentation xrefs
@@ -216,6 +212,11 @@ GST_REQ_MINVER=1.7.1
 AG_GST_CHECK_GST([$GST_REQ_MAJMIN], [$GST_REQ_MINVER], [yes])
 AG_GST_CHECK_GST_BASE([$GST_REQ_MAJMIN], [$GST_REQ_MINVER], [yes])
 AG_GST_CHECK_GST_CHECK([$GST_REQ_MAJMIN], [$GST_REQ_MINVER], [yes])
+
+dnl Tracers require GStreamer debug support
+AG_GST_CHECK_GST_DEBUG_DISABLED([
+  AC_MSG_ERROR([Tracers require GStreamer debug support. Rebuild GStreamer core with --enable-gst-debug.])
+])
 
 GST_REQ_STABLE=1.8.1
 PKG_CHECK_MODULES(GSTREAMER, [
@@ -413,7 +414,6 @@ AC_SUBST(GST_SHARK_PLUGIN_LDFLAGS, "$GST_SHARK_PLUGIN_LDFLAGS")
 
 dnl Finally output everything
 AC_CONFIG_FILES([
-gst-shark.doap
 Makefile
 plugins/Makefile
 plugins/tracers/Makefile
@@ -425,15 +425,6 @@ docs/Makefile
 docs/version.entities
 tools/Makefile
 ])
-
-dnl Allow mainainer to build eval version
-AC_ARG_ENABLE(eval,
-    [  --enable-eval           Build the evaluation version of the plug-in (Disabled by default)],
-    [if test x$enableval = xyes; then
-        AC_MSG_NOTICE([Building the EVAL version of the plug-in])
-        AC_DEFINE(EVAL, 1, [Define this to build the evaluation version of the plug-in])
-    fi]
-)
 
 AC_OUTPUT
 
