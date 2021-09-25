@@ -24,7 +24,7 @@
 
 static GstCtfEngine *_ctf = NULL;
 static GMutex _ctf_mutex;
-static const gchar *_gst_ctf_location = NULL;
+static const gchar *_ctf_location = NULL;
 
 GST_DEBUG_CATEGORY (gst_ctf_debug);
 #define GST_CAT_DEFAULT gst_ctf_debug
@@ -37,8 +37,8 @@ static GstCtfRecord *gst_ctf_register_event_valist (const gchar * name,
 static void
 gst_ctf_load_env (void)
 {
-  _gst_ctf_location = g_getenv (GST_CTF_LOCATION);
-  GST_INFO ("Setting CTF location to \"%s\"", _gst_ctf_location);
+  _ctf_location = g_getenv (GST_CTF_LOCATION);
+  GST_INFO ("Setting CTF location to \"%s\"", _ctf_location);
 }
 
 void
@@ -60,7 +60,7 @@ gst_ctf_init (void)
   gst_ctf_load_env ();
 
   /* Shortcircuit if user doesn't want to write CTF */
-  if (NULL == _gst_ctf_location) {
+  if (NULL == _ctf_location) {
     GST_INFO ("No CTF requested");
     goto out;
   }
@@ -69,7 +69,7 @@ gst_ctf_init (void)
     _ctf = g_object_new (GST_TYPE_CTF_ENGINE, NULL);
   }
 
-  if (FALSE == gst_ctf_engine_start (_ctf, _gst_ctf_location)) {
+  if (FALSE == gst_ctf_engine_start (_ctf, _ctf_location)) {
     GST_ERROR ("Unable to start CTF engine");
     gst_clear_object (&_ctf);
     goto out;
