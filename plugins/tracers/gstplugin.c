@@ -35,28 +35,10 @@
 #include "gstbitrate.h"
 #include "gstbuffer.h"
 #include "gst/ctf/gstctf.h"
-#include "gst/ctf/gstctfrecord.h"
 
 static gboolean
 plugin_init (GstPlugin * plugin)
 {
-  GstCtfRecord *ctf = NULL;
-  gst_ctf_init ();
-
-  ctf = gst_ctf_register_event ("mytracer", "string", GST_TYPE_STRUCTURE,
-      gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_STRING, NULL),
-      "double", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type",
-          G_TYPE_GTYPE, G_TYPE_DOUBLE, NULL), "int", GST_TYPE_STRUCTURE,
-      gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_INT, NULL),
-      NULL);
-
-  for (gint i = 1; i < 200; i++) {
-    gst_ctf_record_log (ctf, "mystring", 1.0 / i, i);
-    g_usleep (10000);
-  }
-
-  gst_object_unref (ctf);
-
 #ifdef GST_CPUUSAGE_ENABLE
   if (!gst_tracer_register (plugin, "cpuusage",
           gst_cpu_usage_tracer_get_type ())) {
@@ -92,8 +74,6 @@ plugin_init (GstPlugin * plugin)
   if (!gst_tracer_register (plugin, "buffer", gst_buffer_tracer_get_type ())) {
     return FALSE;
   }
-
-  gst_ctf_deinit ();
 
   return TRUE;
 }

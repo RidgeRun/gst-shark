@@ -525,7 +525,10 @@ gst_ctf_record_log (GstCtfRecord * self, ...)
   gboolean ret = FALSE;
   va_list var_args;
 
-  g_return_val_if_fail (self, FALSE);
+  /* User didn't request CTF logging */
+  if (NULL == self) {
+    return FALSE;
+  }
 
   va_start (var_args, self);
   ret = gst_ctf_record_log_valist (self, var_args);

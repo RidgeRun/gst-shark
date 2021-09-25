@@ -20,6 +20,8 @@
 
 #include "gstsharktracer.h"
 
+#include "gst/ctf/gstctf.h"
+
 GST_DEBUG_CATEGORY_STATIC (gst_shark_debug);
 #define GST_CAT_DEFAULT gst_shark_debug
 
@@ -140,6 +142,8 @@ gst_shark_tracer_init (GstSharkTracer * self)
   priv->myhooks = g_hash_table_new (g_str_hash, g_str_equal);
 
   gst_shark_tracer_fill_hooks (priv);
+
+  gst_ctf_init ();
 }
 
 static void
@@ -247,6 +251,8 @@ gst_shark_tracer_finalize (GObject * object)
   g_hash_table_unref (priv->params);
   g_hash_table_unref (priv->hooks);
   g_hash_table_unref (priv->myhooks);
+
+  gst_ctf_deinit ();
 
   G_OBJECT_CLASS (gst_shark_tracer_parent_class)->finalize (object);
 }

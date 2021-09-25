@@ -23,7 +23,8 @@
 #include "gstctfengine.h"
 
 static GstCtfEngine *_ctf = NULL;
-const gchar *_gst_ctf_location = NULL;
+static GMutex _ctf_mutex;
+static const gchar *_gst_ctf_location = NULL;
 
 GST_DEBUG_CATEGORY (gst_ctf_debug);
 #define GST_CAT_DEFAULT gst_ctf_debug
@@ -32,19 +33,28 @@ static void gst_ctf_load_env (void);
 static GstCtfRecord *gst_ctf_register_event_valist (const gchar * name,
     const gchar * firstfield, va_list var_args);
 
+/* Should be called locked */
 static void
 gst_ctf_load_env (void)
 {
   _gst_ctf_location = g_getenv (GST_CTF_LOCATION);
-
   GST_INFO ("Setting CTF location to \"%s\"", _gst_ctf_location);
 }
 
 void
 gst_ctf_init (void)
 {
+  g_mutex_lock (&_ctf_mutex);
+
   if (NULL == gst_ctf_debug) {
     GST_DEBUG_CATEGORY_INIT (gst_ctf_debug, "ctf", 0, "ctf debug");
+  }
+
+  /* We already have an engine, ref it */
+  if (NULL != _ctf) {
+    GST_INFO ("Grabbed a reference to the CTF engine");
+    gst_object_ref (_ctf);
+    goto out;
   }
 
   gst_ctf_load_env ();
@@ -52,7 +62,7 @@ gst_ctf_init (void)
   /* Shortcircuit if user doesn't want to write CTF */
   if (NULL == _gst_ctf_location) {
     GST_INFO ("No CTF requested");
-    return;
+    goto out;
   }
 
   if (NULL == _ctf) {
@@ -62,34 +72,46 @@ gst_ctf_init (void)
   if (FALSE == gst_ctf_engine_start (_ctf, _gst_ctf_location)) {
     GST_ERROR ("Unable to start CTF engine");
     gst_clear_object (&_ctf);
-    return;
+    goto out;
   }
 
   GST_INFO ("Initialized CTF");
+
+out:
+  g_mutex_unlock (&_ctf_mutex);
 }
 
 void
 gst_ctf_deinit (void)
 {
-  gst_clear_object (&_ctf);
-
-  GST_INFO ("Deinitialized CTF");
+  g_mutex_lock (&_ctf_mutex);
+  if (NULL != _ctf) {
+    GST_INFO ("Released CTF engine reference");
+    gst_object_unref (_ctf);
+  }
+  g_mutex_unlock (&_ctf_mutex);
 }
 
 static GstCtfRecord *
 gst_ctf_register_event_valist (const gchar * name,
     const gchar * firstfield, va_list var_args)
 {
+  GstCtfRecord *record = NULL;
+
   g_return_val_if_fail (name, NULL);
   g_return_val_if_fail (firstfield, NULL);
 
+  g_mutex_lock (&_ctf_mutex);
   if (NULL == _ctf) {
-    GST_ERROR ("CTF engine not initialized, did you call gst_ctf_init()?");
-    return NULL;
+    GST_DEBUG ("CTF engine not initialized, not logging traces");
+  } else {
+    record = gst_ctf_engine_register_event_valist (_ctf, name, firstfield,
+        var_args);
   }
+  g_mutex_unlock (&_ctf_mutex);
 
-  return gst_ctf_engine_register_event_valist (_ctf, name, firstfield,
-      var_args);
+  return record;
+
 }
 
 GstCtfRecord *
