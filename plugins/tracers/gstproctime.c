@@ -63,6 +63,7 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
   gchar *time_string;
   gboolean should_log;
   gboolean should_calculate;
+  GstCtfRecord *ctf = NULL;
 
   proc_time_tracer = GST_PROC_TIME_TRACER (self);
   shark_tracer = GST_SHARK_TRACER (proc_time_tracer);
@@ -83,6 +84,9 @@ do_push_buffer_pre (GstTracer * self, guint64 ts, GstPad * pad)
     time_string = g_strdup_printf ("%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
     gst_tracer_record_log (tr_proc_time, name, time_string);
+
+    ctf = gst_shark_tracer_get_ctf_record (shark_tracer);
+    gst_ctf_record_log (ctf, name, time_string);
 
     g_free (time_string);
   }
@@ -138,7 +142,8 @@ static void
 gst_proc_time_tracer_init (GstProcTimeTracer * self)
 {
   GstTracer *tracer = GST_TRACER (self);
-
+  GstSharkTracer *stracer = GST_SHARK_TRACER (self);
+  GstCtfRecord *ctf = NULL;
 
   self->proc_time = gst_proctime_new ();
 
@@ -147,4 +152,15 @@ gst_proc_time_tracer_init (GstProcTimeTracer * self)
 
   gst_tracing_register_hook (tracer, "element-new",
       G_CALLBACK (do_element_new));
+
+  ctf = gst_ctf_register_event ("proctime.class",
+      "element", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+          GST_TRACER_VALUE_SCOPE_ELEMENT, NULL), "time", GST_TYPE_STRUCTURE,
+      gst_structure_new ("scope", "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+          GST_TRACER_VALUE_SCOPE_PROCESS, NULL), NULL);
+
+  gst_shark_tracer_set_ctf_record (stracer, ctf);
 }

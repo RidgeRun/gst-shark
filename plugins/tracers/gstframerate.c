@@ -103,6 +103,7 @@ static void
 gst_framerate_tracer_init (GstFramerateTracer * self)
 {
   GstSharkTracer *stracer = GST_SHARK_TRACER (self);
+  GstCtfRecord *ctf = NULL;
 
   self->frame_counters =
       g_hash_table_new_full (g_direct_hash, g_direct_equal,
@@ -114,6 +115,19 @@ gst_framerate_tracer_init (GstFramerateTracer * self)
       G_CALLBACK (pad_push_list_pre));
   gst_shark_tracer_register_hook (stracer, "pad-pull-range-pre",
       G_CALLBACK (pad_pull_range_pre));
+
+  ctf = gst_ctf_register_event ("framerate",
+      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PAD,
+          NULL),
+      "fps", GST_TYPE_STRUCTURE, gst_structure_new ("value",
+          "type", G_TYPE_GTYPE, G_TYPE_UINT,
+          "description", G_TYPE_STRING, "Frames per second",
+          "flags", GST_TYPE_TRACER_VALUE_FLAGS,
+          GST_TRACER_VALUE_FLAGS_AGGREGATED, "min", G_TYPE_UINT, 0, "max",
+          G_TYPE_UINT, G_MAXUINT, NULL), NULL);
+  gst_shark_tracer_set_ctf_record (stracer, ctf);
 }
 
 static void
@@ -150,8 +164,10 @@ print_framerate (GstPeriodicTracer * tracer)
   GHashTableIter iter;
   gpointer key, value;
   GstFramerateHash *pad_table;
+  GstCtfRecord *ctf = NULL;
 
   self = GST_FRAMERATE_TRACER (tracer);
+  ctf = gst_shark_tracer_get_ctf_record (GST_SHARK_TRACER (self));
 
   /* Lock the tracer to make sure no new pad is added while we are logging */
   GST_OBJECT_LOCK (self);
@@ -164,6 +180,8 @@ print_framerate (GstPeriodicTracer * tracer)
 
     gst_tracer_record_log (tr_framerate, pad_table->fullname,
         pad_table->counter);
+
+    gst_ctf_record_log (ctf, pad_table->fullname, pad_table->counter);
     pad_table->counter = 0;
   }
 

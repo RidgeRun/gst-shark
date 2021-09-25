@@ -80,6 +80,7 @@ sched_time_compute (GstTracer * tracer, guint64 ts, GstPad * pad)
   GString *time_string = NULL;
   gchar pad_name[PAD_NAME_SIZE];
   guint64 time_diff;
+  GstCtfRecord *ctf = NULL;
 
   g_return_if_fail (tracer);
   g_return_if_fail (pad);
@@ -107,6 +108,9 @@ sched_time_compute (GstTracer * tracer, guint64 ts, GstPad * pad)
     time_diff = GST_CLOCK_DIFF (schedule_pad->previous_time, ts);
     g_string_printf (time_string, "%" GST_TIME_FORMAT,
         GST_TIME_ARGS (time_diff));
+
+    ctf = gst_shark_tracer_get_ctf_record (GST_SHARK_TRACER (tracer));
+    gst_ctf_record_log (ctf, pad_name, time_string->str);
 
     gst_tracer_record_log (tr_schedule, pad_name, time_string->str);
 
@@ -160,6 +164,7 @@ static void
 gst_scheduletime_tracer_init (GstScheduletimeTracer * self)
 {
   GstSharkTracer *tracer = GST_SHARK_TRACER (self);
+  GstCtfRecord *ctf = NULL;;
 
   self->schedule_pads =
       g_hash_table_new_full (g_direct_hash, g_direct_equal, key_destroy,
@@ -173,4 +178,15 @@ gst_scheduletime_tracer_init (GstScheduletimeTracer * self)
 
   gst_shark_tracer_register_hook (tracer, "pad-pull-range-pre",
       G_CALLBACK (sched_time_compute));
+
+  ctf = gst_ctf_register_event ("scheduletime.class",
+      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PAD,
+          NULL),
+      "time", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+          GST_TRACER_VALUE_SCOPE_PROCESS, NULL), NULL);
+  gst_shark_tracer_set_ctf_record (tracer, ctf);
 }

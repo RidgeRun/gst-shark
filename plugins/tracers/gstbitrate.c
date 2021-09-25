@@ -70,8 +70,10 @@ do_print_bitrate (GstPeriodicTracer * tracer)
   GHashTableIter iter;
   gpointer key, value;
   GstBitrateHash *pad_table;
+  GstCtfRecord *ctf = NULL;
 
   self = GST_BITRATE_TRACER (tracer);
+  ctf = gst_shark_tracer_get_ctf_record (GST_SHARK_TRACER (self));
 
   /* Using the iterator functions to go through the Hash table and print the bitrate
      of every element stored */
@@ -80,6 +82,7 @@ do_print_bitrate (GstPeriodicTracer * tracer)
     pad_table = (GstBitrateHash *) value;
 
     gst_tracer_record_log (tr_bitrate, pad_table->fullname, pad_table->bitrate);
+    gst_ctf_record_log (ctf, pad_table->fullname, pad_table->bitrate);
 
     pad_table->bitrate = 0;
   }
@@ -221,6 +224,7 @@ static void
 gst_bitrate_tracer_init (GstBitrateTracer * self)
 {
   GstSharkTracer *tracer = GST_SHARK_TRACER (self);
+  GstCtfRecord *ctf = NULL;
 
   self->bitrate_counters =
       g_hash_table_new_full (g_direct_hash, g_direct_equal,
@@ -232,6 +236,22 @@ gst_bitrate_tracer_init (GstBitrateTracer * self)
       G_CALLBACK (do_pad_push_list_pre));
   gst_shark_tracer_register_hook (tracer, "pad-pull-range-pre",
       G_CALLBACK (do_pad_pull_range_pre));
+
+  GST_FIXME_OBJECT (self, "Babeltrace does not support 64 bit integers. "
+      "Looging bitrate as plain integer");
+  ctf = gst_ctf_register_event ("bitrate.class",
+      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PAD,
+          NULL),
+      "bitrate", GST_TYPE_STRUCTURE, gst_structure_new ("value",
+          "type", G_TYPE_GTYPE, G_TYPE_UINT,
+          "description", G_TYPE_STRING, "Bitrate",
+          "flags", GST_TYPE_TRACER_VALUE_FLAGS,
+          GST_TRACER_VALUE_FLAGS_AGGREGATED, "min", G_TYPE_UINT64,
+          G_GUINT64_CONSTANT (0), "max", G_TYPE_UINT64, G_MAXUINT64, NULL),
+      NULL);
+  gst_shark_tracer_set_ctf_record (tracer, ctf);
 }
 
 static void

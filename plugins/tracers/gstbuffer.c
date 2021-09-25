@@ -67,6 +67,9 @@ gst_buffer_buffer_pre (GObject * self, GstClockTime ts, GstPad * pad,
   GValue vflags = G_VALUE_INIT;
   gchar *sflags;
   guint refcount;
+  GstCtfRecord *ctf = NULL;
+
+  ctf = gst_shark_tracer_get_ctf_record (GST_SHARK_TRACER (self));
 
   pad_name = g_strdup_printf ("%s:%s", GST_DEBUG_PAD_NAME (pad));
 
@@ -92,6 +95,8 @@ gst_buffer_buffer_pre (GObject * self, GstClockTime ts, GstPad * pad,
   refcount = GST_MINI_OBJECT_REFCOUNT_VALUE (buffer);
 
   gst_tracer_record_log (tr_buffer, pad_name, spts, sdts, sduration, offset,
+      offset_end, size, sflags, refcount);
+  gst_ctf_record_log (ctf, pad_name, spts, sdts, sduration, offset,
       offset_end, size, sflags, refcount);
 
   g_value_unset (&vflags);
@@ -160,6 +165,7 @@ static void
 gst_buffer_tracer_init (GstBufferTracer * self)
 {
   GstSharkTracer *tracer = GST_SHARK_TRACER (self);
+  GstCtfRecord *ctf = NULL;
 
   gst_shark_tracer_register_hook (tracer, "pad-push-pre",
       G_CALLBACK (gst_buffer_buffer_pre));
@@ -169,4 +175,36 @@ gst_buffer_tracer_init (GstBufferTracer * self)
 
   gst_shark_tracer_register_hook (tracer, "pad-pull-range-post",
       G_CALLBACK (gst_buffer_range_post));
+
+  GST_FIXME_OBJECT (self, "Babeltrace does not support 64 bit integers. "
+      "Looging some buffer fields as plain integer");
+  ctf = gst_ctf_register_event ("buffer.class",
+      "pad", GST_TYPE_STRUCTURE, gst_structure_new ("value",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "description", G_TYPE_STRING,
+          "The pad which the buffer is going through", NULL), "pts",
+      GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE,
+          G_TYPE_STRING, "description", G_TYPE_STRING, "Presentation Timestamp",
+          NULL), "dts", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type",
+          G_TYPE_GTYPE, G_TYPE_STRING, "description", G_TYPE_STRING,
+          "Decoding Timestamp", NULL), "duration", GST_TYPE_STRUCTURE,
+      gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "description", G_TYPE_STRING, "Duration", NULL), "offset",
+      GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE,
+          G_TYPE_UINT, "description", G_TYPE_STRING, "Offset", "min",
+          G_TYPE_UINT, 0, "max", G_TYPE_UINT,
+          G_MAXUINT, NULL), "offset_end", GST_TYPE_STRUCTURE,
+      gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_UINT,
+          "description", G_TYPE_STRING, "Offset End", "min", G_TYPE_UINT,
+          0, "max", G_TYPE_UINT, G_MAXUINT, NULL),
+      "size", GST_TYPE_STRUCTURE, gst_structure_new ("value", "type",
+          G_TYPE_GTYPE, G_TYPE_UINT, "description", G_TYPE_STRING,
+          "Data Size", "min", G_TYPE_UINT, 0, "max",
+          G_TYPE_UINT, G_MAXUINT, NULL), "flags", GST_TYPE_STRUCTURE,
+      gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "description", G_TYPE_STRING, "Flags", NULL), "refcount",
+      GST_TYPE_STRUCTURE, gst_structure_new ("value", "type", G_TYPE_GTYPE,
+          G_TYPE_UINT, "description", G_TYPE_STRING, "Ref Count", "min",
+          G_TYPE_UINT, 0, "max", G_TYPE_UINT, G_MAXUINT32, NULL), NULL);
+  gst_shark_tracer_set_ctf_record (tracer, ctf);
 }

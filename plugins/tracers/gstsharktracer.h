@@ -24,6 +24,8 @@
 #include <gst/gst.h>
 #include <gst/gsttracer.h>
 
+#include <gst/ctf/gstctf.h>
+
 G_BEGIN_DECLS
 
 #define GST_SHARK_TYPE_TRACER (gst_shark_tracer_get_type())
@@ -39,6 +41,9 @@ GList * gst_shark_tracer_get_param (GstSharkTracer *self, const gchar *param);
 
 void gst_shark_tracer_register_hook (GstSharkTracer *self, const gchar *detail,
     GCallback func);
+
+void gst_shark_tracer_set_ctf_record (GstSharkTracer *self, GstCtfRecord *ctf);
+GstCtfRecord * gst_shark_tracer_get_ctf_record (GstSharkTracer *self);
 
 G_END_DECLS
 

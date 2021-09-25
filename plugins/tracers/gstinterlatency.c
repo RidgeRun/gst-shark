@@ -104,11 +104,13 @@ static void
 log_latency (GstInterLatencyTracer * interlatency_tracer,
     const GstStructure * data, GstPad * sink_pad, guint64 sink_ts)
 {
+  GstSharkTracer *stracer = GST_SHARK_TRACER (interlatency_tracer);
   GstPad *src_pad = NULL;
   guint64 src_ts;
   gchar *src = NULL, *sink = NULL;
   guint64 time;
   GString *time_string = NULL;
+  GstCtfRecord *ctf = NULL;
 
   gst_structure_id_get (data,
       latency_probe_pad, GST_TYPE_PAD, &src_pad,
@@ -123,6 +125,8 @@ log_latency (GstInterLatencyTracer * interlatency_tracer,
   g_string_printf (time_string, "%" GST_TIME_FORMAT, GST_TIME_ARGS (time));
 
 #ifdef GST_STABLE_RELEASE
+  ctf = gst_shark_tracer_get_ctf_record (stracer);
+  gst_ctf_record_log (ctf, src, sink, time_string->str);
   gst_tracer_record_log (tr_interlatency, src, sink, time_string->str);
 #else
   /* TODO(ensonic): report format is still unstable */
@@ -303,6 +307,8 @@ static void
 gst_interlatency_tracer_init (GstInterLatencyTracer * self)
 {
   GstTracer *tracer = GST_TRACER (self);
+  GstSharkTracer *stracer = GST_SHARK_TRACER (self);
+  GstCtfRecord *ctf = NULL;
 
   /* In push mode, pre/post will be called before/after the peer chain
    * function has been called. For this reason, we only use -pre to avoid
@@ -324,6 +330,21 @@ gst_interlatency_tracer_init (GstInterLatencyTracer * self)
       G_CALLBACK (do_pull_range_post));
   gst_tracing_register_hook (tracer, "pad-push-event-pre",
       G_CALLBACK (do_push_event_pre));
+
+  ctf = gst_ctf_register_event ("interlatency.class",
+      "from_pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PAD,
+          NULL),
+      "to_pad", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE, GST_TRACER_VALUE_SCOPE_PAD,
+          NULL),
+      "time", GST_TYPE_STRUCTURE, gst_structure_new ("scope",
+          "type", G_TYPE_GTYPE, G_TYPE_STRING,
+          "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
+          GST_TRACER_VALUE_SCOPE_PROCESS, NULL), NULL);
+  gst_shark_tracer_set_ctf_record (stracer, ctf);
 }
 
 static void

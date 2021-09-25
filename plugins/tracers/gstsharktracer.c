@@ -34,6 +34,8 @@ struct _GstSharkTracerPrivate
   GHashTable *params;
   GHashTable *hooks;
   GHashTable *myhooks;
+
+  GstCtfRecord *ctf;
 };
 
 static void gst_shark_tracer_constructed (GObject * object);
@@ -252,6 +254,7 @@ gst_shark_tracer_finalize (GObject * object)
   g_hash_table_unref (priv->hooks);
   g_hash_table_unref (priv->myhooks);
 
+  g_clear_object (&priv->ctf);
   gst_ctf_deinit ();
 
   G_OBJECT_CLASS (gst_shark_tracer_parent_class)->finalize (object);
@@ -1097,4 +1100,36 @@ gst_shark_tracer_hook_object_destroyed (GObject * object, GstClockTime ts,
   g_return_if_fail (hook);
 
   ((void (*)(GObject *, GstClockTime, GstObject *)) hook) (object, ts, obj);
+}
+
+void
+gst_shark_tracer_set_ctf_record (GstSharkTracer * self, GstCtfRecord * ctf)
+{
+  GstSharkTracerPrivate *priv = NULL;
+
+  g_return_if_fail (self);
+  g_return_if_fail (ctf);
+
+  priv = GST_SHARK_TRACER_PRIVATE (self);
+
+  GST_OBJECT_LOCK (self);
+  priv->ctf = ctf;
+  GST_OBJECT_UNLOCK (self);
+}
+
+GstCtfRecord *
+gst_shark_tracer_get_ctf_record (GstSharkTracer * self)
+{
+  GstSharkTracerPrivate *priv = NULL;
+  GstCtfRecord *ctf = NULL;
+
+  g_return_val_if_fail (self, NULL);
+
+  priv = GST_SHARK_TRACER_PRIVATE (self);
+
+  GST_OBJECT_LOCK (self);
+  ctf = priv->ctf;
+  GST_OBJECT_UNLOCK (self);
+
+  return ctf;
 }

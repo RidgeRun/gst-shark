@@ -129,7 +129,9 @@ gst_cpu_usage_tracer_class_init (GstCPUUsageTracerClass * klass)
 static void
 gst_cpu_usage_tracer_init (GstCPUUsageTracer * self)
 {
-  GstCPUUsage *cpu_usage;
+  GstSharkTracer *stracer = GST_SHARK_TRACER (self);
+  GstCPUUsage *cpu_usage = NULL;
+  GstCtfRecord *ctf = NULL;
 
   cpu_usage = &self->cpu_usage;
   gst_cpu_usage_init (cpu_usage);
@@ -138,4 +140,17 @@ gst_cpu_usage_tracer_init (GstCPUUsageTracer * self)
   /* Register a dummy hook so that the tracer remains alive */
   gst_tracing_register_hook (GST_TRACER (self), "bin-add-post",
       G_CALLBACK (cpuusage_dummy_bin_add_post));
+
+  ctf = gst_ctf_register_event ("cpuusage.class",
+      "number", GST_TYPE_STRUCTURE, gst_structure_new ("value",
+          "type", G_TYPE_GTYPE, G_TYPE_UINT,
+          "description", G_TYPE_STRING, "Core number",
+          "flags", GST_TYPE_TRACER_VALUE_FLAGS,
+          GST_TRACER_VALUE_FLAGS_AGGREGATED, "min", G_TYPE_UINT, 0, "max",
+          G_TYPE_UINT, CPU_NUM_MAX, NULL), "load", GST_TYPE_STRUCTURE,
+      gst_structure_new ("value", "type", G_TYPE_GTYPE, G_TYPE_DOUBLE,
+          "description", G_TYPE_STRING, "Core load percentage [%]", "flags",
+          GST_TYPE_TRACER_VALUE_FLAGS, GST_TRACER_VALUE_FLAGS_AGGREGATED, "min",
+          G_TYPE_DOUBLE, 0.0f, "max", G_TYPE_DOUBLE, 100.0f, NULL), NULL);
+  gst_shark_tracer_set_ctf_record (stracer, ctf);
 }
