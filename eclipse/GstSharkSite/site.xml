@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<site>
-   <feature url="features/GstSharkFeature_1.0.0.201604070936.jar" id="GstSharkFeature" version="1.0.0.201604070936">
-      <category name="RidgeRun"/>
-   </feature>
-   <category-def name="RidgeRun" label="RidgeRun"/>
-</site>
