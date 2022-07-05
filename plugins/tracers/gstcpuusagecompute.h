@@ -24,7 +24,7 @@
 #include <gst/gst.h>
 
 G_BEGIN_DECLS
-#define CPU_NUM_MAX  8
+#define CPU_NUM_MAX  16
 /* Returns a reference to the array the contains the cpu usage computed */
 #define CPU_USAGE_ARRAY(cpuusage_struct)  (cpuusage_struct->cpu_load)
 /* Returns how many element contains the cpu_usage array
