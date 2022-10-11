@@ -1,6 +1,6 @@
 project('gst-shark', 'c',
   version : '0.7.5.1',
-  meson_version : '>= 0.50',)
+  meson_version : '>= 0.58',)
 
 gst_shark_version = meson.project_version()
 version_arr = gst_shark_version.split('.')
@@ -9,16 +9,32 @@ gst_shark_version_minor = version_arr[1].to_int()
 gst_shark_version_micro = version_arr[2].to_int()
 gst_shark_version_nano = version_arr[3].to_int()
 
+gst_shark_version_short = f'@gst_shark_version_major@.@gst_shark_version_minor@.@gst_shark_version_micro@'
+
+# Create an empty configuration object to set config.h information
+cdata = configuration_data()
+
 # Find external dependencies
-gst_dep       = dependency('gstreamer-1.0',      version : '>=1.8.0')
+glib_dep      = dependency('glib-2.0',           version : '>=2.44.0', required : true)
+gst_dep       = dependency('gstreamer-1.0',      version : '>=1.8.1', required : true)
 gst_base_dep  = dependency('gstreamer-base-1.0', version : '>=1.0.0')
 gst_check_dep = dependency('gstreamer-check-1.0',version : '>=1.0.5')
+xmllib_dep    = dependency('libxml-2.0',         version : '>=1.0.5')
+gio_dep       = dependency('gio-2.0',            version : '>=1.0.5')
+gvc_dep       = dependency('libgvc',             version : '>=2.38')
+
+if gvc_dep.found() # TODO: Add check if we want to enable this --disable-graphviz
+    cdata.set('ENABLE_GRAPHVIZ', 1)
+endif
+cdata.set('GST_STABLE_RELEASE', 1)
 
 cc = meson.get_compiler('c')
 
 ## Dependencies
-# Define gst shark dependencies
-gst_shark_deps = [gst_dep]
+# Define gst shark lib dependencies
+gst_shark_deps = [glib_dep, xmllib_dep, gst_dep, gio_dep, gvc_dep]
+# Define gst shark tracer dependencies
+gst_shark_tracers_deps = [glib_dep, xmllib_dep, gst_dep]
 # Define test dependencies
 test_gst_shark_deps=[gst_base_dep, gst_check_dep]
 
@@ -26,7 +42,7 @@ test_gst_shark_deps=[gst_base_dep, gst_check_dep]
 gst_shark_inc_dir = include_directories('plugins/tracers')
 
 # Define compiler args and include directories
-gst_c_args = ['-DHAVE_CONFIG_H']
+gst_c_args = ['-DHAVE_CONFIG_H', '-g'] # TODO: Add a flag for this -g, something like USE_DEBUG one
 configinc = include_directories('.')
 
 # Define gstreamer API version
@@ -35,7 +51,7 @@ apiversion = '1.0'
 # Define installation directories
 prefix = get_option('prefix')
 lib_install_dir = join_paths(get_option('prefix'), get_option('libdir'))
-
+plugins_install_dir = join_paths(lib_install_dir, 'gstreamer-1.0')
 
 # Get an object returns describing a compiler
 cc = meson.get_compiler('c')
@@ -69,10 +85,8 @@ foreach extra_arg : warning_flags
   endif
 endforeach
 
-# Create an empty configuration object to set config.h information
-cdata = configuration_data()
 
-pkg_gst_shark_url='https://developer.ridgerun.com/wiki/index.php?title=GStreamer_Daemon'
+pkg_gst_shark_url='https://developer.ridgerun.com/wiki/index.php/GstShark'
 # Set config.h information
 cdata.set_quoted('GST_API_VERSION', apiversion)
 cdata.set_quoted('LOCALEDIR', join_paths(prefix, get_option('localedir')))
@@ -169,6 +183,9 @@ foreach h : check_headers
     cdata.set(define, 1)
   endif
 endforeach
+
+# Set License to config
+cdata.set_quoted('GST_SHARK_LICENSE', 'LGPL')
 
 # Gtk documentation
 gnome = import('gnome')
