@@ -230,3 +230,4 @@ configure_file(output : 'config.h', configuration : cdata)
 # Enter to each subdirectory and execute the meson.build
 subdir('plugins')
 subdir('tests')
+subdir('docs')
