@@ -1,5 +1,6 @@
 # Feature options
 option('enable-tests', type : 'boolean', value : true, description : 'Enable tests')
+option('enable-graphviz', type : 'boolean', value : false, description : 'Enable graphviz usage')
 option('enable-gtk-doc', type : 'boolean', value : true, description : 'Use gtk-doc to build documentation')
 
 # Common options

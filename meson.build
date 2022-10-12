@@ -18,6 +18,13 @@ cdata = configuration_data()
 # Get an object returns describing a compiler
 cc = meson.get_compiler('c')
 
+# Define header directories
+gst_shark_inc_dir = include_directories('plugins/tracers')
+
+# Define compiler args and include directories
+gst_c_args = ['-DHAVE_CONFIG_H']
+configinc = include_directories('.')
+
 # Find external dependencies
 glib_dep      = dependency('glib-2.0',           version : '>=2.44.0', required : true)
 gst_dep       = dependency('gstreamer-1.0',      version : '>=1.8.1', required : true)
@@ -28,19 +35,22 @@ gio_dep       = dependency('gio-2.0',            version : '>=1.0.0')
 gvc_dep       = dependency('libgvc',             version : '>=2.38')
 
 ## Dependencies
-# Define gst shark lib dependencies
-gst_shark_deps = [glib_dep, xmllib_dep, gst_dep, gio_dep, gvc_dep]
-# Define gst shark tracer dependencies
+# Define gst shark lib main dependencies
+gst_shark_deps = [glib_dep, xmllib_dep, gst_dep, gio_dep]
+# Define gst shark tracer main dependencies
 gst_shark_tracers_deps = [glib_dep, xmllib_dep, gst_dep]
-# Define test dependencies
-test_gst_shark_deps=[gst_base_dep, gst_check_dep, gst_dep, gvc_dep, glib_dep]
+# Define test main dependencies
+test_gst_shark_deps = [gst_base_dep, gst_check_dep, gst_dep, glib_dep]
 
-# Define header directories
-gst_shark_inc_dir = include_directories('plugins/tracers')
-
-# Define compiler args and include directories
-gst_c_args = ['-DHAVE_CONFIG_H', '-g'] # TODO: Add a flag for this -g, something like USE_DEBUG one
-configinc = include_directories('.')
+# Graphviz enablement
+if gvc_dep.found() and get_option('enable-graphviz')
+  cdata.set('ENABLE_GRAPHVIZ', 1, description: 'Define this to enable Graphviz capabilities')
+  gst_shark_deps += [gvc_dep]
+  test_gst_shark_deps += [gvc_dep]
+  message('Graphviz enabled')
+else
+  warning('Graphviz disabled, if required, install it and enable it with -Denable-graphviz=true')
+endif
 
 # TODO: Add a variable to control if static libraries should be built
 
@@ -132,9 +142,6 @@ endif
 cdata.set_quoted('GST_PACKAGE_NAME', gst_package_name)
 cdata.set_quoted('GST_PACKAGE_ORIGIN', get_option('package-origin'))
 
-if gvc_dep.found() # TODO: Add check if we want to enable this --disable-graphviz
-    cdata.set('ENABLE_GRAPHVIZ', 1, description: 'Define this to enable Graphviz capabilities')
-endif
 cdata.set('GST_STABLE_RELEASE', 1, description: 'Define this to use the tracers API of GStreamer version >= 1.8.1')
 
 # Checking the OS to enable reading of CPU usage
