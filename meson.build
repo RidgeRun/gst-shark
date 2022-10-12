@@ -23,8 +23,8 @@ glib_dep      = dependency('glib-2.0',           version : '>=2.44.0', required 
 gst_dep       = dependency('gstreamer-1.0',      version : '>=1.8.1', required : true)
 gst_base_dep  = dependency('gstreamer-base-1.0', version : '>=1.0.0')
 gst_check_dep = dependency('gstreamer-check-1.0',version : '>=1.0.5')
-xmllib_dep    = dependency('libxml-2.0',         version : '>=1.0.5')
-gio_dep       = dependency('gio-2.0',            version : '>=1.0.5')
+xmllib_dep    = dependency('libxml-2.0',         version : '>=1.0.0')
+gio_dep       = dependency('gio-2.0',            version : '>=1.0.0')
 gvc_dep       = dependency('libgvc',             version : '>=2.38')
 
 ## Dependencies
@@ -33,7 +33,7 @@ gst_shark_deps = [glib_dep, xmllib_dep, gst_dep, gio_dep, gvc_dep]
 # Define gst shark tracer dependencies
 gst_shark_tracers_deps = [glib_dep, xmllib_dep, gst_dep]
 # Define test dependencies
-test_gst_shark_deps=[gst_base_dep, gst_check_dep]
+test_gst_shark_deps=[gst_base_dep, gst_check_dep, gst_dep, gvc_dep, glib_dep]
 
 # Define header directories
 gst_shark_inc_dir = include_directories('plugins/tracers')
@@ -81,8 +81,8 @@ foreach extra_arg : warning_flags
   endif
 endforeach
 
-
-# Set config.h information
+##############################
+## Set config.h information
 gst_shark_repo = 'https://github.com/RidgeRun/gst-shark'
 cdata.set_quoted('GST_API_VERSION', apiversion, description: 'GStreamer API version')
 cdata.set_quoted('GST_SHARK_API_VERSION', f'@gst_shark_version_major@.0', description : 'GstShark API Version')
@@ -208,6 +208,8 @@ foreach h : check_headers
     cdata.set(define, 1, description : f'Define to 1 if you have the <@h@> header file.')
   endif
 endforeach
+## Set config.h information done
+##############################
 
 # Gtk documentation
 gnome = import('gnome')
@@ -220,3 +222,4 @@ configure_file(output : 'config.h', configuration : cdata)
 
 # Enter to each subdirectory and execute the meson.build
 subdir('plugins')
+subdir('tests')

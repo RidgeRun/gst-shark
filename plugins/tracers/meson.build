@@ -1,10 +1,3 @@
-# gst_shark_name = 'gstshark'
-# # Application source files
-# # gstd_src_files = [
-# #   'gstd_daemon.c',
-# #   'gstd.c'
-# # ]
-
 # Library source files
 libgst_shark_src_files = [
     'gstdot.c',
@@ -20,8 +13,7 @@ libgst_shark_c_args = [gst_c_args,
                       '-DGST_USE_UNSTABLE_API',
                       '-Wno-undef']
 
-# Create both libraries. 
-# TODO: Check if this is neccesary
+# Create both libraries.
 gst_shark_lib = both_libraries('gstshark',
   libgst_shark_src_files,
   c_args : libgst_shark_c_args,
@@ -53,7 +45,7 @@ libgst_shark_tracers_src_files = [
 libgst_shark_tracers_c_args = [gst_c_args,
                       '-DGST_USE_UNSTABLE_API']
 
-gst_shark_lib = both_libraries('gstsharktracers',
+gst_shark_tracers_plugins = both_libraries('gstsharktracers',
   libgst_shark_tracers_src_files,
   c_args : libgst_shark_tracers_c_args,
   version : gst_shark_version_short,
