@@ -28,11 +28,11 @@ configinc = include_directories('.')
 # Find external dependencies
 glib_dep      = dependency('glib-2.0',           version : '>=2.44.0', required : true)
 gst_dep       = dependency('gstreamer-1.0',      version : '>=1.8.1', required : true)
-gst_base_dep  = dependency('gstreamer-base-1.0', version : '>=1.0.0')
-gst_check_dep = dependency('gstreamer-check-1.0',version : '>=1.0.5')
-xmllib_dep    = dependency('libxml-2.0',         version : '>=1.0.0')
-gio_dep       = dependency('gio-2.0',            version : '>=1.0.0')
-gvc_dep       = dependency('libgvc',             version : '>=2.38')
+gst_base_dep  = dependency('gstreamer-base-1.0', version : '>=1.0.0', required : true)
+xmllib_dep    = dependency('libxml-2.0',         version : '>=1.0.0', required : true)
+gio_dep       = dependency('gio-2.0',            version : '>=1.0.0', required : true)
+gst_check_dep = dependency('gstreamer-check-1.0',version : '>=1.0.5', required : false)
+gvc_dep       = dependency('libgvc',             version : '>=2.38', required : false)
 
 ## Dependencies
 # Define gst shark lib main dependencies
@@ -51,8 +51,6 @@ if gvc_dep.found() and get_option('enable-graphviz')
 else
   warning('Graphviz disabled, if required, install it and enable it with -Denable-graphviz=true')
 endif
-
-# TODO: Add a variable to control if static libraries should be built
 
 # Define gstreamer API version
 apiversion = '1.0'
