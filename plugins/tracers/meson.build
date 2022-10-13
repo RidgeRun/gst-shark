@@ -8,7 +8,7 @@ libgst_shark_src_files = [
 ]
 
 libgst_shark_c_args = [gst_c_args,
-                      '-DGST_USE_UNSTABLE_API',
+                      '-DGST_USE_UNSTABLE_API',   # Used for usage of GstTracerRecord, GstTracer functions
                       '-Wno-undef']
 
 # Create both libraries.
