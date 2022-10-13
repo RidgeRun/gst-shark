@@ -1,8 +1,8 @@
 # Feature options
 option('enable-tests', type : 'boolean', value : true, description : 'Enable tests')
 option('enable-check', type : 'boolean', value : true, description : 'Enable check tests, need the enable-tests flag set')
-option('enable-graphviz', type : 'boolean', value : false, description : 'Enable graphviz usage')
-option('enable-gtk-doc', type : 'boolean', value : true, description : 'Use gtk-doc to build documentation')
+option('enable-plotting', type : 'feature', value : 'enabled', description : 'Enable pipeline plotting capabilities')
+option('enable-docs', type : 'boolean', value : true, description : 'Enable to build documentation')
 
 # Common options
 option('package-name', type : 'string', yield : true,

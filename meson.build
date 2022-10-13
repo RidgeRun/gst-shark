@@ -1,5 +1,14 @@
+#
+# Copyright (C) RidgeRun 2021
+# Authors:  Michael Gruner <michael.gruner@ridgerun.com>
+#           Carlos Aguero <carlos.aguero@ridgerun.com>
+#           Sebastian Fatjo <sebastian.fatjo@ridgerun.com>
+#           Manuel Leiva <manuel.leiva@ridgerun.com>
+#           Carlos Rodriguez <carlos.rodriguez@ridgerun.com>
+#           Roberto Gutierrez <roberto.gutierrez@ridgerun.com>
+
 project('gst-shark', 'c',
-  version : '0.7.5.1',
+  version : '0.7.5',
   meson_version : '>= 0.58',)
 
 # Project version
@@ -8,7 +17,12 @@ version_arr = gst_shark_version.split('.')
 gst_shark_version_major = version_arr[0].to_int()
 gst_shark_version_minor = version_arr[1].to_int()
 gst_shark_version_micro = version_arr[2].to_int()
-gst_shark_version_nano = version_arr[3].to_int()
+
+if version_arr.length() == 4
+  gst_shark_version_nano = version_arr[3].to_int()
+else
+  gst_shark_version_nano = 0
+endif
 
 gst_shark_version_short = f'@gst_shark_version_major@.@gst_shark_version_minor@.@gst_shark_version_micro@'
 
@@ -32,24 +46,22 @@ gst_base_dep  = dependency('gstreamer-base-1.0', version : '>=1.0.0', required :
 xmllib_dep    = dependency('libxml-2.0',         version : '>=1.0.0', required : true)
 gio_dep       = dependency('gio-2.0',            version : '>=1.0.0', required : true)
 gst_check_dep = dependency('gstreamer-check-1.0',version : '>=1.0.5', required : false)
-gvc_dep       = dependency('libgvc',             version : '>=2.38', required : false)
+gvc_dep       = dependency('libgvc',             version : '>=2.38', required : get_option('enable-plotting'))
 
 ## Dependencies
 # Define gst shark lib main dependencies
-gst_shark_deps = [glib_dep, xmllib_dep, gst_dep, gio_dep]
+gst_shark_deps = [glib_dep, xmllib_dep, gst_dep, gio_dep, gvc_dep]
 # Define gst shark tracer main dependencies
-gst_shark_tracers_deps = [glib_dep, xmllib_dep, gst_dep]
+gst_shark_tracers_deps = [glib_dep, xmllib_dep, gst_dep, gvc_dep]
 # Define test main dependencies
 test_gst_shark_deps = [gst_base_dep, gst_check_dep, gst_dep, glib_dep]
 
-# Graphviz enablement
-if gvc_dep.found() and get_option('enable-graphviz')
-  cdata.set('ENABLE_GRAPHVIZ', 1, description: 'Define this to enable Graphviz capabilities')
-  gst_shark_deps += [gvc_dep]
-  test_gst_shark_deps += [gvc_dep]
-  message('Graphviz enabled')
+# PLotting enablement
+if gvc_dep.found() # and get_option('enable-plotting')
+  cdata.set('ENABLE_GRAPHVIZ', 1, description: 'Define this to enable plotting capabilities')
+  message('plotting enabled')
 else
-  warning('Graphviz disabled, if required, install it and enable it with -Denable-graphviz=true')
+  warning('plotting disabled, if required, install Graphviz and enable it with -Denable-plotting=enabled')
 endif
 
 # Define gstreamer API version
@@ -57,7 +69,7 @@ apiversion = '1.0'
 
 # Define installation directories
 prefix = get_option('prefix')
-lib_install_dir = join_paths(get_option('prefix'), get_option('libdir'))
+lib_install_dir = join_paths(prefix, get_option('libdir'))
 plugins_install_dir = join_paths(lib_install_dir, 'gstreamer-1.0')
 
 # Verify if the warning flags are available in the compiler
@@ -65,35 +77,26 @@ plugins_install_dir = join_paths(lib_install_dir, 'gstreamer-1.0')
 # invocations with the exception of compile tests.
 warning_flags = [
   '-Wmissing-declarations',
-  #'-Wmissing-prototypes',
   '-Wredundant-decls',
   '-Wundef',
   '-Wwrite-strings',
   '-Wformat',
-  #'-Wformat-nonliteral',
   '-Wformat-security',
-  #'-Wold-style-definition',
   '-Winit-self',
   '-Wmissing-include-dirs',
   '-Waddress',
   '-Waggregate-return',
   '-Wno-multichar',
-  #'-Wdeclaration-after-statement',
-  #'-Wvla',
   '-Wpointer-arith',
 ]
-foreach extra_arg : warning_flags
-  if cc.has_argument (extra_arg)
-    # Add flag to the compiler command line
-    add_project_arguments([extra_arg], language: 'c')
-  endif
-endforeach
+add_project_arguments(cc.get_supported_arguments(warning_flags), language: 'c')
 
 ##############################
 ## Set config.h information
 gst_shark_repo = 'https://github.com/RidgeRun/gst-shark'
 cdata.set_quoted('GST_API_VERSION', apiversion, description: 'GStreamer API version')
 cdata.set_quoted('GST_SHARK_API_VERSION', f'@gst_shark_version_major@.0', description : 'GstShark API Version')
+cdata.set_quoted('GST_SHARK_DATADIR', join_paths(prefix, get_option('datadir')), description: 'data dir')
 cdata.set_quoted('GST_SHARK_LICENSE', 'LGPL', description: 'GstShark license')
 cdata.set_quoted('GST_SHARK_PACKAGE_CREATED', '2016-01-29', description: 'GstShark date of creation')
 cdata.set_quoted('GST_SHARK_PACKAGE_MAILINGLIST', '', description: 'GstShark mailing list address')
@@ -143,16 +146,12 @@ cdata.set_quoted('GST_PACKAGE_ORIGIN', get_option('package-origin'))
 cdata.set('GST_STABLE_RELEASE', 1, description: 'Define this to use the tracers API of GStreamer version >= 1.8.1')
 
 # Checking the OS to enable reading of CPU usage
-if host_machine.system().to_lower() == 'linux'
+if host_machine.system() == 'linux'
     cdata.set('GST_CPUUSAGE_ENABLE', 1, description : 'Define this to enable the tracer for reading of the CPU usage')
     message('Your platform supports CPU Usage tracing')
 else
     warning('CPU Usage tracer currently not supported on your platform')
 endif
-
-# Define LIBDIR, GST_DATADIR so we can inform people where we live
-cdata.set_quoted('LIBDIR', join_paths(get_option('prefix'), get_option('libdir')), description: 'library dir')
-cdata.set_quoted('GST_SHARK_DATADIR', join_paths(get_option('prefix'), get_option('datadir')), description: 'data dir')
 
 # These are only needed/used by the ABI tests
 host_defines = [
@@ -171,11 +170,7 @@ host_defines = [
   [ 's390', 'HAVE_CPU_S390' ],
 ]
 foreach h : host_defines
-  if h.get(0) == host_machine.cpu()
-    cdata.set(h.get(1), 1)
-  else
-    cdata.set(h.get(1), false, description : 'Define if the target CPU is ' + h.get(0).to_upper())
-  endif
+  cdata.set(h.get(1), h.get(0) == host_machine.cpu(), description : 'Define if the target CPU is ' + h.get(0).to_upper())
 endforeach
 
 cdata.set_quoted('HOST_CPU', host_machine.cpu())

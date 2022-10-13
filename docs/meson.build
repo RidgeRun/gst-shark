@@ -1,4 +1,4 @@
-if get_option('enable-gtk-doc')
+if get_option('enable-docs')
     docconf = configuration_data()
     docconf.set('GST_SHARK_API_VERSION', apiversion)
     docconf.set('PACKAGE_VERSION', gst_shark_version)
