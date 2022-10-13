@@ -65,7 +65,7 @@ else
 endif
 
 # Define gstreamer API version
-apiversion = '1.0'
+gstreamer_api_version = '1.0'
 
 # Define installation directories
 prefix = get_option('prefix')
@@ -94,7 +94,7 @@ add_project_arguments(cc.get_supported_arguments(warning_flags), language: 'c')
 ##############################
 ## Set config.h information
 gst_shark_repo = 'https://github.com/RidgeRun/gst-shark'
-cdata.set_quoted('GST_API_VERSION', apiversion, description: 'GStreamer API version')
+cdata.set_quoted('GST_API_VERSION', gstreamer_api_version, description: 'GStreamer API version')
 cdata.set_quoted('GST_SHARK_API_VERSION', f'@gst_shark_version_major@.0', description : 'GstShark API Version')
 cdata.set_quoted('GST_SHARK_DATADIR', join_paths(prefix, get_option('datadir')), description: 'data dir')
 cdata.set_quoted('GST_SHARK_LICENSE', 'LGPL', description: 'GstShark license')
