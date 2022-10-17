@@ -49,3 +49,5 @@ gst_shark_tracers_plugins = both_libraries('gstsharktracers',
   install : true,
   install_dir : plugins_install_dir,
 )
+
+plugins = [gst_shark_tracers_plugins]
