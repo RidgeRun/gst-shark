@@ -26,7 +26,7 @@ function plot_tracer(tracer,savefig,format,legend_location)
               plot(tracer.cpuusage.timestamp_mat,tracer.cpuusage.cpu_mat,'linewidth',LINEWIDTH)
         end
 
-        # Calculate the greatest time value
+        # Find time value extrema
         timestamp_max = max(max(tracer.cpuusage.timestamp_mat));
         timestamp_min = min(min(tracer.cpuusage.timestamp_mat));
 
@@ -76,7 +76,7 @@ function plot_tracer(tracer,savefig,format,legend_location)
     
     # Plot framerate
     if (1 == isfield(tracer,'framerate'))
-        # Calculate the greatest time value
+        # Find time value extrema
         timestamp_max = max(max(tracer.framerate.timestamp_mat));
         timestamp_min = min(min(tracer.framerate.timestamp_mat));
 
@@ -109,7 +109,7 @@ function plot_tracer(tracer,savefig,format,legend_location)
     
     # Plot Interlatency
     if (1 == isfield(tracer,'interlatency'))
-        # Calculate the greatest time value
+        # Find time value extrema
         timestamp_max = max(max(tracer.interlatency.timestamp_mat));
         timestamp_min = min(min(tracer.interlatency.timestamp_mat));
         
@@ -142,7 +142,7 @@ function plot_tracer(tracer,savefig,format,legend_location)
     
     # Plot Processing time
     if (1 == isfield(tracer,'proctime'))
-        # Calculate the greatest time value
+        # Find time value extrema
         timestamp_max = max(max(tracer.proctime.timestamp_mat));
         timestamp_min = min(min(tracer.proctime.timestamp_mat));
 
@@ -175,7 +175,7 @@ function plot_tracer(tracer,savefig,format,legend_location)
     
     # Plot Scheduling
     if (1 == isfield(tracer,'scheduling'))
-        # Calculate the greatest time value
+        # Find time value extrema
         timestamp_max = max(max(tracer.scheduling.timestamp_mat));
         timestamp_min = min(min(tracer.scheduling.timestamp_mat));
 
@@ -278,6 +278,7 @@ function plot_tracer(tracer,savefig,format,legend_location)
         legend_list = tracer.framerate.element_name_list;
         legend_list{end+1} = tracer.cpuusage.cpu_name_list{1};
 
+        # Find time value extrema
         timestamp_max = max(max(max(tracer.framerate.timestamp_mat)),max(tracer.cpuusage.timestamp_mat(:,1)));
         timestamp_min = min(min(min(tracer.framerate.timestamp_mat)),min(tracer.cpuusage.timestamp_mat(:,1)));
 
@@ -300,6 +301,46 @@ function plot_tracer(tracer,savefig,format,legend_location)
                     print tracer -dpdf -append
                 case 'png'
                     print('cpuusage_framerate','-dpng');
+                otherwise
+                    printf('octave: WARN: %s is not supported',format)
+            end
+        end
+        # Create a new figure if the legend location is extern
+        if (1 == strcmp(legend_location,'extern'))
+            plot_legend(legend_list,'Frame rate and CPU usage legend',savefig,'cpuusage_framerate_legend',format)
+        end
+    end
+
+    if ((1 == isfield(tracer,'cpuusage')) && (1 == isfield(tracer,'framerate')))
+        # Create legend name list
+        legend_list = tracer.framerate.element_name_list;
+        legend_list{end+1} = tracer.cpuusage.cpu_name_list{1};
+        legend_list{end+1} = tracer.cpuusage.cpu_name_list{2};
+        legend_list{end+1} = tracer.cpuusage.cpu_name_list{3};
+        legend_list{end+1} = tracer.cpuusage.cpu_name_list{4};
+
+        timestamp_max = max(max(max(max(tracer.framerate.timestamp_mat)),max(tracer.cpuusage.timestamp_mat)));
+        timestamp_min = min(min(min(min(tracer.framerate.timestamp_mat)),min(tracer.cpuusage.timestamp_mat)));
+
+        figure('Name','Frame rate and CPU usage (cores)')
+        [hAx,hLine1,hLine2] = plotyy(tracer.framerate.timestamp_mat',tracer.framerate.fps_mat',tracer.cpuusage.timestamp_mat,tracer.cpuusage.cpu_mat);
+         if (0 == strcmp(legend_location,'extern'))
+            legend(str2latex(legend_list),'Location',legend_location)
+        end
+
+        title('Frame rate and CPU usage (cores)','fontsize',FONTSIZE)
+        xlabel('time (seconds)','fontsize',FONTSIZE)
+        ylabel(hAx(1),'FPS','fontsize',FONTSIZE)
+        ylabel(hAx(2),'CPU usage (%)','fontsize',FONTSIZE)
+        xlim([timestamp_min,timestamp_max])
+
+        if (TRUE == savefig)
+            disp('Save cpuusage (cores) vs framerate figure...')
+            switch format
+                case 'pdf'
+                    print tracer -dpdf -append
+                case 'png'
+                    print('cpuusage-cores_framerate','-dpng');
                 otherwise
                     printf('octave: WARN: %s is not supported',format)
             end

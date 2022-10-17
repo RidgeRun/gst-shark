@@ -19,6 +19,7 @@
  */
 
 #include "gstsharktracer.h"
+#include "gstctf.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_shark_debug);
 #define GST_CAT_DEFAULT gst_shark_debug
@@ -33,6 +34,8 @@ struct _GstSharkTracerPrivate
   GHashTable *hooks;
   GHashTable *myhooks;
 };
+
+static volatile gint g_shark_tracer_refcount = 0;
 
 static void gst_shark_tracer_constructed (GObject * object);
 static void gst_shark_tracer_finalize (GObject * object);
@@ -220,9 +223,15 @@ gst_shark_tracer_fill_hooks (GstSharkTracerPrivate * priv)
 static void
 gst_shark_tracer_constructed (GObject * object)
 {
+  gint prev_count;
   GstSharkTracer *self = GST_SHARK_TRACER (object);
 
   gst_shark_tracer_save_params (self);
+
+  prev_count = g_atomic_int_add (&g_shark_tracer_refcount, 1);
+  if (prev_count == 0) {
+    gst_ctf_init ();
+  }
 }
 
 static void
@@ -249,6 +258,10 @@ gst_shark_tracer_finalize (GObject * object)
   g_hash_table_unref (priv->myhooks);
 
   G_OBJECT_CLASS (gst_shark_tracer_parent_class)->finalize (object);
+
+  if (g_atomic_int_dec_and_test (&g_shark_tracer_refcount)) {
+    gst_ctf_close ();
+  }
 }
 
 static void
