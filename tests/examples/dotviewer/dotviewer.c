@@ -30,14 +30,12 @@ int
 main (int argc, char *argv[])
 {
   GstElement *pipe;
-  GMainLoop *loop;
   const gchar *dot_string;
   GstDotRender render;
 
   gst_init (&argc, &argv);
 
   pipe = gst_parse_launch ("fakesrc ! fakesink", NULL);
-  loop = g_main_loop_new (NULL, FALSE);
   render = gst_dot_x11_render;
 
   dot_string = gst_dot_pipeline_to_string (GST_PIPELINE (pipe));
