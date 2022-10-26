@@ -271,7 +271,6 @@ static void
 gst_interlatency_tracer_class_init (GstInterLatencyTracerClass * klass)
 {
   GObjectClass *oclass;
-  gchar *metadata_event;
 
   oclass = G_OBJECT_CLASS (klass);
 
@@ -312,17 +311,13 @@ gst_interlatency_tracer_class_init (GstInterLatencyTracerClass * klass)
   /* *INDENT-ON* */
 
   oclass->dispose = gst_interlatency_tracer_dispose;
-
-  metadata_event =
-      g_strdup_printf (interlatency_metadata_event, INTERLATENCY_EVENT_ID, 0);
-  add_metadata_event_struct (metadata_event);
-  g_free (metadata_event);
 }
 
 static void
 gst_interlatency_tracer_init (GstInterLatencyTracer * self)
 {
   GstTracer *tracer = GST_TRACER (self);
+  gchar *metadata_event = NULL;
 
   /* In push mode, pre/post will be called before/after the peer chain
    * function has been called. For this reason, we only use -pre to avoid
@@ -344,6 +339,11 @@ gst_interlatency_tracer_init (GstInterLatencyTracer * self)
       G_CALLBACK (do_pull_range_post));
   gst_tracing_register_hook (tracer, "pad-push-event-pre",
       G_CALLBACK (do_push_event_pre));
+
+  metadata_event =
+      g_strdup_printf (interlatency_metadata_event, INTERLATENCY_EVENT_ID, 0);
+  add_metadata_event_struct (metadata_event);
+  g_free (metadata_event);
 }
 
 static void
