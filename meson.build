@@ -8,7 +8,7 @@
 #           Roberto Gutierrez <roberto.gutierrez@ridgerun.com>
 
 project('gst-shark', 'c',
-  version : '0.8.0',
+  version : '0.8.1',
   meson_version : '>= 0.58',)
 
 # Project version

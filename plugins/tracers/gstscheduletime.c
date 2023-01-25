@@ -155,7 +155,6 @@ static void
 gst_scheduletime_tracer_class_init (GstScheduletimeTracerClass * klass)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
-  gchar *metadata_event;
 
   gobject_class->finalize = gst_scheduletime_tracer_finalize;
 
@@ -168,17 +167,13 @@ gst_scheduletime_tracer_class_init (GstScheduletimeTracerClass * klass)
           "type", G_TYPE_GTYPE, G_TYPE_STRING,
           "related-to", GST_TYPE_TRACER_VALUE_SCOPE,
           GST_TRACER_VALUE_SCOPE_PROCESS, NULL), NULL);
-
-  metadata_event =
-      g_strdup_printf (scheduling_metadata_event, SCHED_TIME_EVENT_ID, 0);
-  add_metadata_event_struct (metadata_event);
-  g_free (metadata_event);
 }
 
 static void
 gst_scheduletime_tracer_init (GstScheduletimeTracer * self)
 {
   GstSharkTracer *tracer = GST_SHARK_TRACER (self);
+  gchar *metadata_event = NULL;
 
   self->schedule_pads =
       g_hash_table_new_full (g_direct_hash, g_direct_equal, key_destroy,
@@ -192,4 +187,9 @@ gst_scheduletime_tracer_init (GstScheduletimeTracer * self)
 
   gst_shark_tracer_register_hook (tracer, "pad-pull-range-pre",
       G_CALLBACK (sched_time_compute));
+
+  metadata_event =
+      g_strdup_printf (scheduling_metadata_event, SCHED_TIME_EVENT_ID, 0);
+  add_metadata_event_struct (metadata_event);
+  g_free (metadata_event);
 }

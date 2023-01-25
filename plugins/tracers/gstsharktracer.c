@@ -137,12 +137,18 @@ static void
 gst_shark_tracer_init (GstSharkTracer * self)
 {
   GstSharkTracerPrivate *priv = GST_SHARK_TRACER_PRIVATE (self);
+  gint prev_count = 0;
 
   priv->params = g_hash_table_new (g_str_hash, g_str_equal);
   priv->hooks = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
   priv->myhooks = g_hash_table_new (g_str_hash, g_str_equal);
 
   gst_shark_tracer_fill_hooks (priv);
+
+  prev_count = g_atomic_int_add (&g_shark_tracer_refcount, 1);
+  if (prev_count == 0) {
+    gst_ctf_init ();
+  }
 }
 
 static void
@@ -223,15 +229,10 @@ gst_shark_tracer_fill_hooks (GstSharkTracerPrivate * priv)
 static void
 gst_shark_tracer_constructed (GObject * object)
 {
-  gint prev_count;
+
   GstSharkTracer *self = GST_SHARK_TRACER (object);
 
   gst_shark_tracer_save_params (self);
-
-  prev_count = g_atomic_int_add (&g_shark_tracer_refcount, 1);
-  if (prev_count == 0) {
-    gst_ctf_init ();
-  }
 }
 
 static void
