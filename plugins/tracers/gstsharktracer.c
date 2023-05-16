@@ -468,7 +468,7 @@ gst_shark_tracer_hook_pad_push_list_pre (GObject * object, GstClockTime ts,
     return;
   }
 
-  hook = g_hash_table_lookup (priv->hooks, "pad-push-pre");
+  hook = g_hash_table_lookup (priv->hooks, "pad-push-list-pre");
   g_return_if_fail (hook);
 
   ((void (*)(GObject *, GstClockTime, GstPad *, GstBufferList *)) hook) (object,
