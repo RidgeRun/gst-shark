@@ -167,6 +167,7 @@ send_latency_probe (GstElement * parent, GstPad * pad, guint64 ts)
   }
 }
 
+
 static void
 calculate_latency (GstInterLatencyTracer * interlatency_tracer,
     GstElement * parent, GstPad * pad, guint64 ts)
@@ -176,10 +177,15 @@ calculate_latency (GstInterLatencyTracer * interlatency_tracer,
   g_return_if_fail (pad);
 
   if (!GST_IS_BIN (parent)) {
-    GstEvent *ev = g_object_get_qdata ((GObject *) pad, latency_probe_id);
-
-    if (GST_IS_EVENT (ev))
-      log_latency (interlatency_tracer, gst_event_get_structure (ev), pad, ts);
+    GList *list = g_object_steal_qdata ((GObject *) pad, latency_probe_id);
+    while(list && g_list_first(list)) {
+      GstEvent* ev = g_list_nth_data(list, 0);
+      if (GST_IS_EVENT (ev)) {
+        log_latency(interlatency_tracer, gst_event_get_structure(ev), pad, ts);
+        gst_event_unref(ev);
+      }
+      list = g_list_remove(list, ev);
+    }
   }
 }
 
@@ -240,6 +246,10 @@ do_pull_range_post (GstTracer * self, guint64 ts, GstPad * pad)
     calculate_latency (interlatency_tracer, parent, pad, ts);
 }
 
+static void free_event_g_list(GList* list) {
+  g_list_free_full(list, (GDestroyNotify)gst_event_unref);
+}
+
 static void
 do_push_event_pre (GstTracer * self, guint64 ts, GstPad * pad, GstEvent * ev)
 {
@@ -253,13 +263,20 @@ do_push_event_pre (GstTracer * self, guint64 ts, GstPad * pad, GstEvent * ev)
       const GstStructure *data = gst_event_get_structure (ev);
 
       if (gst_structure_get_name_id (data) == latency_probe_id) {
+        GList* list = (GList*)g_object_get_qdata((GObject *) pad, latency_probe_id);
+        GList* new_list = g_list_append(list, gst_event_ref(ev));
         /* store event and calculate latency when the buffer that follows
          * has been processed */
-        g_object_set_qdata_full ((GObject *) pad, latency_probe_id,
-            gst_event_ref (ev), (GDestroyNotify) gst_event_unref);
-        if (GST_OBJECT_FLAG_IS_SET (parent_peer, GST_ELEMENT_FLAG_SINK))
-          g_object_set_qdata_full ((GObject *) peer_pad, latency_probe_id,
-              gst_event_ref (ev), (GDestroyNotify) gst_event_unref);
+        if(!list)
+          g_object_set_qdata_full ((GObject *) pad, latency_probe_id,
+                                  new_list, (GDestroyNotify) free_event_g_list);
+        if (GST_OBJECT_FLAG_IS_SET (parent_peer, GST_ELEMENT_FLAG_SINK)) {
+          GList* list = (GList*)g_object_get_qdata((GObject *) peer_pad, latency_probe_id);
+          GList* new_list = g_list_append(list, gst_event_ref(ev));
+          if(!list)
+            g_object_set_qdata_full((GObject*)peer_pad, latency_probe_id, new_list,
+                                    (GDestroyNotify)free_event_g_list);
+        }
       }
     }
   }
