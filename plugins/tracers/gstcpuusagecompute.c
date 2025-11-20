@@ -35,7 +35,7 @@
 #define XS(arg) #arg
 
 void
-gst_cpu_usage_init (GstCPUUsage * cpu_usage)
+gst_cpu_usage_init (GstCPUUsage *cpu_usage)
 {
   gint cpu_num = 0;
 
@@ -53,7 +53,7 @@ gst_cpu_usage_init (GstCPUUsage * cpu_usage)
 }
 
 void
-gst_cpu_usage_compute (GstCPUUsage * cpu_usage)
+gst_cpu_usage_compute (GstCPUUsage *cpu_usage)
 {
   gfloat *cpu_load;
   gint cpu_num;
@@ -69,7 +69,7 @@ gst_cpu_usage_compute (GstCPUUsage * cpu_usage)
   gint *idle;
   gint *idle_aux;
 
-  gchar cpu_name[CPU_NAME_MAX_SIZE];
+  gchar cpu_name[CPU_NAME_MAX_SIZE + 1];
   gint iowait;                  /* Time waiting for I/O to complete */
   gint irq;                     /* Time servicing interrupts        */
   gint softirq;                 /* Time servicing softirqs          */
