@@ -7,12 +7,12 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -29,11 +29,17 @@ static void element_change_state_post (GstTracer * self, guint64 ts,
 static void install_callback (GstPeriodicTracer * self);
 static void remove_callback (GstPeriodicTracer * self);
 static void reset_internal (GstPeriodicTracer * self);
-static gboolean callback_internal (gpointer * data);
+static gboolean callback_internal (gpointer data);
 static void write_header_internal (GstPeriodicTracer * self);
 static gint set_period (GstPeriodicTracer * self);
-static void start_monitoring_internal (GstPeriodicTracer * self, GstPipeline *pipeline);
-static void stop_monitoring_internal (GstPeriodicTracer * self, GstPipeline *pipeline);
+static void start_monitoring_internal (GstPeriodicTracer * self,
+    GstPipeline * pipeline);
+static void stop_monitoring_internal (GstPeriodicTracer * self,
+    GstPipeline * pipeline);
+static gpointer periodic_thread (gpointer data);
+static void start_timer_thread (GstPeriodicTracer * self);
+static void stop_timer_thread (GstPeriodicTracer * self);
+static void gst_periodic_tracer_finalize (GObject * object);
 
 #define GST_PERIODIC_TRACER_PRIVATE(o) \
   gst_periodic_tracer_get_instance_private(GST_PERIODIC_TRACER(o))
@@ -44,27 +50,34 @@ typedef struct _GstPeriodicTracerPrivate GstPeriodicTracerPrivate;
 struct _GstPeriodicTracerPrivate
 {
   guint pipes_running;
-  guint callback_id;
   gboolean header_written;
   gint period;
+  GThread *thread;
+  GMutex thread_lock;
+  GCond thread_cond;
+  gboolean stop_thread;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (GstPeriodicTracer, gst_periodic_tracer,
     GST_SHARK_TYPE_TRACER);
 
 static void
-gst_periodic_tracer_class_init (GstPeriodicTracerClass * klass)
+gst_periodic_tracer_class_init (GstPeriodicTracerClass *klass)
 {
+  GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
+
   GST_DEBUG_CATEGORY_INIT (gst_periodic_debug, "periodictracer", 0,
       "base periodic tracer");
 
   klass->timer_callback = NULL;
   klass->reset = NULL;
   klass->write_header = NULL;
+
+  gobject_class->finalize = gst_periodic_tracer_finalize;
 }
 
 static void
-gst_periodic_tracer_init (GstPeriodicTracer * self)
+gst_periodic_tracer_init (GstPeriodicTracer *self)
 {
   GstPeriodicTracerPrivate *priv;
   GstTracer *tracer;
@@ -73,18 +86,20 @@ gst_periodic_tracer_init (GstPeriodicTracer * self)
   tracer = GST_TRACER (self);
 
   priv->pipes_running = 0;
-  priv->callback_id = 0;
   priv->header_written = FALSE;
   priv->period = DEFAULT_TIMEOUT_INTERVAL;
+  priv->thread = NULL;
+  priv->stop_thread = FALSE;
+  g_mutex_init (&priv->thread_lock);
+  g_cond_init (&priv->thread_cond);
 
   gst_tracing_register_hook (tracer, "element-change-state-post",
       G_CALLBACK (element_change_state_post));
 }
 
 static void
-element_change_state_post (GstTracer * tracer, guint64 ts,
-    GstElement * element, GstStateChange transition,
-    GstStateChangeReturn result)
+element_change_state_post (GstTracer *tracer, guint64 ts,
+    GstElement *element, GstStateChange transition, GstStateChangeReturn result)
 {
   GstPeriodicTracer *self = GST_PERIODIC_TRACER (tracer);
 
@@ -102,18 +117,18 @@ element_change_state_post (GstTracer * tracer, guint64 ts,
         GST_OBJECT_NAME (element));
     write_header_internal (self);
     reset_internal (self);
-    start_monitoring_internal (self, GST_PIPELINE(element));
+    start_monitoring_internal (self, GST_PIPELINE (element));
     install_callback (self);
   } else if (transition == GST_STATE_CHANGE_PLAYING_TO_PAUSED) {
     GST_DEBUG_OBJECT (self, "Pipeline %s changed to paused",
         GST_OBJECT_NAME (element));
-    stop_monitoring_internal (self, GST_PIPELINE(element));
+    stop_monitoring_internal (self, GST_PIPELINE (element));
     remove_callback (self);
   }
 }
 
 static void
-write_header_internal (GstPeriodicTracer * self)
+write_header_internal (GstPeriodicTracer *self)
 {
   GstPeriodicTracerClass *klass;
   GstPeriodicTracerPrivate *priv;
@@ -145,7 +160,7 @@ write_header_internal (GstPeriodicTracer * self)
 }
 
 static void
-install_callback (GstPeriodicTracer * self)
+install_callback (GstPeriodicTracer *self)
 {
   GstPeriodicTracerPrivate *priv;
 
@@ -160,9 +175,7 @@ install_callback (GstPeriodicTracer * self)
         "First pipeline started running, starting profiling");
 
     priv->period = set_period (self);
-    priv->callback_id =
-        g_timeout_add_seconds (priv->period,
-        (GSourceFunc) callback_internal, (gpointer) self);
+    start_timer_thread (self);
   }
 
   priv->pipes_running++;
@@ -172,9 +185,10 @@ install_callback (GstPeriodicTracer * self)
 }
 
 static void
-remove_callback (GstPeriodicTracer * self)
+remove_callback (GstPeriodicTracer *self)
 {
   GstPeriodicTracerPrivate *priv;
+  gboolean stop_thread = FALSE;
 
   g_return_if_fail (self);
 
@@ -184,18 +198,21 @@ remove_callback (GstPeriodicTracer * self)
 
   if (1 == priv->pipes_running) {
     GST_INFO_OBJECT (self, "Last pipeline stopped running, stopped profiling");
-    g_source_remove (priv->callback_id);
-    priv->callback_id = 0;
+    stop_thread = TRUE;
   }
 
   priv->pipes_running--;
   GST_DEBUG_OBJECT (self, "Pipes running: %d", priv->pipes_running);
 
   GST_OBJECT_UNLOCK (self);
+
+  if (stop_thread) {
+    stop_timer_thread (self);
+  }
 }
 
 static void
-reset_internal (GstPeriodicTracer * self)
+reset_internal (GstPeriodicTracer *self)
 {
   GstPeriodicTracerClass *klass;
 
@@ -211,7 +228,7 @@ reset_internal (GstPeriodicTracer * self)
 }
 
 static gboolean
-callback_internal (gpointer * data)
+callback_internal (gpointer data)
 {
   GstPeriodicTracer *self;
   GstPeriodicTracerClass *klass;
@@ -228,9 +245,118 @@ callback_internal (gpointer * data)
   return klass->timer_callback (self);
 }
 
+static gpointer
+periodic_thread (gpointer data)
+{
+  GstPeriodicTracer *self = NULL;
+  GstPeriodicTracerPrivate *priv = NULL;
+
+  g_return_val_if_fail (data, NULL);
+
+  self = GST_PERIODIC_TRACER (data);
+  priv = GST_PERIODIC_TRACER_PRIVATE (self);
+
+  while (TRUE) {
+    gboolean timed_out = FALSE;
+    gint period;
+    gboolean stop;
+    gint64 end_time;
+
+    g_mutex_lock (&priv->thread_lock);
+    stop = priv->stop_thread;
+    period = priv->period;
+    end_time = g_get_monotonic_time () + ((gint64) period * G_TIME_SPAN_SECOND);
+
+    while (!priv->stop_thread) {
+      gboolean signaled;
+
+      signaled =
+          g_cond_wait_until (&priv->thread_cond, &priv->thread_lock, end_time);
+
+      if (!signaled) {
+        timed_out = TRUE;
+        break;
+      }
+    }
+
+    stop = priv->stop_thread;
+
+    g_mutex_unlock (&priv->thread_lock);
+
+    if (stop) {
+      break;
+    }
+
+    if (timed_out) {
+      if (!callback_internal (self)) {
+        g_mutex_lock (&priv->thread_lock);
+        priv->stop_thread = TRUE;
+        g_mutex_unlock (&priv->thread_lock);
+        break;
+      }
+    }
+  }
+
+  g_object_unref (self);
+
+  return NULL;
+}
 
 static void
-start_monitoring_internal (GstPeriodicTracer * self, GstPipeline *pipeline)
+start_timer_thread (GstPeriodicTracer *self)
+{
+  GstPeriodicTracerPrivate *priv;
+
+  g_return_if_fail (self);
+
+  priv = GST_PERIODIC_TRACER_PRIVATE (self);
+
+  g_mutex_lock (&priv->thread_lock);
+
+  if (NULL == priv->thread) {
+    priv->stop_thread = FALSE;
+    priv->thread = g_thread_new ("gst-periodic-tracer",
+        (GThreadFunc) periodic_thread, g_object_ref (self));
+  }
+
+  g_mutex_unlock (&priv->thread_lock);
+}
+
+static void
+stop_timer_thread (GstPeriodicTracer *self)
+{
+  GstPeriodicTracerPrivate *priv;
+  GThread *thread = NULL;
+
+  g_return_if_fail (self);
+
+  priv = GST_PERIODIC_TRACER_PRIVATE (self);
+
+  g_mutex_lock (&priv->thread_lock);
+
+  if (priv->thread) {
+    priv->stop_thread = TRUE;
+    g_cond_broadcast (&priv->thread_cond);
+    thread = priv->thread;
+  }
+
+  g_mutex_unlock (&priv->thread_lock);
+
+  if (thread) {
+    g_thread_join (thread);
+
+    g_mutex_lock (&priv->thread_lock);
+    if (priv->thread == thread) {
+      priv->thread = NULL;
+      priv->stop_thread = FALSE;
+    }
+    g_mutex_unlock (&priv->thread_lock);
+  }
+}
+
+
+static void
+start_monitoring_internal (GstPeriodicTracer *self, GstPipeline *pipeline)
 {
   GstPeriodicTracerClass *klass;
 
@@ -246,7 +372,7 @@ start_monitoring_internal (GstPeriodicTracer * self, GstPipeline *pipeline)
 }
 
 static void
-stop_monitoring_internal (GstPeriodicTracer * self, GstPipeline *pipeline)
+stop_monitoring_internal (GstPeriodicTracer *self, GstPipeline *pipeline)
 {
   GstPeriodicTracerClass *klass;
 
@@ -262,7 +388,7 @@ stop_monitoring_internal (GstPeriodicTracer * self, GstPipeline *pipeline)
 }
 
 static gint
-set_period (GstPeriodicTracer * self)
+set_period (GstPeriodicTracer *self)
 {
   GList *list = NULL;
   GstSharkTracer *tracer = NULL;
@@ -290,4 +416,20 @@ set_period (GstPeriodicTracer * self)
   }
 
   return period;
+}
+
+static void
+gst_periodic_tracer_finalize (GObject *object)
+{
+  GstPeriodicTracer *self = GST_PERIODIC_TRACER (object);
+  GstPeriodicTracerPrivate *priv;
+
+  priv = GST_PERIODIC_TRACER_PRIVATE (self);
+
+  stop_timer_thread (self);
+
+  g_mutex_clear (&priv->thread_lock);
+  g_cond_clear (&priv->thread_cond);
+
+  G_OBJECT_CLASS (gst_periodic_tracer_parent_class)->finalize (object);
 }
